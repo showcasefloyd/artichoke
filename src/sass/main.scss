@@ -1,0 +1,117 @@
+/* ==========================================================================
+   Author's custom styles
+========================================================================== */
+// @font-face {
+//   font-family: "some-font";
+//   src: url("../assets/bootstrap/fonts/glyphicons-halflings-regular.eot");
+//   src: url("../assets/bootstrap/fonts/glyphicons-halflings-regular.eot#iefix") format("embedded-opentype"),
+//        url("../assets/bootstrap/fonts/glyphicons-halflings-regular.woff") format("woff"),
+//        url("../assets/bootstrap/fonts/glyphicons-halflings-regular.ttf") format("truetype"),
+//        url("../assets/bootstrap/fonts/glyphicons-halflings-regular.svg#rio") format("svg");
+//   font-weight: normal;
+//   font-style: normal;
+// }
+
+//@import "node_modules/bootstrap-sass/assets/stylesheets/_bootstrap.scss";
+
+@import "admin";
+
+a { text-decoration: none; }
+a:hover { color: #cc0000; text-decoration: underline;}
+
+/* general */
+span.error-message { font-weight: bold; color: red; }
+span.success-message { font-weight: bold; color: green; }
+span.mandatory-field-marker { fonts-weight: bold; color: red; }
+
+/* globals */
+
+.page-header{
+	padding: 1em;
+	background-color: #DBD87B;
+	margin-bottom: 0;
+}
+
+.page-header-menu {
+	padding: 1em 1.8em;
+	background-color: #adaa58;
+	margin-bottom: 1em;
+}
+
+/* menu */
+
+
+/* titles menu */
+#titles-list {
+	border: 1px solid #ccc;
+	list-style: none;
+	padding: 0;
+	height: 100vh;
+}
+.title-table {margin-left: 4px; margin-top: 4px; width: 100%; background-color: pink;}
+.title-table-header {padding: 6px 0px 6px 6px; font-size: 1.3em; font-weight: bold;}
+.title-icon-open { padding-left:4px; width:20px }
+.title-icon-closed { padding-left:4px; width:20px }
+.title-name-open {  padding-left:4px; font-weight: bold; font-size: 1.1em; }
+.title-name-closed {  padding-left:4px; font-size: 1.1em;}
+.title-series { padding-left:10px; }
+
+/* series grid */
+
+// .series-table { margin-left: 4px; margin-top: 4px; }
+// td.series-title { padding: 6px 0px 6px 6px;}
+// span.series-title { font-weight: bold;  font-size: 14px; }
+// span.series-series { font-weight: bold; font-size: 12px; }
+// span.series-col { text-decoration: underline; }
+// .series-col-l { padding-left: 6px; vertical-align: bottom; text-align: left; }
+// .series-col-r { vertical-align: bottom; text-align: right; }
+//
+// span.series-row {  }
+// .series-row-l { padding-left: 6px; vertical-align: bottom;  text-align: left; }
+// .series-row-r { vertical-align: bottom;  text-align: right; }
+
+#main-top {
+
+	height: 300px;
+	overflow: auto;
+	margin-bottom: 1em;
+	border: 1px solid green;
+
+	#comicgrid {
+		//border: 1px solid #ccc;
+		margin-top:4px;
+		display: flex;
+		flex-flow: row wrap;
+
+	}
+
+	.issue-box {
+		flex-basis:10%;
+		border: 1px solid #ccc;
+		border-left: 1px solid #ccc;
+		border-bottom: 1px solid #ccc;
+		float: left;
+		color: #ccc;
+		padding: 10px;
+	}
+
+	.own {
+		background-color: #8cd8ff;
+	}
+
+}
+
+/* issue table */
+
+.issue-table {
+	margin-top: 4px;
+	width: 100%;
+	.issue-key {padding:6px; text-align: right; font-weight: bold; width:20%;}
+	.issue-val {padding:6px; text-align: left; }
+}
+
+hr.clear-row {margin: 0; padding: 0; clear: both; background: #fff ;}
+
+/* Admin */
+/* Admin Container */
+.title {font-weight: bold;}

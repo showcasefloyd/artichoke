@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>::: Artichoke, Comic Book Database :::</title>
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="/build/css/bootstrap.css" media="screen">
+	<link rel="stylesheet" href="/build/css/main.css" media="screen">
+
+</head>
+
+<body ng-app="jsComicDBAdmin">
+    <div class="container" ng-controller="adminController">
+        <div class="row">
+            <div class="col-sm-12">
+                <h3 class="page-header">[ Artichoke, Comic Book Database >> Administration Panel ]</h3>
+                <div class="page-header-menu"><a href="/">Catalog</a></div>
+            </div>
+        </div>
+        <div class="row">
+
+            <div class="col-sm-3" id="left-menu">
+                <!-- {{titles}} -->
+                <div id="admin-titles-list">
+
+                    <div class="form-group">
+
+                        <select class="form-control" name="titles-menu" ng-model="title" ng-options="title.name for title in titles">
+                         <!-- <option ng-repeat="title in titles" value="{{title.id}}">{{title.name}}</option> -->
+                        </select>
+
+                        <div ng-show="titles">
+                            <h3>Titles</h3>
+                            <button ng-click="loadTitle()" class="btn btn-primary">Load Title</button>
+                            <button ng-click="createTitle()" class="btn btn-warning">New Title</button>
+                        </div>
+
+
+                        <div ng-show="series">
+                            <h3>Series</h3>
+                            <button class="btn btn-primary">Load Series</button>
+                            <button class="btn btn-warning">New Series</button>
+                        </div>
+
+                        <div ng-show="issues">
+                            <h3>Issues</h3>
+                            <button class="btn btn-primary">Load Issue</button>
+                            <button class="btn btn-warning">New Issues</button>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-sm-9">
+                <span ng-if="error">
+                    <div class="alert alert-warning">{{error}}</div>
+                </span>
+                <span ng-if="action == 'loadTitle'">
+                    <div ng-include="'/views/title.html'"></div>
+                </span>
+                <span ng-if="action == 'createTitle'">
+                    <div ng-include="'/views/new-title.html'" onload="title = createtitle"></div>
+                </span>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="/build/js/vendor.js"></script>
+    <script src="/build/js/admin.js"></script>
+
+</body>
+</html>

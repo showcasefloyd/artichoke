@@ -1,0 +1,54 @@
+{
+  "name": "jscomicdb",
+  "version": "1.0.0",
+  "description": "Conversion of old PHPComicDB to Angular 1.5 and Webpack",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "npm run dev-server && npm run dev-client",
+    "dev-server": "nodemon app/index.js",
+    "dev-client": "node_modules/.bin/webpack-dev-server",
+    "wp": "webpack --watch --progress --colors",
+    "wpprod": "webpack --progress --colors -p"
+  },
+  "keywords": [
+    "Comics",
+    "Books",
+    "JS"
+  ],
+  "author": "PBI",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "https://gitlab.com/showcasefloyd/artichoke-comic-book-d"
+  },
+  "dependencies": {
+    "angular": "^1.6.5",
+    "angular-resource": "^1.6.5",
+    "angular-route": "^1.6.5",
+    "body-parser": "~1.17.1",
+    "bootstrap": "^3.3.7",
+    "bootstrap-sass": "^3.3.7",
+    "browser-sync": "^2.18.12",
+    "express": "~4.15.2",
+    "gulp": "^3.9.1",
+    "gulp-jshint": "~2.0.1",
+    "jquery": "^3.2.1",
+    "jshint": "^2.9.5"
+  },
+  "devDependencies": {
+    "css-loader": "^0.28.4",
+    "exec-php": "^0.0.5",
+    "extract-text-webpack-plugin": "^2.1.2",
+    "file-loader": "^0.11.2",
+    "gulp-nodemon": "^2.2.1",
+    "gulp-sass": "^3.0.0",
+    "node-sass": "^4.5.3",
+    "sass-loader": "^6.0.6",
+    "style-loader": "^0.17.0",
+    "url-loader": "^0.5.9",
+    "webpack": "^2.6.1",
+    "webpack-dev-server": "^2.5.0",
+    "webpack-stream": "^3.2.0"
+  }
+}

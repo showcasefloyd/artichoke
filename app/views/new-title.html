@@ -1,0 +1,102 @@
+<p class="lead text-primary">Create New Title: {{title.name}}</p>
+<form>
+	<div class="form-group">
+		<label class="control-label" for="inputTitle"> Title <span class="mandatory-field-marker">*</span></label>
+		<input type="text" class="form-control" ng-model="title.name" id="inputTitle" value="{{title.name}}" placeholder="New title">
+	</div>
+
+	<div class="form-group">
+		<p>{{title.edittitle}}</p>
+		<input type="hidden" name="title_id" value="{{title.id}}">
+		<input class="btn btn-primary" type="submit" name="save_title" value="Save" ng-click="saveTitle(title.name)">
+		<input ng-hide="title.id == null" class="btn btn-warning" type="submit" name="remove_title" value="Remove">
+	</div>
+</form>
+
+
+<form class="form-horizontal well" method="post" action="actions.php">
+	<div class="form-group">
+		<div class="col-md-12">
+			<p class="lead text-primary">New Title </p>
+		</div>
+	</div>
+    <div class="form-group">
+        <label class="control-label col-sm-3" for="inputTitle">
+        	<span class="mandatory-field-marker">*</span> Comic Title:
+        </label>
+        <div class="col-sm-6">
+        	<input type="text" class="form-control" id="inputTitle" name="title_name" value="">
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label class="control-label col-sm-3" for="inputSeries">
+        	<span class="mandatory-field-marker">*</span> Series:
+        </label>
+        <div class="col-sm-6">
+        	<input type="text" class="form-control" id="inputSeries" name="series_name" value="">
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label class="control-label col-sm-3">
+        	<span class="mandatory-field-marker" for="inputPublisher">*</span> Publisher:
+        </label>
+		<div class="col-sm-6">
+	        <select class="form-control" name="publisher" id="inputPublisher">
+				<option value=""> --choose-- </option>
+	        </select>
+	    </div>
+    </div>
+
+    <div class="form-group">
+        <label class="control-label col-sm-3">Type:</label>
+        <div class="col-sm-6">
+	        <select class="form-control" name="series_type">
+				<option value=""> --choose-- </option>
+	        </select>
+ 		</div>
+    </div>
+
+    <div class="form-group">
+        <label class="control-label col-sm-3">Default Price:</label>
+       <div class="col-sm-6">
+       		<input type="text" class="form-control" name="default_price" value="" maxlength="12">
+       	</div>
+    </div>
+
+	<div class="form-group">
+	    <label class="control-label col-sm-3">Issues:</label>
+	    <div class="col-sm-3">
+	    	<input type="text" class="form-control" name="first_issue" placeholder="First"  maxlength="11">
+	   	</div>
+		<div class="col-sm-3">
+	    	<input type="text" class="form-control" name="last_issue" placeholder="Last" maxlength="11" >
+	   	</div>
+	</div>
+
+    <div class="form-group">
+       <label class="control-label col-sm-3">Subscribed?</label>
+       <div class="col-sm-6">
+       		<div class="checkbox">
+		       <label>
+		       		<input type="checkbox" name="subscribed">
+		       </label>
+		    </div>
+       	</div>
+    </div>
+
+    <div class="form-group">
+        <label class="control-label col-sm-3">Comments:</label>
+        <div class="col-sm-6">
+        	<textarea name="comments" class="form-control" rows="6" cols="80"></textarea>
+        </div>
+    </div>
+
+	 <div class="form-group ">
+	 	<div class="col-sm-offset-3">
+		 	<input type="submit" name="save_new_title" class="btn btn-default" value="Save">
+		</div>
+	 </div>
+
+</form>

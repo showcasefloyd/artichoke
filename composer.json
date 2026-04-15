@@ -1,0 +1,15 @@
+{
+    "type": "project",
+    "repositories": [
+        {
+            "type": "pear",
+            "url": "http://pear.php.net"
+        }
+    ],
+    "require": {
+        "pear-pear.php.net/db": "*"
+    },
+     "config":{
+        "secure-http" : false
+    }
+}
