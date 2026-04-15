@@ -13,10 +13,11 @@
 //define('DB_PASS','comicdb');
 //define('DB_NAME','comicdb');
 
-define('DB_URL','207.210.200.134');
-define('DB_USER','scfloyd_comicdb');
-define('DB_PASS','28doVPrpJ');
-define('DB_NAME','scfloyd_comicdb');
+// Local defaults can be overridden via environment variables.
+define('DB_URL', getenv('ARTICHOKE_DB_HOST') ?: 'localhost');
+define('DB_USER', getenv('ARTICHOKE_DB_USER') ?: 'comicdb');
+define('DB_PASS', getenv('ARTICHOKE_DB_PASS') ?: 'comicdb');
+define('DB_NAME', getenv('ARTICHOKE_DB_NAME') ?: 'comicdb');
 
 // prefixed to the title of every HTML page
 define('HTML_TITLE_PREFIX', 'jsComicDB');
