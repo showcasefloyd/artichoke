@@ -8,22 +8,23 @@ const extractSass = new ExtractTextPlugin("css/main.css");
 
 module.exports = {
     entry: {
-      app: './src/modules/js/app.js',
-      admin: './src/modules/js/admin.js',
-      vendor: ['angular','angular-route','angular-resource','bootstrap']
+        app: './src/modules/js/app.js',
+        admin: './src/modules/js/admin.js',
+        vendor: ['angular', 'angular-route', 'angular-resource', 'bootstrap']
     },
     output: {
-        path: path.join(__dirname,  "/app/build"),
+        path: path.join(__dirname, "/app/build"),
         filename: 'js/[name].js',
         publicPath: "/build"
     },
 
     devServer: {
         contentBase: path.join(__dirname, "/app"),
+        host: "0.0.0.0",
         compress: true,
-        port: 8080,
+        port: 8093,
         proxy: {
-            '/':'http://localhost:3000/',
+            '/': 'http://localhost:3000/',
         },
         watchOptions: {
             aggregateTimeout: 500,
@@ -45,7 +46,7 @@ module.exports = {
                 test: /\.scss$/,
                 use: extractSass.extract({
                     use: [
-                        { loader: "css-loader",  options: { sourceMap: true } },
+                        { loader: "css-loader", options: { sourceMap: true } },
                         { loader: "sass-loader", options: { sourceMap: true } }
                     ],
                 })
@@ -62,10 +63,10 @@ module.exports = {
         extractSass,
         extractBootstrap,
         new webpack.ProvidePlugin({
-          $: 'jquery',
-          jQuery: 'jquery',
-          'window.jQuery': 'jquery'
-      })
+            $: 'jquery',
+            jQuery: 'jquery',
+            'window.jQuery': 'jquery'
+        })
 
-  ]
+    ]
 }
