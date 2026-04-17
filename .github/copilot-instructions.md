@@ -18,9 +18,13 @@
 - Install dependencies:
   - `npm install`
   - `composer install`
+- Package manager policy:
+  - Use `npm` for all JavaScript dependency changes and scripts.
+  - Commit and maintain `package-lock.json` as the source of truth for JS dependencies.
+  - Do not use Yarn or recreate `yarn.lock`.
 - Common development commands:
   - `npm run dev-server` starts Express backend on port `3000`
-  - `npm run dev-client` starts webpack-dev-server on port `8080` (proxy to backend)
+  - `npm run dev-client` starts webpack-dev-server on port `8093` (proxy to backend)
   - `npm run wp` runs webpack in watch mode
   - `npm run wpprod` builds production bundles
 - Tests are not currently configured (`npm test` exits with error placeholder).

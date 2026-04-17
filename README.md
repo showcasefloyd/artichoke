@@ -1,19 +1,61 @@
 # Artichoke ComicBook Catalog
 
+## Docker Development (Recommended)
+
+This repository now includes a Docker Compose setup that runs:
+
+* MySQL on port `3307`
+* Backend (Express + PHP bridge) on port `3000`
+* Frontend (webpack-dev-server) on port `8093`
+
+### One-time setup
+
+```bash
+docker compose build
+```
+
+### Start all services
+
+```bash
+npm run stack:up
+```
+
+### App URLs
+
+* Frontend dev server: `http://localhost:8093`
+* Backend app endpoint: `http://localhost:3000`
+* MySQL: `localhost:3307` (`comicdb` / `comicdb`, DB `comicdb`)
+
+### Stop services
+
+```bash
+npm run stack:down
+```
+
+These scripts wrap Docker Compose:
+
+* `npm run stack:up` -> `docker compose up -d --build`
+* `npm run stack:down` -> `docker compose down`
+
+### Reset DB volume (fresh bootstrap)
+
+```bash
+docker compose down -v
+docker compose up
+```
+
+The schema/bootstrap script is loaded from `app/sql/bootstrap_mysql.sql`.
+
 ## Install Instructions
 
-* Right now this project has packages from Bower, NPM and Composer. You must run the installs for all three before it will be up and running
+* This project is managed with NPM and Composer.
+* Install JavaScript dependencies with `npm install`.
+* Install PHP dependencies with `composer install`.
 
 * __Note__ This application still relies heavily on PHP and PEAR Packages. The quickest way to satisfy these requirements is to user Composer (the
 PHP Package manager).
 
-* There is a `composer.json` file in the app/root that needs to be run with the following command: `composer install`
-
-* You can install composer via `brew` on OS X or by downloading the composer.phar file from the Composer website
-
-* The application uses AngularJS 1.5 and can be run in the browser via `gulp` with the following command
-
-* To start browser-sync and fire up a local server just type `gulp`  
+* Development uses Webpack + webpack-dev-server (`npm run dev-client`) and the backend Node/PHP bridge (`npm run dev-server`).
 
 ## Update: May 30, 2019
 

@@ -1,0 +1,62 @@
+services:
+  db:
+    image: mysql:8.0
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_DATABASE: comicdb
+      MYSQL_USER: comicdb
+      MYSQL_PASSWORD: comicdb
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3307:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./app/sql/bootstrap_mysql.sql:/docker-entrypoint-initdb.d/01-bootstrap.sql:ro
+    healthcheck:
+      test: [ "CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u$$MYSQL_USER -p$$MYSQL_PASSWORD --silent" ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  backend:
+    build:
+      context: .
+      dockerfile: docker/app/Dockerfile
+    working_dir: /workspace
+    command: npm run dev-server
+    environment:
+      ARTICHOKE_DB_HOST: db
+      ARTICHOKE_DB_USER: comicdb
+      ARTICHOKE_DB_PASS: comicdb
+      ARTICHOKE_DB_NAME: comicdb
+      ARTICHOKE_DEBUG: "1"
+    volumes:
+      - .:/workspace
+      - node_modules:/workspace/node_modules
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/app/Dockerfile
+    working_dir: /workspace
+    command: npm run dev-client
+    environment:
+      CHOKIDAR_USEPOLLING: "1"
+      WATCHPACK_POLLING: "true"
+    volumes:
+      - .:/workspace
+      - node_modules:/workspace/node_modules
+    ports:
+      - "8093:8093"
+    depends_on:
+      backend:
+        condition: service_started
+
+volumes:
+  db_data:
+  node_modules:

@@ -9,6 +9,9 @@ applyTo: "src/modules/js/**, src/sass/**"
 - Preserve legacy AngularJS 1.x module/controller patterns used in [src/modules/js/app.js](src/modules/js/app.js) and [src/modules/js/admin.js](src/modules/js/admin.js).
 - Keep array-based dependency injection for controllers and services to remain minification-safe.
 - Follow the existing `$scope` + `$http` style in touched files instead of introducing new frameworks or broad architectural rewrites.
+- Use `npm` for frontend package management and scripts.
+- Treat `package-lock.json` as the source-of-truth lockfile for JavaScript dependencies.
+- Do not use Yarn or recreate `yarn.lock`.
 - Edit source files only:
   - JavaScript in `src/modules/js/`
   - Sass in `src/sass/`
