@@ -48,6 +48,7 @@ services:
     environment:
       CHOKIDAR_USEPOLLING: "1"
       WATCHPACK_POLLING: "true"
+      WEBPACK_PROXY_TARGET: "http://backend:3000/"
     volumes:
       - .:/workspace
       - node_modules:/workspace/node_modules

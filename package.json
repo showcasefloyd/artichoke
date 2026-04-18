@@ -5,7 +5,6 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "npm run dev-server && npm run dev-client",
     "stack:up": "docker compose up -d --build",
     "stack:down": "docker compose down",
     "dev-server": "nodemon app/index.js",

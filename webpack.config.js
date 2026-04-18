@@ -1,6 +1,8 @@
 var webpack = require("webpack");
 var path = require('path');
 
+var proxyTarget = process.env.WEBPACK_PROXY_TARGET || 'http://localhost:3000/';
+
 const ExtractTextPlugin = require("extract-text-webpack-plugin");
 const extractBootstrap = new ExtractTextPlugin("css/bootstrap.css");
 const extractSass = new ExtractTextPlugin("css/main.css");
@@ -24,7 +26,7 @@ module.exports = {
         compress: true,
         port: 8093,
         proxy: {
-            '/': 'http://localhost:3000/',
+            '/': proxyTarget,
         },
         watchOptions: {
             aggregateTimeout: 500,
