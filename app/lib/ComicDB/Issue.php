@@ -260,7 +260,7 @@ EOT;
 
 		$coverDate = $this->coverDate();
 		if ($coverDate) {
-			$coverDate = strftime("%Y%m%d", $coverDate);
+			$coverDate = date("Ymd", $coverDate);
 			$data['cover_date'] = "'$coverDate'";
 		}
 
@@ -295,7 +295,7 @@ EOT;
 		}
 
 		$purchaseDate = $this->purchaseDate();
-		$purchaseDate = strftime("%Y%m%d", $purchaseDate);
+		$purchaseDate = date("Ymd", $purchaseDate);
 		if ($purchaseDate) {
 			$data['purchase_date'] = "'$purchaseDate'";
 		}
@@ -395,7 +395,7 @@ EOT;
 
 		$coverDate = $this->coverDate();
 		if ($coverDate) {
-			$coverDate = strftime("%Y%m%d", $coverDate);
+			$coverDate = date("Ymd", $coverDate);
 			$data['cover_date'] = "'$coverDate'";
 		} else {
 			$data['cover_date'] = "NULL";
@@ -445,7 +445,7 @@ EOT;
 
 		$purchaseDate = $this->purchaseDate();
 		if ($purchaseDate) {
-			$purchaseDate = strftime("%Y%m%d", $purchaseDate);
+			$purchaseDate = date("Ymd", $purchaseDate);
 			$data['purchase_date'] = "'$purchaseDate'";
 		} else {
 			$data['purchase_date'] = "NULL";

@@ -2,6 +2,11 @@
 /* Database connection class */
 //include_once("DB.php");
 
+// PEAR DB_OK constant - retained for compatibility with legacy model code
+if (!defined('DB_OK')) {
+   define('DB_OK', 1);
+}
+
 class ComicDB_DB {
    // static methods
    public static function dsn($dsn=null) {

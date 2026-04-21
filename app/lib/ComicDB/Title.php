@@ -61,9 +61,7 @@ class ComicDB_Title extends ComicDB_Object
 EOT;
 
         $db = ComicDB_DB::db();
-        $db->query($query);
-
-        if (! $result = $db->query($query)) {
+        if (! $db->query($query)) {
             die('There was an error running the query [' . $db->error . ']');
         }
 
@@ -75,17 +73,10 @@ EOT;
 			  LIMIT 1
 EOT;
 
-        $db->query($query);
-
         if (! $result = $db->query($query)) {
             die('There was an error running the query [' . $db->error . ']');
         }
 
-        //if (PEAR::isError($id)) {
-        // XXX: how to correctly handle? the insert was
-        // successful, but discovering the new id was not
-        // return $id;
-        //}
         $row = $result->fetch_assoc();
         $this->id($row['id']);
 

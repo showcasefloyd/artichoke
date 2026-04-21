@@ -5,6 +5,7 @@ var express = require('express'),
 
 // Tell Express to use this module -- This is middleware
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
 
 // Middleware
 app.use('/views',express.static(__dirname + "/views"));
@@ -81,6 +82,90 @@ app.get('/title/:id',function(req, res){
          console.log("output", output);
          console.log("printed", printed);
 
+         res.send(result);
+      });
+   });
+});
+
+// Title CRUD
+app.post('/title', function(req, res) {
+   console.log('CREATE TITLE', req.body);
+   execPhp(__dirname + '/api.php', function(error, php, data) {
+      php.createtitle(req.body.name, function(err, result) {
+         res.send(result);
+      });
+   });
+});
+
+app.put('/title/:id', function(req, res) {
+   console.log('UPDATE TITLE', req.params.id, req.body);
+   execPhp(__dirname + '/api.php', function(error, php, data) {
+      php.updatetitle(req.params.id, req.body.name, function(err, result) {
+         res.send(result);
+      });
+   });
+});
+
+app.delete('/title/:id', function(req, res) {
+   console.log('DELETE TITLE', req.params.id);
+   execPhp(__dirname + '/api.php', function(error, php, data) {
+      php.deletetitle(req.params.id, function(err, result) {
+         res.send(result);
+      });
+   });
+});
+
+// Series CRUD
+app.post('/series', function(req, res) {
+   console.log('CREATE SERIES', req.body);
+   execPhp(__dirname + '/api.php', function(error, php, data) {
+      php.createseries(JSON.stringify(req.body), function(err, result) {
+         res.send(result);
+      });
+   });
+});
+
+app.put('/series/:id', function(req, res) {
+   console.log('UPDATE SERIES', req.params.id, req.body);
+   execPhp(__dirname + '/api.php', function(error, php, data) {
+      php.updateseries(req.params.id, JSON.stringify(req.body), function(err, result) {
+         res.send(result);
+      });
+   });
+});
+
+app.delete('/series/:id', function(req, res) {
+   console.log('DELETE SERIES', req.params.id);
+   execPhp(__dirname + '/api.php', function(error, php, data) {
+      php.deleteseries(req.params.id, function(err, result) {
+         res.send(result);
+      });
+   });
+});
+
+// Issue CRUD
+app.post('/issue', function(req, res) {
+   console.log('CREATE ISSUE', req.body);
+   execPhp(__dirname + '/api.php', function(error, php, data) {
+      php.createissue(JSON.stringify(req.body), function(err, result) {
+         res.send(result);
+      });
+   });
+});
+
+app.put('/issue/:id', function(req, res) {
+   console.log('UPDATE ISSUE', req.params.id, req.body);
+   execPhp(__dirname + '/api.php', function(error, php, data) {
+      php.updateissue(req.params.id, JSON.stringify(req.body), function(err, result) {
+         res.send(result);
+      });
+   });
+});
+
+app.delete('/issue/:id', function(req, res) {
+   console.log('DELETE ISSUE', req.params.id);
+   execPhp(__dirname + '/api.php', function(error, php, data) {
+      php.deleteissue(req.params.id, function(err, result) {
          res.send(result);
       });
    });
