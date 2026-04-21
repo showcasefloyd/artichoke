@@ -6,9 +6,6 @@ applyTo: "app/lib/ComicDB/**"
 
 # ComicDB PHP Guidelines
 
-- Use `npm` for JavaScript package management and scripts.
-- Treat `package-lock.json` as the source-of-truth lockfile for JavaScript dependencies.
-- Do not use Yarn or recreate `yarn.lock`.
 - Follow existing ComicDB class naming patterns such as ComicDB_Object, ComicDB_Title, and ComicDB_Titles.
 - Keep the legacy getter and setter style used across entity classes, including isDirty flag updates when state changes.
 - Preserve object lifecycle flags and behavior: isNew, isDirty, and isDeleted.

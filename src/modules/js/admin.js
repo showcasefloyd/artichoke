@@ -1,4 +1,4 @@
-//var $ = require("jquery");
+// var $ = require("jquery");
 // require('angular');
 // require('angular-route');
 // require('angular-resource');
@@ -16,10 +16,10 @@ angular.module('jsComicDBAdmin', [])
     $scope.loadTitle = function () {
       console.log("Calling Load Title", $scope.title.id);
 
-        if(!$scope.title.id){
-            $scope.error = "Missing Title ID"
-            return
-        };
+      if (!$scope.title.id) {
+        $scope.error = "Missing Title ID"
+        return
+      };
 
       $http.get('/title/' + $scope.title.id)
         .then(function (response) {
@@ -37,7 +37,7 @@ angular.module('jsComicDBAdmin', [])
           console.log(response);
           console.log("Status", response.status);
           console.log("THIS IS A ERROR", response.statusText);
-          })
+        })
     };
 
     $scope.createTitle = function () {

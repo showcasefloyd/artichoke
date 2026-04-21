@@ -1,10 +1,16 @@
 # Artichoke ComicBook Catalog
 
+
+
+
 ## Docker Development (Recommended)
 
 This repository now includes a Docker Compose setup that runs:
 
+
+
 * MySQL on port `3307`
+* Adminer on port `8100`
 * Backend (Express + PHP bridge) on port `3000`
 * Frontend (webpack-dev-server) on port `8093`
 
@@ -44,6 +50,22 @@ docker compose down -v
 docker compose up
 ```
 
+### To only serve the application you just need to serve the db and backend
+
+```bash
+docker compose up -d db backend
+```
+
+### To also run the front-end in watch mode use the additional
+
+```bash
+docker compose exec backend npm run wp
+```
+
+To stop this just use `Ctrl-C` to kill the process in the terminal
+
+### To use the 
+
 The schema/bootstrap script is loaded from `app/sql/bootstrap_mysql.sql`.
 
 ## Install Instructions
@@ -59,7 +81,7 @@ PHP Package manager).
 
 ## Update: May 30, 2019
 
-This branch is way ahead of the Master branch and at this point `DOES NOT REQUIRE GULP`. It is using Webpack and Webpack-Dev-Server. Webpack is basically running an Express Server which then calls out api.php script. 
+This branch is way ahead of the Master branch and at this point `DOES NOT REQUIRE GULP`. It is using Webpack and Webpack-Dev-Server. Webpack is basically running an Express Server which then calls out api.php script.
 
 Webpack also handles bundling of SASS and JavaScript files.
 
@@ -67,7 +89,7 @@ __Note__ `src` is where Angular modules are before compiling
 
 ## Update: Sept 2017
 
-There are two processes that you need to run the app. A backend service which is currently handled by `nodedemon` and runs the app in standalone mode at `localhost:3000` and a front end which you can run two ways depending on what you want to do. 
+There are two processes that you need to run the app. A backend service which is currently handled by `nodedemon` and runs the app in standalone mode at `localhost:3000` and a front end which you can run two ways depending on what you want to do.
 
 The frontend needs `Webpack` to handle javascript and scss compiling. So running `npm run wp` will start webpack in watch mode. If you want hot-reloading / browser-sync like features you JS and SCSS files then you would run `wp run dev-server`.
 

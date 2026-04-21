@@ -12,14 +12,14 @@ require('../../sass/main.scss');
 
 angular.module('jscomicdb',['ngRoute'])
 
-   // .config(['$routeProvider','$locationPr ovider',function($routeProvider,$locationProvider) {
-   //     $routeProvider
-   //       .when('/admin',{template:'This is the computers Route'});
-   //
-   //       $locationProvider.html5Mode(true);
-   // }])
+    // .config(['$routeProvider','$locationPr provider',function($routeProvider,$locationProvider) {
+    //     $routeProvider
+    //       .when('/admin',{template:'This is the computers Route'});
+    //
+    //       $locationProvider.html5Mode(true);
+    // }])
 
-   .controller('jsTitles',['$scope','$http',function($scope,$http){
+    .controller('jsTitles',['$scope','$http',function($scope,$http){
 
         $scope.heyNow = "Showcase Floyd";
 
@@ -33,8 +33,8 @@ angular.module('jscomicdb',['ngRoute'])
             $scope.openSeries = id;
             $http.get('/list/'+id)
                 .then(function(response){
-                   console.log(response.data);
-                   $scope.series = response.data;
+                    console.log(response.data);
+                    $scope.series = response.data;
                 });
         };
 

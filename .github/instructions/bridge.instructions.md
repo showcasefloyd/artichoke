@@ -6,11 +6,9 @@ applyTo: "app/index.js, app/api.php"
 
 # Node to PHP Bridge Guidelines
 
-- Use `npm` for JavaScript package management and scripts.
-- Treat `package-lock.json` as the source-of-truth lockfile for JavaScript dependencies.
-- Do not use Yarn or recreate `yarn.lock`.
-- Preserve the existing bridge flow in [app/index.js](app/index.js): Express route -> `execPhp(__dirname + '/api.php', ...)` -> PHP function callback -> `res.send(...)`.
+- Preserve the existing bridge flow in [app/index.js](app/index.js): Express route → `execPhp(__dirname + '/api.php', callback)` → `php.functionName(args, callback)` → `res.send(result)`.
 - Match route and callback style already used by `/list`, `/list/:id`, `/issues/:id`, `/issue/:id`, and `/title/:id` in [app/index.js](app/index.js).
+- PHP functions called via `exec-php` must be declared at file scope in [app/api.php](app/api.php) (not in a class). Function names are case-sensitive.
 - When adding bridge endpoints, keep response shapes compatible with existing AngularJS callers in [src/modules/js/app.js](src/modules/js/app.js) and [src/modules/js/admin.js](src/modules/js/admin.js).
 - Put PHP callable logic in [app/api.php](app/api.php) and keep function names stable and explicit.
 - Avoid unrelated refactors to server bootstrap and middleware in [app/index.js](app/index.js); keep changes scoped to the new endpoint behavior.

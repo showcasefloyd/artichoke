@@ -29,6 +29,18 @@
   - `npm run wpprod` builds production bundles
 - Tests are not currently configured (`npm test` exits with error placeholder).
 
+## Docker Development
+- Start full stack: `npm run stack:up` (runs `docker compose up -d --build`)
+- Stop full stack: `npm run stack:down`
+- Port map: backend `3000`, webpack-dev-server `8093`, MySQL `3307`, Adminer `8100`
+- Database is auto-bootstrapped from [app/sql/bootstrap_mysql.sql](app/sql/bootstrap_mysql.sql) on first DB container start.
+- DB connection is configured via environment variables: `ARTICHOKE_DB_HOST`, `ARTICHOKE_DB_USER`, `ARTICHOKE_DB_PASS`, `ARTICHOKE_DB_NAME`; these are set in [docker-compose.yml](docker-compose.yml) for Docker and in [app/lib/config.inc](app/lib/config.inc) for local dev.
+- The `node_modules` directory is mounted as a named Docker volume to avoid host/container permission conflicts — do not delete this volume without rebuilding.
+
+## Known Bugs
+- Deleting an issue deletes the entire series (see [README.md](README.md) for details).
+- Issue condition does not persist correctly.
+
 ## Conventions
 - Edit source files, not generated assets:
   - JavaScript source: `src/modules/js/`

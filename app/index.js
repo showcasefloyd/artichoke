@@ -1,9 +1,9 @@
 var express = require('express'),
-    bodyParser = require('body-parser'),
-    app = express(),
-    execPhp = require('exec-php');
+   bodyParser = require('body-parser'),
+   app = express(),
+   execPhp = require('exec-php');
 
-// Tell Expresss to use this module -- This is middleware
+// Tell Express to use this module -- This is middleware
 app.use(bodyParser.urlencoded({ extended: true }));
 
 // Middleware
@@ -25,40 +25,44 @@ app.get('/', function(req, res) {
 // DELETE - delete
 
 app.get('/list',function(req, res){
-    console.log("LIST")
+   console.log("LIST")
+
    execPhp(__dirname + '/api.php', function(error, php, data){
-       res.send(data);
+      res.send(data);
    });
 });
 
 app.get('/list/:id',function(req, res){
    console.log("LIST ID", req.params.id);
+
    execPhp(__dirname + '/api.php', function(error, php, data){
-       php.grabseries(req.params.id, function(err, result, output, printed){
-          res.send(result);
-       });
+      php.grabseries(req.params.id, function(err, result, output, printed){
+      res.send(result);
+      });
    });
 });
 
 app.get('/issues/:id',function(req, res){
-   //console.log(req.params.id);
+   console.log(req.params.id);
+
    execPhp(__dirname + '/api.php', function(error, php, data){
       php.grabissues(req.params.id, function(err,result,output,printed){
-         //console.log("RESULTS", err,result,output,printed);
+
+         console.log("RESULTS", err,result,output,printed);
          res.send(result);
       });
    });
 });
 
 app.get('/issue/:id',function(req, res){
-   //console.log(req.params.id);
+   console.log(req.params.id);
+
    execPhp(__dirname + '/api.php', function(error, php, data){
+      php.grabissue(req.params.id, function(err,result,output,printed){
 
-
-        php.grabissue(req.params.id, function(err,result,output,printed){
-            //console.log("RESULTS", err,result,output,printed);
-            res.send(result);
-        });
+         console.log("RESULTS", err,result,output,printed);
+         res.send(result);
+      });
    });
 });
 
@@ -72,7 +76,6 @@ app.get('/title/:id',function(req, res){
    execPhp(__dirname + '/api.php', function(error, php, data){
       php.grabtitle(req.params.id, function(err,result,output,printed){
 
-
          console.log("ERR", err);
          console.log("result", result);
          console.log("output", output);
@@ -82,7 +85,6 @@ app.get('/title/:id',function(req, res){
       });
    });
 });
-
 
 app.listen('3000',function(){
    console.log("Listening on port 3000");
