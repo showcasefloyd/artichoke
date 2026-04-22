@@ -10,6 +10,7 @@ const TitleEditor: React.FC<Props> = ({ titleId, onSaved, onDeleted }) => {
     const [name, setName] = useState('');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [success, setSuccess] = useState('');
 
     useEffect(() => {
         setLoading(true);
@@ -26,14 +27,17 @@ const TitleEditor: React.FC<Props> = ({ titleId, onSaved, onDeleted }) => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name }),
         })
-            .then(res => res.json())
-            .then(() => { setError(''); onSaved(); });
+            .then(res => { if (!res.ok) throw new Error(`Server error ${res.status}`); return res.json(); })
+            .then(() => { setError(''); setSuccess('Saved successfully.'); onSaved(); })
+            .catch(err => setError(err.message));
     };
 
     const handleDelete = () => {
         if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
         fetch(`/title/${titleId}`, { method: 'DELETE' })
-            .then(() => onDeleted());
+            .then(res => { if (!res.ok) throw new Error(`Server error ${res.status}`); return res.json(); })
+            .then(() => onDeleted())
+            .catch(err => setError(err.message));
     };
 
     if (loading) return <p>Loading&hellip;</p>;
@@ -42,6 +46,7 @@ const TitleEditor: React.FC<Props> = ({ titleId, onSaved, onDeleted }) => {
         <div>
             <p className="lead text-primary">Edit Title</p>
             {error && <div className="alert alert-danger">{error}</div>}
+            {success && <div className="alert alert-success">{success}</div>}
             <form onSubmit={handleSave}>
                 <div className="mb-3">
                     <label className="form-label" htmlFor="inputTitle">

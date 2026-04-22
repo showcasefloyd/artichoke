@@ -1,44 +1,52 @@
 import React, { useEffect, useState } from 'react';
 
-interface SeriesData {
+interface IssueData {
     id: number;
-    titleId: number;
-    name: string;
-    publisher: string;
+    seriesId: number;
+    number: string;
+    sort: string;
+    printRun: string;
+    quantity: string;
+    coverDate: string;
+    location: string;
     type: string;
-    defaultPrice: string;
-    firstIssue: string;
-    finalIssue: string;
-    subscribed: string;
+    status: string;
+    condition: string;
+    coverPrice: string;
+    purchasePrice: string;
+    purchaseDate: string;
+    guideValue: string;
+    guide: string;
+    issueValue: string;
     comments: string;
 }
 
 interface Props {
-    seriesId: number;
+    issueId: number;
     onSaved: () => void;
     onDeleted: () => void;
 }
 
-const SeriesEditor: React.FC<Props> = ({ seriesId, onSaved, onDeleted }) => {
-    const [data, setData] = useState<SeriesData | null>(null);
+const IssueEditor: React.FC<Props> = ({ issueId, onSaved, onDeleted }) => {
+    const [data, setData] = useState<IssueData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
 
     useEffect(() => {
         setLoading(true);
-        fetch(`/series/${seriesId}`)
+        fetch(`/issue/${issueId}/raw`)
             .then(res => res.json())
             .then(d => { setData(d); setLoading(false); });
-    }, [seriesId]);
+    }, [issueId]);
 
-    const set = (field: keyof SeriesData) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    const set = (field: keyof IssueData) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
         setData(prev => prev ? { ...prev, [field]: e.target.value } : prev);
 
     const handleSave = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!data?.name.trim()) { setError('Name is required'); return; }
-        fetch(`/series/${seriesId}`, {
+        if (!data?.number.trim()) { setError('Issue number is required'); return; }
+        fetch(`/issue/${issueId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data),
@@ -49,8 +57,8 @@ const SeriesEditor: React.FC<Props> = ({ seriesId, onSaved, onDeleted }) => {
     };
 
     const handleDelete = () => {
-        if (!confirm(`Delete series "${data?.name}"? This cannot be undone.`)) return;
-        fetch(`/series/${seriesId}`, { method: 'DELETE' })
+        if (!confirm(`Delete issue #${data?.number}? This cannot be undone.`)) return;
+        fetch(`/issue/${issueId}`, { method: 'DELETE' })
             .then(res => { if (!res.ok) throw new Error(`Server error ${res.status}`); return res.json(); })
             .then(() => onDeleted())
             .catch(err => setError(err.message));
@@ -58,7 +66,7 @@ const SeriesEditor: React.FC<Props> = ({ seriesId, onSaved, onDeleted }) => {
 
     if (loading || !data) return <p>Loading&hellip;</p>;
 
-    const field = (label: string, key: keyof SeriesData) => (
+    const field = (label: string, key: keyof IssueData) => (
         <div className="mb-3" key={key}>
             <label className="form-label" htmlFor={`input-${key}`}>{label}</label>
             <input
@@ -73,17 +81,32 @@ const SeriesEditor: React.FC<Props> = ({ seriesId, onSaved, onDeleted }) => {
 
     return (
         <div>
-            <p className="lead text-primary">Edit Series</p>
+            <p className="lead text-primary">Edit Issue</p>
             {error && <div className="alert alert-danger">{error}</div>}
             {success && <div className="alert alert-success">{success}</div>}
             <form onSubmit={handleSave}>
-                {field('Name *', 'name')}
-                {field('Publisher', 'publisher')}
+                {field('Issue Number *', 'number')}
+                {field('Sort Order', 'sort')}
+                {field('Print Run', 'printRun')}
+                {field('Quantity', 'quantity')}
+                {field('Cover Date (timestamp)', 'coverDate')}
+                {field('Location', 'location')}
                 {field('Type', 'type')}
-                {field('Default Price', 'defaultPrice')}
-                {field('First Issue', 'firstIssue')}
-                {field('Final Issue', 'finalIssue')}
-                {field('Subscribed', 'subscribed')}
+                <div className="mb-3">
+                    <label className="form-label" htmlFor="input-status">Status</label>
+                    <select className="form-select" id="input-status" value={data.status} onChange={set('status')}>
+                        <option value="0">Collected</option>
+                        <option value="1">For Sale</option>
+                        <option value="2">Wish List</option>
+                    </select>
+                </div>
+                {field('Condition', 'condition')}
+                {field('Cover Price', 'coverPrice')}
+                {field('Purchase Price', 'purchasePrice')}
+                {field('Purchase Date (timestamp)', 'purchaseDate')}
+                {field('Guide Value', 'guideValue')}
+                {field('Price Guide', 'guide')}
+                {field('Issue Value', 'issueValue')}
                 {field('Comments', 'comments')}
                 <div className="mb-3">
                     <button type="submit" className="btn btn-primary me-2">Save</button>
@@ -94,4 +117,4 @@ const SeriesEditor: React.FC<Props> = ({ seriesId, onSaved, onDeleted }) => {
     );
 };
 
-export default SeriesEditor;
+export default IssueEditor;

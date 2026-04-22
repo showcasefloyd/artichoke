@@ -74,34 +74,33 @@ Upgrade the app in 5 phases: (1) fix the broken REST API, (2) add PHPUnit testin
 
 **Verify:** `npx webpack --mode development` compiles cleanly — ✅ M3a complete.
 
-#### 3b. Catalog App (read-only, `app/index.html`)
-7. Create `src/modules/ts/app/` with React components:
-   - `App.tsx` — root component, state for selected title/series/issue
-   - `TitleList.tsx` — left sidebar list of titles
-   - `SeriesList.tsx` — series under a title
-   - `IssueGrid.tsx` — grid of issue numbers (owned/missing)
-   - `IssueDetail.tsx` — right panel issue metadata
-8. Replace Angular bootstrap in `app/index.html` with React root mount
-9. Update webpack entry point for the catalog bundle
+#### 3b. Catalog App (read-only, `app/index.html`) — DONE
 
-#### 3c. Admin App (CRUD, `app/admin.html`)
-10. Create `src/modules/ts/admin/` with React components:
-    - `AdminApp.tsx` — root component with routing/state
-    - `TitleEditor.tsx` — load/edit/delete a title
-    - `TitleCreator.tsx` — create new title
-    - `SeriesEditor.tsx` — edit series
-    - `IssueEditor.tsx` — edit issue
-11. Wire all forms to Phase 1 API endpoints (POST/PUT/DELETE)
-12. Replace Angular bootstrap in `app/admin.html` with React root mount
-13. Remove legacy `app/views/*.html` ng-include templates (replaced by React components)
-14. Remove legacy `app/admin/actions.php` form handling (API handles all writes now)
+**Changes made:**
+- Replaced `app/index.html`: stripped all Angular attributes and markup, updated CSS link to new `app.css` webpack output, added `<div id="root">` React mount point, removed `vendor.js` reference
+- Created `src/modules/ts/app/App.tsx`: root component with all state (`titles`, `openTitleId`, `seriesData`, `issues`, `issue`) and API fetch handlers (`grabSeries`, `grabIssues`, `grabIssue`); exports all shared TypeScript interfaces
+- Created `src/modules/ts/app/TitleList.tsx`: sidebar with expand/collapse chevron toggle and inline nested series list
+- Created `src/modules/ts/app/IssueGrid.tsx`: issue number grid, owned issues as clickable links, unowned as plain text
+- Created `src/modules/ts/app/IssueDetail.tsx`: metadata table for a selected issue (all 15 fields)
+- Fixed webpack-dev-server overlay: set `mode` dynamically via `NODE_ENV`, disabled overlay for warnings (errors only)
 
-**Files:** `webpack.config.js`, `tsconfig.json` (new), `package.json`, `src/modules/ts/**` (new), `src/sass/main.scss`, `src/sass/_admin.scss`, `app/index.html`, `app/admin.html`
+**Verify:** Catalog page loads at port 8093; title/series/issue drill-down works — ✅ M3b complete.
 
-**Verify:**
-- Catalog page loads, title/series/issue drill-down works — M3b
-- Admin page can create, edit, delete a title, series, and issue — M3c
-- Bootstrap 5 styles rendering correctly
+#### 3c. Admin App (CRUD, `app/admin.html`) — DONE
+
+**Changes made:**
+- Created `src/modules/ts/admin/AdminApp.tsx`: root component with sidebar (title dropdown, series list, issue list), discriminated union `AdminView` state, all panel routing
+- Created `src/modules/ts/admin/TitleEditor.tsx`: load/edit/delete title via GET+PUT+DELETE `/title/:id`; stays open after save with success banner
+- Created `src/modules/ts/admin/TitleCreator.tsx`: create title via POST `/title`; on create refreshes list and navigates to editTitle
+- Created `src/modules/ts/admin/SeriesEditor.tsx`: edit/delete series via GET+PUT+DELETE `/series/:id` (added `GET /series/:id` route and `grabSerieById()` PHP function)
+- Created `src/modules/ts/admin/SeriesCreator.tsx`: create series via POST `/series`
+- Created `src/modules/ts/admin/IssueEditor.tsx`: edit/delete issue via GET raw+PUT+DELETE; uses `GET /issue/:id/raw` for unformatted field values
+- Created `src/modules/ts/admin/IssueCreator.tsx`: create issue via POST `/issue`
+- Added `GET /series/:id` and `GET /issue/:id/raw` Express routes and `grabSerieById()`/`grabIssueRaw()` PHP functions
+- Fixed stale title dropdown: moved top-level `echo json_encode()` in `api.php` into `grabList()` function so `/list` route calls PHP at request time (not cached stdout)
+- Replaced Angular bootstrap in `app/admin.html` with React root mount
+
+**Verify:** Admin page can create, edit, delete a title, series, and issue — ✅ M3c complete.
 
 ---
 
@@ -169,7 +168,7 @@ Upgrade the app in 5 phases: (1) fix the broken REST API, (2) add PHPUnit testin
 | M1 | All 9 new API routes respond correctly to curl | ✅ Done |
 | M2 | `composer test` passes for all ComicDB models | ✅ Done |
 | M3a | webpack builds TypeScript React bundles without errors | ✅ Done |
-| M3b | Catalog page fully functional in React | ⬜ |
-| M3c | Admin CRUD fully functional in React | ⬜ |
+| M3b | Catalog page fully functional in React | ✅ Done |
+| M3c | Admin CRUD fully functional in React | ✅ Done |
 | M4 | `npm test` passes for all React components | ⬜ |
 | M5 | Error boundaries catch and display API failures gracefully | ⬜ |
