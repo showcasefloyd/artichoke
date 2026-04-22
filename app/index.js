@@ -116,6 +116,15 @@ app.delete('/title/:id', function(req, res) {
 });
 
 // Series CRUD
+app.get('/series/:id', function(req, res) {
+   console.log('GET SERIES', req.params.id);
+   execPhp(__dirname + '/api.php', function(error, php, data) {
+      php.grabseriebyid(req.params.id, function(err, result) {
+         res.send(result);
+      });
+   });
+});
+
 app.post('/series', function(req, res) {
    console.log('CREATE SERIES', req.body);
    execPhp(__dirname + '/api.php', function(error, php, data) {

@@ -48,7 +48,22 @@ function grabSeries ($id){
    return json_encode($data);
 }
 
-function grabSerie(){}
+function grabSerieById($id) {
+   $series = new ComicDB_Series($id);
+   $series->restore();
+   return json_encode(array(
+      'id'           => $series->id(),
+      'titleId'      => $series->titleId(),
+      'name'         => $series->name(),
+      'publisher'    => $series->publisher(),
+      'type'         => $series->type(),
+      'defaultPrice' => $series->defaultPrice(),
+      'firstIssue'   => $series->firstIssue(),
+      'finalIssue'   => $series->finalIssue(),
+      'subscribed'   => $series->subscribed(),
+      'comments'     => $series->comments(),
+   ));
+}
 
 // Create a Title
 function createTitle($name) {

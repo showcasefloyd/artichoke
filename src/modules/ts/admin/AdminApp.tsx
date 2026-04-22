@@ -1,9 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import TitleEditor from './TitleEditor';
+import TitleCreator from './TitleCreator';
+import SeriesEditor from './SeriesEditor';
 
 export interface Title {
     id: number;
     name: string;
+}
+
+interface SeriesBook {
+    id: number;
+    title: string;
 }
 
 export type AdminView =
@@ -18,6 +25,7 @@ export type AdminView =
 const AdminApp: React.FC = () => {
     const [titles, setTitles] = useState<Title[]>([]);
     const [selectedTitleId, setSelectedTitleId] = useState<number | null>(null);
+    const [seriesList, setSeriesList] = useState<SeriesBook[]>([]);
     const [view, setView] = useState<AdminView>({ mode: 'idle' });
     const [error, setError] = useState<string>('');
 
@@ -27,7 +35,19 @@ const AdminApp: React.FC = () => {
             .then(data => setTitles(data.titles ?? []));
     };
 
+    const loadSeries = (titleId: number) => {
+        fetch(`/list/${titleId}`)
+            .then(res => res.json())
+            .then(data => setSeriesList((data.series ?? []).filter((s: SeriesBook) => s.id !== 0)));
+    };
+
     useEffect(() => { loadTitles(); }, []);
+
+    const handleTitleSelect = (id: number | null) => {
+        setSelectedTitleId(id);
+        setSeriesList([]);
+        if (id) loadSeries(id);
+    };
 
     const handleLoadTitle = () => {
         if (!selectedTitleId) { setError('Please select a title first'); return; }
@@ -51,7 +71,7 @@ const AdminApp: React.FC = () => {
                             <select
                                 className="form-select"
                                 value={selectedTitleId ?? ''}
-                                onChange={e => setSelectedTitleId(Number(e.target.value) || null)}
+                                onChange={e => handleTitleSelect(Number(e.target.value) || null)}
                             >
                                 <option value="">-- select a title --</option>
                                 {titles.map(t => (
@@ -69,6 +89,15 @@ const AdminApp: React.FC = () => {
                         {selectedTitleId && (
                             <div className="mb-3">
                                 <h6>Series</h6>
+                                {seriesList.length > 0 && (
+                                    <ul className="list-unstyled mb-2">
+                                        {seriesList.map(s => (
+                                            <li key={s.id}>
+                                                <a href="#" onClick={e => { e.preventDefault(); setError(''); setView({ mode: 'editSeries', seriesId: s.id }); }}>{s.title}</a>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
                                 <button className="btn btn-warning btn-sm" onClick={() => { setError(''); setView({ mode: 'newSeries', titleId: selectedTitleId }); }}>New Series</button>
                             </div>
                         )}
@@ -85,7 +114,20 @@ const AdminApp: React.FC = () => {
                             onDeleted={() => { loadTitles(); setSelectedTitleId(null); setView({ mode: 'idle' }); }}
                         />
                     )}
-                    {view.mode !== 'idle' && view.mode !== 'editTitle' && <p>Panel: <strong>{view.mode}</strong> — coming next</p>}
+                    {view.mode === 'newTitle' && (
+                        <TitleCreator
+                            onCreated={(id, name) => { loadTitles(); setSelectedTitleId(id); setView({ mode: 'editTitle', titleId: id }); }}
+                            onCancel={() => setView({ mode: 'idle' })}
+                        />
+                    )}
+                    {view.mode === 'editSeries' && (
+                        <SeriesEditor
+                            seriesId={view.seriesId}
+                            onSaved={() => { if (selectedTitleId) loadSeries(selectedTitleId); setView({ mode: 'idle' }); }}
+                            onDeleted={() => { if (selectedTitleId) loadSeries(selectedTitleId); setView({ mode: 'idle' }); }}
+                        />
+                    )}
+                    {view.mode !== 'idle' && view.mode !== 'editTitle' && view.mode !== 'newTitle' && view.mode !== 'editSeries' && <p>Panel: <strong>{view.mode}</strong> — coming next</p>}
                 </div>
             </div>
         </div>
