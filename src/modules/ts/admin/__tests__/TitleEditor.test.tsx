@@ -5,16 +5,10 @@ import '@testing-library/jest-dom';
 import TitleEditor from '../TitleEditor';
 
 beforeEach(() => {
-    jest.spyOn(global, 'fetch').mockImplementation((input) => {
-        const url = typeof input === 'string' ? input : (input as Request).url;
-        if (url === '/title/5' && (input as Request | string) === '/title/5') {
-            // default GET — covered by the cast below
-        }
-        return Promise.resolve({
-            ok: true,
-            json: () => Promise.resolve({ id: 5, name: 'Test Title' }),
-        } as Response);
-    });
+    jest.spyOn(global, 'fetch').mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ id: 5, name: 'Test Title' }),
+    } as Response);
 });
 
 afterEach(() => {
