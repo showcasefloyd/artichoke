@@ -1,8 +1,9 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import '../../../sass/main.scss';
+import App from './App';
 
 const rootEl = document.getElementById('root');
 if (rootEl) {
-    ReactDOM.createRoot(rootEl).render(<div>App loading&hellip;</div>);
+    ReactDOM.createRoot(rootEl).render(<App />);
 }

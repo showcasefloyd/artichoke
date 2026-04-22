@@ -4,6 +4,7 @@ const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const proxyTarget = process.env.WEBPACK_PROXY_TARGET || 'http://localhost:3000/';
 
 module.exports = {
+    mode: process.env.NODE_ENV === 'production' ? 'production' : 'development',
     entry: {
         app: './src/modules/ts/app/index.tsx',
         admin: './src/modules/ts/admin/index.tsx',
@@ -27,6 +28,9 @@ module.exports = {
         proxy: [
             { context: ['/'], target: proxyTarget },
         ],
+        client: {
+            overlay: { errors: true, warnings: false },
+        },
     },
     devtool: 'source-map',
 
