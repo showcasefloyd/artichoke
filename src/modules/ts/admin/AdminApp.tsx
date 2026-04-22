@@ -2,6 +2,9 @@ import React, { useEffect, useState } from 'react';
 import TitleEditor from './TitleEditor';
 import TitleCreator from './TitleCreator';
 import SeriesEditor from './SeriesEditor';
+import SeriesCreator from './SeriesCreator';
+import IssueEditor from './IssueEditor';
+import IssueCreator from './IssueCreator';
 
 export interface Title {
     id: number;
@@ -11,6 +14,12 @@ export interface Title {
 interface SeriesBook {
     id: number;
     title: string;
+}
+
+interface IssueItem {
+    issue: string;
+    own: string;
+    issue_id: number;
 }
 
 export type AdminView =
@@ -26,6 +35,8 @@ const AdminApp: React.FC = () => {
     const [titles, setTitles] = useState<Title[]>([]);
     const [selectedTitleId, setSelectedTitleId] = useState<number | null>(null);
     const [seriesList, setSeriesList] = useState<SeriesBook[]>([]);
+    const [selectedSeriesId, setSelectedSeriesId] = useState<number | null>(null);
+    const [issueList, setIssueList] = useState<IssueItem[]>([]);
     const [view, setView] = useState<AdminView>({ mode: 'idle' });
     const [error, setError] = useState<string>('');
 
@@ -41,17 +52,32 @@ const AdminApp: React.FC = () => {
             .then(data => setSeriesList((data.series ?? []).filter((s: SeriesBook) => s.id !== 0)));
     };
 
+    const loadIssues = (seriesId: number) => {
+        fetch(`/issues/${seriesId}`)
+            .then(res => res.json())
+            .then(data => setIssueList(data ?? []));
+    };
+
     useEffect(() => { loadTitles(); }, []);
 
     const handleTitleSelect = (id: number | null) => {
         setSelectedTitleId(id);
         setSeriesList([]);
+        setSelectedSeriesId(null);
+        setIssueList([]);
         if (id) loadSeries(id);
+    };
+
+    const handleSeriesSelect = (id: number) => {
+        setSelectedSeriesId(id);
+        setIssueList([]);
+        loadIssues(id);
     };
 
     const handleLoadTitle = () => {
         if (!selectedTitleId) { setError('Please select a title first'); return; }
         setError('');
+        loadTitles();
         setView({ mode: 'editTitle', titleId: selectedTitleId });
     };
 
@@ -93,12 +119,28 @@ const AdminApp: React.FC = () => {
                                     <ul className="list-unstyled mb-2">
                                         {seriesList.map(s => (
                                             <li key={s.id}>
-                                                <a href="#" onClick={e => { e.preventDefault(); setError(''); setView({ mode: 'editSeries', seriesId: s.id }); }}>{s.title}</a>
+                                                <a href="#" onClick={e => { e.preventDefault(); setError(''); handleSeriesSelect(s.id); setView({ mode: 'editSeries', seriesId: s.id }); }}>{s.title}</a>
                                             </li>
                                         ))}
                                     </ul>
                                 )}
                                 <button className="btn btn-warning btn-sm" onClick={() => { setError(''); setView({ mode: 'newSeries', titleId: selectedTitleId }); }}>New Series</button>
+                            </div>
+                        )}
+
+                        {selectedSeriesId && (
+                            <div className="mb-3">
+                                <h6>Issues</h6>
+                                {issueList.length > 0 && (
+                                    <ul className="list-unstyled mb-2">
+                                        {issueList.map(i => (
+                                            <li key={i.issue_id}>
+                                                <a href="#" onClick={e => { e.preventDefault(); setError(''); setView({ mode: 'editIssue', issueId: i.issue_id }); }}>#{i.issue}</a>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                                <button className="btn btn-warning btn-sm" onClick={() => { setError(''); setView({ mode: 'newIssue', seriesId: selectedSeriesId }); }}>New Issue</button>
                             </div>
                         )}
                     </div>
@@ -110,7 +152,7 @@ const AdminApp: React.FC = () => {
                     {view.mode === 'editTitle' && (
                         <TitleEditor
                             titleId={view.titleId}
-                            onSaved={() => { loadTitles(); setView({ mode: 'idle' }); }}
+                            onSaved={() => loadTitles()}
                             onDeleted={() => { loadTitles(); setSelectedTitleId(null); setView({ mode: 'idle' }); }}
                         />
                     )}
@@ -123,11 +165,31 @@ const AdminApp: React.FC = () => {
                     {view.mode === 'editSeries' && (
                         <SeriesEditor
                             seriesId={view.seriesId}
-                            onSaved={() => { if (selectedTitleId) loadSeries(selectedTitleId); setView({ mode: 'idle' }); }}
-                            onDeleted={() => { if (selectedTitleId) loadSeries(selectedTitleId); setView({ mode: 'idle' }); }}
+                            onSaved={() => { if (selectedTitleId) loadSeries(selectedTitleId); }}
+                            onDeleted={() => { if (selectedTitleId) loadSeries(selectedTitleId); setSelectedSeriesId(null); setIssueList([]); setView({ mode: 'idle' }); }}
                         />
                     )}
-                    {view.mode !== 'idle' && view.mode !== 'editTitle' && view.mode !== 'newTitle' && view.mode !== 'editSeries' && <p>Panel: <strong>{view.mode}</strong> — coming next</p>}
+                    {view.mode === 'newSeries' && (
+                        <SeriesCreator
+                            titleId={view.titleId}
+                            onCreated={(id) => { if (selectedTitleId) loadSeries(selectedTitleId); handleSeriesSelect(id); setView({ mode: 'editSeries', seriesId: id }); }}
+                            onCancel={() => setView({ mode: 'idle' })}
+                        />
+                    )}
+                    {view.mode === 'editIssue' && (
+                        <IssueEditor
+                            issueId={view.issueId}
+                            onSaved={() => { if (selectedSeriesId) loadIssues(selectedSeriesId); }}
+                            onDeleted={() => { if (selectedSeriesId) loadIssues(selectedSeriesId); setView({ mode: 'idle' }); }}
+                        />
+                    )}
+                    {view.mode === 'newIssue' && (
+                        <IssueCreator
+                            seriesId={view.seriesId}
+                            onCreated={(id) => { if (selectedSeriesId) loadIssues(selectedSeriesId); setView({ mode: 'editIssue', issueId: id }); }}
+                            onCancel={() => setView({ mode: 'idle' })}
+                        />
+                    )}
                 </div>
             </div>
         </div>

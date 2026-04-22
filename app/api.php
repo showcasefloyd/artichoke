@@ -5,19 +5,18 @@ include_once("ComicDB/Title.php");
 include_once("ComicDB/Serieses.php");
 include_once("ComicDB/Issue.php");
 
-$data = array();
-$titlesArray = array();
-$titlesList = new ComicDB_Titles();
-$titles = $titlesList->getAll();
-
-// Grab Titles
-foreach ($titles as $t){
-  array_push($titlesArray, array('id' =>$t->id, 'name'=> $t->name));
-  //$titlesArray['titles'][] = array('id' =>$t->id, 'name'=> $t->name);
+// Grab all Titles (used by GET /list)
+function grabList() {
+   $data = array();
+   $titlesArray = array();
+   $titlesList = new ComicDB_Titles();
+   $titles = $titlesList->getAll();
+   foreach ($titles as $t) {
+      array_push($titlesArray, array('id' => $t->id, 'name' => $t->name));
+   }
+   $data['titles'] = $titlesArray;
+   return json_encode($data);
 }
-//array_push($data,$titlesArray);
-$data['titles'] = $titlesArray;
-echo json_encode($data);
 
 // Grab a Title
 function grabTitle ($id){
@@ -190,6 +189,31 @@ function deleteIssue($id) {
    $issue->restore();
    $issue->remove();
    return json_encode(array('deleted' => true, 'id' => (int)$id));
+}
+
+function grabIssueRaw($id) {
+   $issue = new ComicDB_Issue($id);
+   $issue->restore();
+   return json_encode(array(
+      'id'            => $issue->id(),
+      'seriesId'      => $issue->seriesId(),
+      'number'        => $issue->number(),
+      'sort'          => $issue->sort(),
+      'printRun'      => $issue->printRun(),
+      'quantity'      => $issue->quantity(),
+      'coverDate'     => $issue->coverdate(),
+      'location'      => $issue->location(),
+      'type'          => $issue->type(),
+      'status'        => $issue->status(),
+      'condition'     => $issue->condition(),
+      'coverPrice'    => $issue->coverPrice(),
+      'purchasePrice' => $issue->purchasePrice(),
+      'purchaseDate'  => $issue->purchasedate(),
+      'guideValue'    => $issue->guideValue(),
+      'guide'         => $issue->guide(),
+      'issueValue'    => $issue->issueValue(),
+      'comments'      => $issue->comments(),
+   ));
 }
 
 function grabIssues($id){

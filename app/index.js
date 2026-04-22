@@ -29,7 +29,9 @@ app.get('/list',function(req, res){
    console.log("LIST")
 
    execPhp(__dirname + '/api.php', function(error, php, data){
-      res.send(data);
+      php.grablist(function(err, result) {
+         res.send(result);
+      });
    });
 });
 
@@ -153,6 +155,15 @@ app.delete('/series/:id', function(req, res) {
 });
 
 // Issue CRUD
+app.get('/issue/:id/raw', function(req, res) {
+   console.log('GET ISSUE RAW', req.params.id);
+   execPhp(__dirname + '/api.php', function(error, php, data) {
+      php.grabissueraw(req.params.id, function(err, result) {
+         res.send(result);
+      });
+   });
+});
+
 app.post('/issue', function(req, res) {
    console.log('CREATE ISSUE', req.body);
    execPhp(__dirname + '/api.php', function(error, php, data) {
