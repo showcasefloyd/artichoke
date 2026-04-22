@@ -2,8 +2,13 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import '../../../sass/main.scss';
 import App from './App';
+import ErrorBoundary from '../ErrorBoundary';
 
 const rootEl = document.getElementById('root');
 if (rootEl) {
-    ReactDOM.createRoot(rootEl).render(<App />);
+    ReactDOM.createRoot(rootEl).render(
+        <ErrorBoundary>
+            <App />
+        </ErrorBoundary>
+    );
 }

@@ -125,19 +125,21 @@ Upgrade the app in 5 phases: (1) fix the broken REST API, (2) add PHPUnit testin
 
 ---
 
-## Phase 5: Debugging Infrastructure
+## ✅ Phase 5: Debugging Infrastructure — DONE
 
 ### Goal: Structured error handling throughout the stack
 
-**Steps:**
-1. Add Express error-handling middleware to `app/index.js` (catch exec-php errors, return structured JSON with status codes)
-2. Add React `ErrorBoundary.tsx` component wrapping catalog and admin roots
-3. Add user-friendly error messages in React components on API call failure
-4. Verify `ARTICHOKE_DEBUG=1` env var still surfaces PHP errors in Docker as documented
+**Changes made:**
+- Added `sendPhpResult(res, err, result)` helper to `app/index.js`: returns `500 { error, detail }` JSON on PHP bridge error or empty result instead of sending empty body
+- Replaced all `res.send(result)` calls in exec-php callbacks with `sendPhpResult()`
+- Added Express 4-param error-handling middleware at the bottom of `app/index.js` as a catch-all
+- Created `src/modules/ts/ErrorBoundary.tsx`: React class component that catches render errors and displays a Bootstrap danger alert
+- Wrapped both `<App />` and `<AdminApp />` in `<ErrorBoundary>` in their respective `index.tsx` entry points
+- Added `error` state + `res.ok` checks to all `fetch()` calls in `App.tsx`; displays a danger alert banner when any API call fails
+- Updated `AdminApp.tsx` fetch calls (`loadTitles`, `loadSeries`, `loadIssues`) to check `res.ok` and call `setError()` on failure (banner was already wired)
+- Verified `ARTICHOKE_DEBUG=1` env var still enables PHP `display_errors` in Docker via `global.inc`
 
-**Files:** `app/index.js`, `src/modules/ts/ErrorBoundary.tsx` (new)
-
-**Verify:** Error boundaries catch and display API failures gracefully — M5.
+**Verify:** Error boundaries catch and display API failures gracefully — ✅ M5 complete.
 
 ---
 
@@ -171,4 +173,4 @@ Upgrade the app in 5 phases: (1) fix the broken REST API, (2) add PHPUnit testin
 | M3b | Catalog page fully functional in React | ✅ Done |
 | M3c | Admin CRUD fully functional in React | ✅ Done |
 | M4 | `npm test` passes for all React components | ✅ Done |
-| M5 | Error boundaries catch and display API failures gracefully | ⬜ |
+| M5 | Error boundaries catch and display API failures gracefully | ✅ Done |

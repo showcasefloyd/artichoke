@@ -42,20 +42,23 @@ const AdminApp: React.FC = () => {
 
     const loadTitles = () => {
         fetch('/list')
-            .then(res => res.json())
-            .then(data => setTitles(data.titles ?? []));
+            .then(res => { if (!res.ok) throw new Error(`Failed to load titles (${res.status})`); return res.json(); })
+            .then(data => setTitles(data.titles ?? []))
+            .catch(e => setError(String(e.message ?? e)));
     };
 
     const loadSeries = (titleId: number) => {
         fetch(`/list/${titleId}`)
-            .then(res => res.json())
-            .then(data => setSeriesList((data.series ?? []).filter((s: SeriesBook) => s.id !== 0)));
+            .then(res => { if (!res.ok) throw new Error(`Failed to load series (${res.status})`); return res.json(); })
+            .then(data => setSeriesList((data.series ?? []).filter((s: SeriesBook) => s.id !== 0)))
+            .catch(e => setError(String(e.message ?? e)));
     };
 
     const loadIssues = (seriesId: number) => {
         fetch(`/issues/${seriesId}`)
-            .then(res => res.json())
-            .then(data => setIssueList(data ?? []));
+            .then(res => { if (!res.ok) throw new Error(`Failed to load issues (${res.status})`); return res.json(); })
+            .then(data => setIssueList(data ?? []))
+            .catch(e => setError(String(e.message ?? e)));
     };
 
     useEffect(() => { loadTitles(); }, []);

@@ -53,33 +53,41 @@ const App: React.FC = () => {
     const [seriesData, setSeriesData] = useState<SeriesResponse | null>(null);
     const [issues, setIssues] = useState<IssueGridItem[]>([]);
     const [issue, setIssue] = useState<IssueDetail | null>(null);
+    const [error, setError] = useState<string>('');
 
     useEffect(() => {
         fetch('/list')
-            .then(res => res.json())
-            .then(data => setTitles(data.titles ?? []));
+            .then(res => { if (!res.ok) throw new Error(`Failed to load titles (${res.status})`); return res.json(); })
+            .then(data => setTitles(data.titles ?? []))
+            .catch(e => setError(String(e.message ?? e)));
     }, []);
 
     const grabSeries = (id: number) => {
         setOpenTitleId(id);
         setIssues([]);
         setIssue(null);
+        setError('');
         fetch(`/list/${id}`)
-            .then(res => res.json())
-            .then(data => setSeriesData(data));
+            .then(res => { if (!res.ok) throw new Error(`Failed to load series (${res.status})`); return res.json(); })
+            .then(data => setSeriesData(data))
+            .catch(e => setError(String(e.message ?? e)));
     };
 
     const grabIssues = (id: number) => {
         setIssue(null);
+        setError('');
         fetch(`/issues/${id}`)
-            .then(res => res.json())
-            .then(data => setIssues(data));
+            .then(res => { if (!res.ok) throw new Error(`Failed to load issues (${res.status})`); return res.json(); })
+            .then(data => setIssues(data))
+            .catch(e => setError(String(e.message ?? e)));
     };
 
     const grabIssue = (id: number) => {
+        setError('');
         fetch(`/issue/${id}`)
-            .then(res => res.json())
-            .then(data => setIssue(data));
+            .then(res => { if (!res.ok) throw new Error(`Failed to load issue (${res.status})`); return res.json(); })
+            .then(data => setIssue(data))
+            .catch(e => setError(String(e.message ?? e)));
     };
 
     return (
@@ -90,6 +98,14 @@ const App: React.FC = () => {
                     <div className="page-header-menu"><a href="/admin">Admin</a></div>
                 </div>
             </div>
+
+            {error && (
+                <div className="row">
+                    <div className="col">
+                        <div className="alert alert-danger" role="alert">{error}</div>
+                    </div>
+                </div>
+            )}
 
             <div className="row">
                 <div className="col-3">
