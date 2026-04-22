@@ -1,5 +1,6 @@
 const path = require('path');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 
 const proxyTarget = process.env.WEBPACK_PROXY_TARGET || 'http://localhost:3000/';
 
@@ -64,6 +65,7 @@ module.exports = {
     },
 
     plugins: [
+        new CleanWebpackPlugin(),
         new MiniCssExtractPlugin({
             filename: 'css/[name].css',
         }),
