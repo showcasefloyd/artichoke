@@ -78,16 +78,16 @@ const App: React.FC = () => {
     };
 
     return (
-        <div className="container">
+        <div className="container-fluid">
             <div className="row">
-                <div className="col-sm-12">
+                <div className="col">
                     <h3 className="page-header">[ Artichoke, Comic Book Database &gt;&gt; Catalogue ]</h3>
                     <div className="page-header-menu"><a href="/admin">Admin</a></div>
                 </div>
             </div>
 
             <div className="row">
-                <div className="col-sm-3" id="left-menu">
+                <div className="col-3">
                     <TitleList
                         titles={titles}
                         openTitleId={openTitleId}
@@ -97,7 +97,7 @@ const App: React.FC = () => {
                     />
                 </div>
 
-                <div className="col-sm-9">
+                <div className="col-9">
                     <div id="main-top">
                         <IssueGrid issues={issues} onIssueClick={grabIssue} />
                     </div>

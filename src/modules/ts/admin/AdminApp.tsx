@@ -82,7 +82,7 @@ const AdminApp: React.FC = () => {
     };
 
     return (
-        <div className="container">
+        <div className="container-fluid">
             <div className="row">
                 <div className="col-sm-12">
                     <h3 className="page-header">[ Artichoke, Comic Book Database &gt;&gt; Administration Panel ]</h3>
@@ -91,7 +91,7 @@ const AdminApp: React.FC = () => {
             </div>
 
             <div className="row">
-                <div className="col-sm-3" id="left-menu">
+                <div className="col-3" id="left-menu">
                     <div id="admin-titles-list">
                         <div className="mb-3">
                             <select
@@ -146,7 +146,7 @@ const AdminApp: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="col-sm-9">
+                <div className="col-9">
                     {error && <div className="alert alert-warning">{error}</div>}
                     {view.mode === 'idle' && <p className="text-muted">Select a title from the list to get started.</p>}
                     {view.mode === 'editTitle' && (
