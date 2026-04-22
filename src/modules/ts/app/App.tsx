@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import TitleList from './TitleList';
 import IssueGrid from './IssueGrid';
+import IssueDetail from './IssueDetail';
 
 export interface Title {
     id: number;
@@ -101,8 +102,7 @@ const App: React.FC = () => {
                         <IssueGrid issues={issues} onIssueClick={grabIssue} />
                     </div>
                     <div id="main-bottom">
-                        {/* IssueDetail goes here */}
-                        {issue && <p>IssueDetail placeholder — issue #{issue.number}</p>}
+                        {issue && <IssueDetail issue={issue} />}
                     </div>
                 </div>
             </div>

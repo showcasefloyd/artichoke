@@ -56,15 +56,25 @@ docker compose up
 docker compose up -d db backend
 ```
 
-### To also run the front-end in watch mode use the additional
+### Frontend watch mode
+
+The `frontend` service in Docker Compose runs webpack-dev-server automatically when you do `npm run stack:up`. It watches for file changes and proxies API calls to the backend.
+
+If you want a plain webpack watch (rebuilds bundles without a dev-server) inside Docker:
 
 ```bash
-docker compose exec backend npm run wp
+docker compose run --rm frontend webpack --watch --progress
 ```
 
-To stop this just use `Ctrl-C` to kill the process in the terminal
+To run webpack watch directly on the host (requires local `node_modules`):
 
-### To use the 
+```bash
+npm run wp
+```
+
+> **Note:** Do not use `docker compose exec backend npm run wp`. The `backend` container runs the Express server, not webpack. The `frontend` container is the correct target for all webpack work.
+
+###
 
 The schema/bootstrap script is loaded from `app/sql/bootstrap_mysql.sql`.
 
@@ -87,15 +97,20 @@ Webpack also handles bundling of SASS and JavaScript files.
 
 __Note__ `src` is where Angular modules are before compiling
 
-## Update: Sept 2017
+## Development Workflow
 
-There are two processes that you need to run the app. A backend service which is currently handled by `nodedemon` and runs the app in standalone mode at `localhost:3000` and a front end which you can run two ways depending on what you want to do.
+The stack uses **webpack 5** with a React + TypeScript frontend. Source files live in `src/`; generated output goes to `app/build/` (do not hand-edit).
 
-The frontend needs `Webpack` to handle javascript and scss compiling. So running `npm run wp` will start webpack in watch mode. If you want hot-reloading / browser-sync like features you JS and SCSS files then you would run `wp run dev-server`.
+| What you want | Command |
+|---|---|
+| Full stack with hot reload | `npm run stack:up` (then open `http://localhost:8093`) |
+| Backend only (no webpack) | `docker compose up -d db backend` |
+| Webpack watch on host | `npm run wp` |
+| Webpack watch in Docker | `docker compose run --rm frontend webpack --watch --progress` |
+| Production build | `npm run wpprod` |
+| Run PHP tests | `npm run test:php` |
 
-To just run the app you only need one command `npm run dev-server` which you can then use at `localhost:8080`. To work and recompile the app with reload you would wanr `npm run dev-client` if you want the hot reloading. If you do care about that, then `npm run wp` will do that same thing.
-
-__Note__ `Nodedemon` is smart enough to reload the server when you save any file it's watching. Sometimes this cause the frontend client server to fail because it proxies to the backend for API calls and then it goes down it can throw and error before it reloads.
+`nodemon` watches `app/index.js` and restarts the Express server on changes automatically.
 
 ## Update: July 2017
 
@@ -130,4 +145,4 @@ The project now requires Webpack to compile the JavaScript. All configurations c
 5. Add multiple issues at once
 
 ### Dependencies
-**Node, NPM, Webpack, SASS, Express, Angular 1.5.x**
+**Node, NPM, Webpack 5, TypeScript, React, Bootstrap 5, SASS, Express, PHP (ComicDB)**
