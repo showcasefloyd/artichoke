@@ -58,11 +58,12 @@ Upgrade the app in 5 phases: (1) fix the broken REST API, (2) add PHPUnit testin
 
 #### 3a. Tooling Setup
 1. Install: `react`, `react-dom`, `@types/react`, `@types/react-dom`, `typescript`, `ts-loader`
-2. Uninstall: `angular`, `angular-resource`, `angular-route`
-3. Add `tsconfig.json` with JSX support
-4. Update `webpack.config.js` to handle `.tsx`/`.ts` entry points
-5. Replace `bootstrap` + `bootstrap-sass` (v3) with `bootstrap` v5
-6. Update `src/sass/main.scss` imports for Bootstrap 5 (different variable/mixin names)
+2. Remove Bower as a package manager going forward use NPM
+3. Uninstall: `angular`, `angular-resource`, `angular-route`
+4. Add `tsconfig.json` with JSX support
+5. Update `webpack.config.js` to handle `.tsx`/`.ts` entry points
+6. Replace `bootstrap` + `bootstrap-sass` (v3) with `bootstrap` v5
+7. Update `src/sass/main.scss` imports for Bootstrap 5 (different variable/mixin names)
 
 #### 3b. Catalog App (read-only, `app/index.html`)
 7. Create `src/modules/ts/app/` with React components:
@@ -157,7 +158,7 @@ Upgrade the app in 5 phases: (1) fix the broken REST API, (2) add PHPUnit testin
 | Milestone | Description | Status |
 |-----------|-------------|--------|
 | M1 | All 9 new API routes respond correctly to curl | ✅ Done |
-| M2 | `composer test` passes for all ComicDB models | ⬜ |
+| M2 | `composer test` passes for all ComicDB models | ✅ Done |
 | M3a | webpack builds TypeScript React bundles without errors | ⬜ |
 | M3b | Catalog page fully functional in React | ⬜ |
 | M3c | Admin CRUD fully functional in React | ⬜ |

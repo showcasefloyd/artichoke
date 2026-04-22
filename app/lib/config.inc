@@ -14,10 +14,22 @@
 //define('DB_NAME','comicdb');
 
 // Local defaults can be overridden via environment variables.
-define('DB_URL', getenv('ARTICHOKE_DB_HOST') ?: 'localhost');
-define('DB_USER', getenv('ARTICHOKE_DB_USER') ?: 'comicdb');
-define('DB_PASS', getenv('ARTICHOKE_DB_PASS') ?: 'comicdb');
-define('DB_NAME', getenv('ARTICHOKE_DB_NAME') ?: 'comicdb');
+// Guard with defined() so test bootstrap (which sets comicdb_test) wins.
+if (! defined('DB_URL')) {
+    define('DB_URL', getenv('ARTICHOKE_DB_HOST') ?: 'localhost');
+}
+
+if (! defined('DB_USER')) {
+    define('DB_USER', getenv('ARTICHOKE_DB_USER') ?: 'comicdb');
+}
+
+if (! defined('DB_PASS')) {
+    define('DB_PASS', getenv('ARTICHOKE_DB_PASS') ?: 'comicdb');
+}
+
+if (! defined('DB_NAME')) {
+    define('DB_NAME', getenv('ARTICHOKE_DB_NAME') ?: 'comicdb');
+}
 
 // prefixed to the title of every HTML page
 define('HTML_TITLE_PREFIX', 'jsComicDB');

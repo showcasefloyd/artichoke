@@ -1,15 +1,15 @@
 {
     "type": "project",
-    "repositories": [
-        {
-            "type": "pear",
-            "url": "http://pear.php.net"
-        }
-    ],
-    "require": {
-        "pear-pear.php.net/db": "*"
+    "require-dev": {
+        "phpunit/phpunit": "^10"
     },
-     "config":{
-        "secure-http" : false
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "secure-http": false,
+        "vendor-dir": "app/vendor"
     }
 }

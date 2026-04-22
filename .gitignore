@@ -7,3 +7,5 @@ app/css
 app/fonts
 app/js
 app/build
+.vscode/
+.phpunit.result.cache

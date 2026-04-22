@@ -7,7 +7,7 @@
 require('bootstrap/dist/css/bootstrap.css');
 
 require('../../sass/main.scss');
-// Loads all the boostrap js files
+// Loads all the bootstrap js files
 //require('bootstrap');
 
 angular.module('jscomicdb',['ngRoute'])
