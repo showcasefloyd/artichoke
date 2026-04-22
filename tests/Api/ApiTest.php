@@ -1,5 +1,4 @@
 <?php
-
 namespace Tests\Api;
 
 use Tests\ComicDBTestCase;
@@ -39,7 +38,7 @@ class ApiTest extends ComicDBTestCase
 
     public function testCreateTitleReturnsIdAndName(): void
     {
-        $json = createTitle('API Test Title');
+        $json   = createTitle('API Test Title');
         $result = json_decode($json, true);
 
         $this->assertArrayHasKey('id', $result);
@@ -50,8 +49,8 @@ class ApiTest extends ComicDBTestCase
     public function testUpdateTitleChangesName(): void
     {
         $created = json_decode(createTitle('Before API Update'), true);
-        $json = updateTitle($created['id'], 'After API Update');
-        $result = json_decode($json, true);
+        $json    = updateTitle($created['id'], 'After API Update');
+        $result  = json_decode($json, true);
 
         $this->assertSame('After API Update', $result['name']);
         $this->assertSame($created['id'], $result['id']);
@@ -60,8 +59,8 @@ class ApiTest extends ComicDBTestCase
     public function testDeleteTitleReturnsDeletedTrue(): void
     {
         $created = json_decode(createTitle('Title To API Delete'), true);
-        $json = deleteTitle($created['id']);
-        $result = json_decode($json, true);
+        $json    = deleteTitle($created['id']);
+        $result  = json_decode($json, true);
 
         $this->assertTrue($result['deleted']);
         $this->assertEquals($created['id'], $result['id']);
@@ -71,14 +70,14 @@ class ApiTest extends ComicDBTestCase
 
     public function testCreateSeriesReturnsIdAndName(): void
     {
-        $title = json_decode(createTitle('Series Parent Title'), true);
+        $title   = json_decode(createTitle('Series Parent Title'), true);
         $payload = json_encode([
-            'titleId'    => $title['id'],
-            'name'       => 'API Series',
-            'publisher'  => 'API Pub',
+            'titleId'   => $title['id'],
+            'name'      => 'API Series',
+            'publisher' => 'API Pub',
         ]);
 
-        $json = createSeries($payload);
+        $json   = createSeries($payload);
         $result = json_decode($json, true);
 
         $this->assertArrayHasKey('id', $result);
@@ -88,14 +87,14 @@ class ApiTest extends ComicDBTestCase
 
     public function testUpdateSeriesChangesName(): void
     {
-        $title = json_decode(createTitle('Series Update Title'), true);
+        $title   = json_decode(createTitle('Series Update Title'), true);
         $created = json_decode(createSeries(json_encode([
             'titleId'   => $title['id'],
             'name'      => 'Before Series Update',
             'publisher' => 'Pub',
         ])), true);
 
-        $json = updateSeries($created['id'], json_encode(['name' => 'After Series Update']));
+        $json   = updateSeries($created['id'], json_encode(['name' => 'After Series Update']));
         $result = json_decode($json, true);
 
         $this->assertSame('After Series Update', $result['name']);
@@ -103,14 +102,14 @@ class ApiTest extends ComicDBTestCase
 
     public function testDeleteSeriesReturnsDeletedTrue(): void
     {
-        $title = json_decode(createTitle('Series Delete Title'), true);
+        $title   = json_decode(createTitle('Series Delete Title'), true);
         $created = json_decode(createSeries(json_encode([
             'titleId'   => $title['id'],
             'name'      => 'Series To Delete',
             'publisher' => 'Del Pub',
         ])), true);
 
-        $json = deleteSeries($created['id']);
+        $json   = deleteSeries($created['id']);
         $result = json_decode($json, true);
 
         $this->assertTrue($result['deleted']);
@@ -152,7 +151,7 @@ class ApiTest extends ComicDBTestCase
             'number'   => '5',
         ])), true);
 
-        $json = updateIssue($created['id'], json_encode(['number' => '6']));
+        $json   = updateIssue($created['id'], json_encode(['number' => '6']));
         $result = json_decode($json, true);
 
         $this->assertSame('6', $result['number']);
@@ -171,7 +170,7 @@ class ApiTest extends ComicDBTestCase
             'number'   => '99',
         ])), true);
 
-        $json = deleteIssue($created['id']);
+        $json   = deleteIssue($created['id']);
         $result = json_decode($json, true);
 
         $this->assertTrue($result['deleted']);

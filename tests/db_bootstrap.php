@@ -15,10 +15,10 @@
  *   ARTICHOKE_DB_ROOT_PASS    – default: root
  */
 
-$host     = getenv('ARTICHOKE_DB_HOST')      ?: 'localhost';
-$appUser  = getenv('ARTICHOKE_DB_USER')      ?: 'comicdb';
-$appPass  = getenv('ARTICHOKE_DB_PASS')      ?: 'comicdb';
-$testDb   = getenv('ARTICHOKE_TEST_DB')      ?: 'comicdb_test';
+$host     = getenv('ARTICHOKE_DB_HOST') ?: 'localhost';
+$appUser  = getenv('ARTICHOKE_DB_USER') ?: 'comicdb';
+$appPass  = getenv('ARTICHOKE_DB_PASS') ?: 'comicdb';
+$testDb   = getenv('ARTICHOKE_TEST_DB') ?: 'comicdb_test';
 $rootUser = getenv('ARTICHOKE_DB_ROOT_USER') ?: 'root';
 $rootPass = getenv('ARTICHOKE_DB_ROOT_PASS') ?: 'root';
 

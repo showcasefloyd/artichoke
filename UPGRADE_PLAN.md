@@ -32,23 +32,26 @@ Upgrade the app in 5 phases: (1) fix the broken REST API, (2) add PHPUnit testin
 
 ---
 
-## Phase 2: PHP Testing (PHPUnit)
+## ✅ Phase 2: PHP Testing (PHPUnit) — DONE
 
 ### Goal: PHPUnit test suite covering all ComicDB model CRUD
 
-**Steps:**
-1. Add `phpunit/phpunit` to `composer.json` (require-dev)
-2. Add `phpunit.xml` config pointing to a `tests/` directory
-3. Create test database bootstrap (separate test DB using existing MySQL schema)
-4. Write unit tests for `ComicDB_Title` (create, read, update, delete)
-5. Write unit tests for `ComicDB_Series`
-6. Write unit tests for `ComicDB_Issue` (including condition persistence)
-7. Write integration tests for `api.php` functions
-8. Add `"test:php": "vendor/bin/phpunit"` to `package.json` scripts
+**Changes made:**
+- Dropped PEAR repository from `composer.json` (unsupported in Composer 2) and added `phpunit/phpunit ^10` as `require-dev`; set `vendor-dir: app/vendor` to match existing install location
+- Added `phpunit.xml` config with two test suites (ComicDB, Api) bootstrapped from `tests/bootstrap.php`
+- Added `tests/bootstrap.php`: sets PHP include path, defines DB constants pointing at `comicdb_test`, runs schema setup
+- Added `tests/db_bootstrap.php`: creates/resets `comicdb_test` using root credentials before each run; rebuilds schema from `app/sql/bootstrap_mysql.sql`
+- Added `tests/ComicDBTestCase.php`: base class with per-test table truncation and `assertRowDeleted()` helper
+- Added `tests/ComicDB/TitleTest.php`: 5 tests (insert, restore, update, delete, lifecycle flags)
+- Added `tests/ComicDB/SeriesTest.php`: 6 tests (insert, restore, update, optional fields, delete, flags)
+- Added `tests/ComicDB/IssueTest.php`: 7 tests including two for condition persistence (documents known bug)
+- Added `tests/Api/ApiTest.php`: 9 integration tests calling all `api.php` CRUD functions directly
+- Updated `docker/app/Dockerfile`: added `php-mbstring` and `php-xml` required by PHPUnit
+- Updated `app/lib/config.inc`: guarded `define()` calls with `if (!defined(...))` to prevent redefinition warnings when test bootstrap runs first
+- Added `"test:php"` npm script: runs `phpunit` inside Docker backend container
+- Updated `.gitignore`: added `.vscode/` and `.phpunit.result.cache`
 
-**Files:** `composer.json`, `phpunit.xml` (new), `tests/ComicDB/TitleTest.php` (new), `tests/ComicDB/SeriesTest.php` (new), `tests/ComicDB/IssueTest.php` (new), `tests/api/ApiTest.php` (new)
-
-**Verify:** `composer test` runs and passes — M2.
+**Verify:** 28 tests, 47 assertions — all pass (`npm run test:php`) — ✅ M2 complete.
 
 ---
 
@@ -56,14 +59,20 @@ Upgrade the app in 5 phases: (1) fix the broken REST API, (2) add PHPUnit testin
 
 ### Goal: Replace Angular 1.x with React + TypeScript; replace Bootstrap 3 with Bootstrap 5
 
-#### 3a. Tooling Setup
-1. Install: `react`, `react-dom`, `@types/react`, `@types/react-dom`, `typescript`, `ts-loader`
-2. Remove Bower as a package manager going forward use NPM
-3. Uninstall: `angular`, `angular-resource`, `angular-route`
-4. Add `tsconfig.json` with JSX support
-5. Update `webpack.config.js` to handle `.tsx`/`.ts` entry points
-6. Replace `bootstrap` + `bootstrap-sass` (v3) with `bootstrap` v5
-7. Update `src/sass/main.scss` imports for Bootstrap 5 (different variable/mixin names)
+#### 3a. Tooling Setup — DONE
+
+**Changes made:**
+- Installed `react`, `react-dom`, `bootstrap@^5` as runtime dependencies
+- Installed `typescript`, `ts-loader`, `@types/react`, `@types/react-dom`, `mini-css-extract-plugin`, `webpack@^5`, `webpack-cli@^5`, `webpack-dev-server@^5`, `css-loader@^6`, `sass-loader@^14`, `ajv@^8` as dev dependencies
+- Removed `angular`, `angular-resource`, `angular-route`, `bootstrap-sass` (v3), `extract-text-webpack-plugin`, `file-loader`, `url-loader`, `style-loader`
+- Added `tsconfig.json` with `react-jsx` and `moduleResolution: bundler`
+- Rewrote `webpack.config.js` for webpack 5: `MiniCssExtractPlugin`, `.tsx`/`.ts` rule via `ts-loader`, asset modules for fonts
+- Updated `package.json` scripts: `webpack serve` for dev-client, `--mode production` for wpprod
+- Added `src/modules/ts/declarations.d.ts` to declare `*.scss`/`*.css` module types for TypeScript
+- Added stub entry points `src/modules/ts/app/index.tsx` and `src/modules/ts/admin/index.tsx`
+- Updated `src/sass/main.scss`: replaced deprecated `@import` with `@use` for Dart Sass 3 compatibility
+
+**Verify:** `npx webpack --mode development` compiles cleanly — ✅ M3a complete.
 
 #### 3b. Catalog App (read-only, `app/index.html`)
 7. Create `src/modules/ts/app/` with React components:
@@ -159,7 +168,7 @@ Upgrade the app in 5 phases: (1) fix the broken REST API, (2) add PHPUnit testin
 |-----------|-------------|--------|
 | M1 | All 9 new API routes respond correctly to curl | ✅ Done |
 | M2 | `composer test` passes for all ComicDB models | ✅ Done |
-| M3a | webpack builds TypeScript React bundles without errors | ⬜ |
+| M3a | webpack builds TypeScript React bundles without errors | ✅ Done |
 | M3b | Catalog page fully functional in React | ⬜ |
 | M3c | Admin CRUD fully functional in React | ⬜ |
 | M4 | `npm test` passes for all React components | ⬜ |

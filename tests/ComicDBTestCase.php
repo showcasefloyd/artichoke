@@ -1,5 +1,4 @@
 <?php
-
 namespace Tests;
 
 use PHPUnit\Framework\TestCase;
@@ -50,6 +49,6 @@ abstract class ComicDBTestCase extends TestCase
     {
         $stmt = $this->pdo()->prepare("SELECT COUNT(*) FROM `$table` WHERE id = ?");
         $stmt->execute([$id]);
-        $this->assertSame(0, (int)$stmt->fetchColumn(), "Row $id should not exist in $table");
+        $this->assertSame(0, (int) $stmt->fetchColumn(), "Row $id should not exist in $table");
     }
 }

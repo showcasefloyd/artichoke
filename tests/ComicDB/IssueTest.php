@@ -1,5 +1,4 @@
 <?php
-
 namespace Tests\ComicDB;
 
 use Tests\ComicDBTestCase;
@@ -25,12 +24,12 @@ class IssueTest extends ComicDBTestCase
         $title->save();
 
         $series = new \ComicDB_Series();
-        $series->titleId((int)$title->id());
+        $series->titleId((int) $title->id());
         $series->name('Issue Test Series');
         $series->publisher('Issue Pub');
         $series->save();
 
-        $this->seriesId = (int)$series->id();
+        $this->seriesId = (int) $series->id();
     }
 
     // ------------------------------------------------------------------ create
@@ -57,7 +56,7 @@ class IssueTest extends ComicDBTestCase
         $loaded->restore();
 
         $this->assertSame('42', $loaded->number());
-        $this->assertSame((string)$this->seriesId, (string)$loaded->seriesId());
+        $this->assertSame((string) $this->seriesId, (string) $loaded->seriesId());
     }
 
     // ------------------------------------------------------------------ update
@@ -127,7 +126,7 @@ class IssueTest extends ComicDBTestCase
         $issue->seriesId($this->seriesId);
         $issue->number('99');
         $issue->save();
-        $id = (int)$issue->id();
+        $id = (int) $issue->id();
 
         $issue->remove();
 

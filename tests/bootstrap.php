@@ -24,13 +24,13 @@ $appDir = realpath(__DIR__ . '/../app');
 ini_set('include_path', $libDir . PATH_SEPARATOR . $appDir . PATH_SEPARATOR . ini_get('include_path'));
 
 // DB constants – use a dedicated test database to avoid clobbering real data
-define('DB_URL',  getenv('ARTICHOKE_DB_HOST') ?: 'localhost');
+define('DB_URL', getenv('ARTICHOKE_DB_HOST') ?: 'localhost');
 define('DB_USER', getenv('ARTICHOKE_DB_USER') ?: 'comicdb');
 define('DB_PASS', getenv('ARTICHOKE_DB_PASS') ?: 'comicdb');
 define('DB_NAME', getenv('ARTICHOKE_TEST_DB') ?: 'comicdb_test');
 
 // DB_OK constant expected by legacy save() return paths
-if (!defined('DB_OK')) {
+if (! defined('DB_OK')) {
     define('DB_OK', 1);
 }
 

@@ -1,74 +1,67 @@
-var webpack = require("webpack");
-var path = require('path');
+const path = require('path');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
-var proxyTarget = process.env.WEBPACK_PROXY_TARGET || 'http://localhost:3000/';
-
-const ExtractTextPlugin = require("extract-text-webpack-plugin");
-const extractBootstrap = new ExtractTextPlugin("css/bootstrap.css");
-const extractSass = new ExtractTextPlugin("css/main.css");
-
+const proxyTarget = process.env.WEBPACK_PROXY_TARGET || 'http://localhost:3000/';
 
 module.exports = {
     entry: {
-        app: './src/modules/js/app.js',
-        admin: './src/modules/js/admin.js',
-        vendor: ['angular', 'angular-route', 'angular-resource', 'bootstrap']
+        app: './src/modules/ts/app/index.tsx',
+        admin: './src/modules/ts/admin/index.tsx',
     },
     output: {
-        path: path.join(__dirname, "/app/build"),
+        path: path.join(__dirname, '/app/build'),
         filename: 'js/[name].js',
-        publicPath: "/build"
+        publicPath: '/build/',
+    },
+    resolve: {
+        extensions: ['.tsx', '.ts', '.js'],
     },
 
     devServer: {
-        contentBase: path.join(__dirname, "/app"),
-        host: "0.0.0.0",
+        static: {
+            directory: path.join(__dirname, '/app'),
+        },
+        host: '0.0.0.0',
         compress: true,
         port: 8093,
-        proxy: {
-            '/': proxyTarget,
-        },
-        watchOptions: {
-            aggregateTimeout: 500,
-        },
+        proxy: [
+            { context: ['/'], target: proxyTarget },
+        ],
     },
-    devtool: "source-map",
+    devtool: 'source-map',
 
     module: {
         rules: [
             {
+                test: /\.tsx?$/,
+                use: 'ts-loader',
+                exclude: /node_modules/,
+            },
+            {
                 test: /\.css$/,
-                //use: [ 'style-loader', 'css-loader' ]
-                use: extractBootstrap.extract({
-                    use: "css-loader"
-                })
-                //use: ['file-loader?name=css/[name].[ext]']
+                use: [MiniCssExtractPlugin.loader, 'css-loader'],
             },
             {
                 test: /\.scss$/,
-                use: extractSass.extract({
-                    use: [
-                        { loader: "css-loader", options: { sourceMap: true } },
-                        { loader: "sass-loader", options: { sourceMap: true } }
-                    ],
-                })
+                use: [
+                    MiniCssExtractPlugin.loader,
+                    { loader: 'css-loader', options: { sourceMap: true } },
+                    { loader: 'sass-loader', options: { api: 'modern', sourceMap: true } },
+                ],
             },
             {
                 test: /\.(woff2?|eot|ttf|svg)$/,
-                //use: [ 'url-loader']
-                use: ["file-loader?name=/fonts/[name].[ext]"]
-            }
-        ]
+                type: 'asset/resource',
+                generator: {
+                    filename: 'fonts/[name][ext]',
+                },
+            },
+        ],
     },
 
     plugins: [
-        extractSass,
-        extractBootstrap,
-        new webpack.ProvidePlugin({
-            $: 'jquery',
-            jQuery: 'jquery',
-            'window.jQuery': 'jquery'
-        })
-
-    ]
-}
+        new MiniCssExtractPlugin({
+            filename: 'css/[name].css',
+        }),
+    ],
+};

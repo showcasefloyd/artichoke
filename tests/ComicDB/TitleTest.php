@@ -1,5 +1,4 @@
 <?php
-
 namespace Tests\ComicDB;
 
 use Tests\ComicDBTestCase;
@@ -58,7 +57,7 @@ class TitleTest extends ComicDBTestCase
         $title = new \ComicDB_Title();
         $title->name('Title To Delete');
         $title->save();
-        $id = (int)$title->id();
+        $id = (int) $title->id();
 
         $title->remove();
 

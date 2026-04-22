@@ -1,5 +1,4 @@
 <?php
-
 namespace Tests\ComicDB;
 
 use Tests\ComicDBTestCase;
@@ -23,7 +22,7 @@ class SeriesTest extends ComicDBTestCase
         $title = new \ComicDB_Title();
         $title->name('Parent Title');
         $title->save();
-        $this->titleId = (int)$title->id();
+        $this->titleId = (int) $title->id();
     }
 
     // ------------------------------------------------------------------ create
@@ -55,7 +54,7 @@ class SeriesTest extends ComicDBTestCase
 
         $this->assertSame('Restorable Series', $loaded->name());
         $this->assertSame('Restorer Publishing', $loaded->publisher());
-        $this->assertSame((string)$this->titleId, (string)$loaded->titleId());
+        $this->assertSame((string) $this->titleId, (string) $loaded->titleId());
     }
 
     // ------------------------------------------------------------------ update
@@ -94,9 +93,9 @@ class SeriesTest extends ComicDBTestCase
 
         $loaded = new \ComicDB_Series($id);
         $loaded->restore();
-        $this->assertSame('5', (string)$loaded->firstIssue());
-        $this->assertSame('50', (string)$loaded->finalIssue());
-        $this->assertSame('1', (string)$loaded->subscribed());
+        $this->assertSame('5', (string) $loaded->firstIssue());
+        $this->assertSame('50', (string) $loaded->finalIssue());
+        $this->assertSame('1', (string) $loaded->subscribed());
         $this->assertSame('Great run', $loaded->comments());
     }
 
@@ -109,7 +108,7 @@ class SeriesTest extends ComicDBTestCase
         $series->name('Series To Delete');
         $series->publisher('Del Pub');
         $series->save();
-        $id = (int)$series->id();
+        $id = (int) $series->id();
 
         $series->remove();
 

@@ -14,7 +14,7 @@
 
 //@import "node_modules/bootstrap-sass/assets/stylesheets/_bootstrap.scss";
 
-@import "admin";
+@use 'admin';
 
 a { text-decoration: none; }
 a:hover { color: #cc0000; text-decoration: underline;}
