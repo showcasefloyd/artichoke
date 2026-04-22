@@ -406,18 +406,18 @@ function grabIssue($id)
     $issue      = new ComicDB_Issue($id);
     $issue->restore();
 
-    $issueArray['number']          = htmlspecialchars($issue->number());
-    $issueArray['printrun']        = htmlspecialchars($issue->printRun());
-    $issueArray['quanity']         = $issue->quantity();
-    $issueArray['location']        = htmlspecialchars($issue->location());
-    $issueArray['type']            = htmlspecialchars($issue->type());
-    $issueArray['condition']       = htmlspecialchars($issue->condition());
+    $issueArray['number']          = htmlspecialchars($issue->number() ?? '');
+    $issueArray['printrun']        = htmlspecialchars($issue->printRun() ?? '');
+    $issueArray['quantity']        = $issue->quantity();
+    $issueArray['location']        = htmlspecialchars($issue->location() ?? '');
+    $issueArray['type']            = htmlspecialchars($issue->type() ?? '');
+    $issueArray['condition']       = htmlspecialchars($issue->condition() ?? '');
     $issueArray['coverprice']      = $issue->coverPrice();
     $issueArray['purchaseprice']   = $issue->purchasePrice();
     $issueArray['priceguidevalue'] = $issue->guideValue();
     $issueArray['issuevalue']      = $issue->issueValue();
-    $issueArray['priceguide']      = htmlspecialchars($issue->guide());
-    $issueArray['comments']        = htmlspecialchars($issue->comments());
+    $issueArray['priceguide']      = htmlspecialchars($issue->guide() ?? '');
+    $issueArray['comments']        = htmlspecialchars($issue->comments() ?? '');
     //$issueArray['image'] = "";
 
     $status = $issue->status();
@@ -431,8 +431,10 @@ function grabIssue($id)
         $status = "Unknown";
     }
     $issueArray['status']       = $status;
-    $issueArray['purchasedate'] = date("M d, Y", $issue->purchasedate());
-    $issueArray['coverdate']    = date("M Y", $issue->coverdate());
+    $purchasedate               = $issue->purchasedate();
+    $issueArray['purchasedate'] = $purchasedate !== null ? date("M d, Y", (int) $purchasedate) : '';
+    $coverdate                  = $issue->coverdate();
+    $issueArray['coverdate']    = $coverdate !== null ? date("M Y", (int) $coverdate) : '';
 
     return json_encode($issueArray);
 }
