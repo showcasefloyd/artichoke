@@ -24,6 +24,11 @@ export interface IssueGridItem {
     issue_id: number;
 }
 
+export interface Publisher {
+    id: number;
+    name: string;
+}
+
 export interface IssueDetail {
     number: string;
     printrun: string;

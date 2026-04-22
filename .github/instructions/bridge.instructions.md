@@ -9,7 +9,7 @@ applyTo: "app/index.js, app/api.php"
 - Preserve the existing bridge flow in [app/index.js](app/index.js): Express route → `execPhp(__dirname + '/api.php', callback)` → `php.functionName(args, callback)` → `res.send(result)`.
 - Match route and callback style already used by `/list`, `/list/:id`, `/issues/:id`, `/issue/:id`, and `/title/:id` in [app/index.js](app/index.js).
 - PHP functions called via `exec-php` must be declared at file scope in [app/api.php](app/api.php) (not in a class). Function names are case-sensitive.
-- When adding bridge endpoints, keep response shapes compatible with existing AngularJS callers in [src/modules/js/app.js](src/modules/js/app.js) and [src/modules/js/admin.js](src/modules/js/admin.js).
+- When adding bridge endpoints, keep response shapes compatible with the React callers in `src/modules/ts/`. The `src/modules/js/` AngularJS files are legacy/unused — do not use them as the reference.
 - Put PHP callable logic in [app/api.php](app/api.php) and keep function names stable and explicit.
 - Avoid unrelated refactors to server bootstrap and middleware in [app/index.js](app/index.js); keep changes scoped to the new endpoint behavior.
 - If debugging is needed, use `ARTICHOKE_DEBUG=1` behavior defined in [app/lib/global.inc](app/lib/global.inc) instead of changing global error policy.

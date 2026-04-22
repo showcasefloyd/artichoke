@@ -1,30 +1,51 @@
-
-
-
 @use 'admin';
 
 @import "../../node_modules/bootstrap/scss/bootstrap.scss";
 
-a { text-decoration: none; }
-a:hover { color: #cc0000; text-decoration: underline;}
+body {
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 14px;
+	margin: 0;
+	padding: 0;
+}
+
+a {
+	text-decoration: none;
+}
+
+a:hover {
+	color: #cc0000;
+	text-decoration: underline;
+}
 
 /* general */
-span.error-message { font-weight: bold; color: red; }
-span.success-message { font-weight: bold; color: green; }
-span.mandatory-field-marker { fonts-weight: bold; color: red; }
+span.error-message {
+	font-weight: bold;
+	color: red;
+}
+
+span.success-message {
+	font-weight: bold;
+	color: green;
+}
+
+span.mandatory-field-marker {
+	fonts-weight: bold;
+	color: red;
+}
 
 /* globals */
 
-.page-header{
+.page-header {
 	padding: 1em;
-	background-color: #2f302f;
+	background-color: #5d8d5d;
 	color: #fff700;
 	margin-bottom: 0;
 }
 
 .page-header-menu {
 	padding: 1em 1.8em;
-	background-color: #fff700;
+	background-color: #1a1912;
 	margin-bottom: 1em;
 }
 
@@ -38,13 +59,43 @@ span.mandatory-field-marker { fonts-weight: bold; color: red; }
 	padding: 0;
 
 }
-.title-table {margin-left: 4px; margin-top: 4px; background-color: pink;}
-.title-table-header {padding: 6px 0px 6px 6px; font-size: 1.3em; font-weight: bold;}
-.title-icon-open { padding-left:4px; width:20px }
-.title-icon-closed { padding-left:4px; width:20px }
-.title-name-open {  padding-left:4px; font-weight: bold; font-size: 1.1em; }
-.title-name-closed {  padding-left:4px; font-size: 1.1em;}
-.title-series { padding-left:10px; }
+
+.title-table {
+	margin-left: 4px;
+	margin-top: 4px;
+	background-color: pink;
+}
+
+.title-table-header {
+	padding: 6px 0px 6px 6px;
+	font-size: 1.3em;
+	font-weight: bold;
+}
+
+.title-icon-open {
+	padding-left: 4px;
+	width: 20px
+}
+
+.title-icon-closed {
+	padding-left: 4px;
+	width: 20px
+}
+
+.title-name-open {
+	padding-left: 4px;
+	font-weight: bold;
+	font-size: 1.1em;
+}
+
+.title-name-closed {
+	padding-left: 4px;
+	font-size: 1.1em;
+}
+
+.title-series {
+	padding-left: 10px;
+}
 
 
 
@@ -57,14 +108,14 @@ span.mandatory-field-marker { fonts-weight: bold; color: red; }
 
 	#comicgrid {
 		//border: 1px solid #ccc;
-		margin-top:4px;
+		margin-top: 4px;
 		display: flex;
 		flex-flow: row wrap;
 
 	}
 
 	.issue-box {
-		flex-basis:10%;
+		flex-basis: 10%;
 		border: 1px solid #ccc;
 		border-left: 1px solid #ccc;
 		border-bottom: 1px solid #ccc;
@@ -83,13 +134,30 @@ span.mandatory-field-marker { fonts-weight: bold; color: red; }
 
 .issue-table {
 	margin-top: 4px;
+
 	// width: 100%;
-	.issue-key {padding:6px; text-align: right; font-weight: bold; width:20%;}
-	.issue-val {padding:6px; text-align: left; }
+	.issue-key {
+		padding: 6px;
+		text-align: right;
+		font-weight: bold;
+		width: 20%;
+	}
+
+	.issue-val {
+		padding: 6px;
+		text-align: left;
+	}
 }
 
-hr.clear-row {margin: 0; padding: 0; clear: both; background: #fff ;}
+hr.clear-row {
+	margin: 0;
+	padding: 0;
+	clear: both;
+	background: #fff;
+}
 
 /* Admin */
 /* Admin Container */
-.title {font-weight: bold;}
+.title {
+	font-weight: bold;
+}
