@@ -170,5 +170,5 @@ Upgrade the app in 5 phases: (1) fix the broken REST API, (2) add PHPUnit testin
 | M3a | webpack builds TypeScript React bundles without errors | ✅ Done |
 | M3b | Catalog page fully functional in React | ✅ Done |
 | M3c | Admin CRUD fully functional in React | ✅ Done |
-| M4 | `npm test` passes for all React components | ⬜ |
+| M4 | `npm test` passes for all React components | ✅ Done |
 | M5 | Error boundaries catch and display API failures gracefully | ⬜ |
