@@ -112,6 +112,10 @@ The stack uses **webpack 5** with a React + TypeScript frontend. Source files li
 
 `nodemon` watches `app/index.js` and restarts the Express server on changes automatically.
 
+## Updates: To Do April 2026
+- Convert home page into Miller Columns
+
+
 ## Update: July 2017
 
 `npm run dev-client` and then `npm run wp`
