@@ -192,6 +192,15 @@ app.delete('/issue/:id', function (req, res) {
 });
 
 // Publisher
+app.get('/publishers', function (req, res) {
+   console.log('GET PUBLISHERS');
+   execPhp(__dirname + '/api.php', function (error, php, data) {
+      php.grabpublishers(function (err, result) {
+         sendPhpResult(res, err, result);
+      });
+   });
+});
+
 app.get('/publisher/:id', function (req, res) {
    console.log('GET PUBLISHER', req.params.id);
    execPhp(__dirname + '/api.php', function (error, php, data) {

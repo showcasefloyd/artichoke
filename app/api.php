@@ -383,6 +383,29 @@ function grabPublisher($id)
     ]);
 }
 
+// Grab all Publishers with title count
+function grabPublishers()
+{
+    $db = ComicDB_DB::db();
+    $query = <<<EOT
+      SELECT p.id, p.name, COUNT(DISTINCT s.title) AS title_count
+        FROM publisher p
+   LEFT JOIN series s ON s.publisher = p.name
+    GROUP BY p.id, p.name
+    ORDER BY p.name ASC
+EOT;
+    $result = $db->query($query);
+    $list = [];
+    while ($row = $result->fetch_assoc()) {
+        $list[] = [
+            'id'          => (int) $row['id'],
+            'name'        => $row['name'],
+            'title_count' => (int) $row['title_count'],
+        ];
+    }
+    return json_encode(['publishers' => $list]);
+}
+
 function grabIssues($id)
 {
     //$issuesArray = array();

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import TitleList from './TitleList';
 import IssueGrid from './IssueGrid';
 import IssueDetail from './IssueDetail';
+import InventoryNavigation from './InventoryNavigation';
 
 export interface Title {
     id: number;
@@ -106,8 +107,12 @@ const App: React.FC = () => {
                     </div>
                 </div>
             )}
+            <div className="row">
+                <InventoryNavigation />
+            </div>
 
             <div className="row">
+
                 <div className="col-3">
                     <TitleList
                         titles={titles}
