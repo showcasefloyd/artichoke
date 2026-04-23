@@ -14,7 +14,7 @@ const TitleList: React.FC<Props> = ({ titles, openTitleId, seriesData, onTitleCl
         {titles.map(title => (
             <li key={title.id}>
                 <a href="#" onClick={e => { e.preventDefault(); onTitleClick(title.id); }}>
-                    <span className={openTitleId === title.id ? 'glyphicon glyphicon-chevron-down' : 'glyphicon glyphicon-chevron-right'} />
+                    <span className={openTitleId === title.id ? 'bi bi-chevron-down' : 'bi bi-chevron-right'} />
                     {title.name}
                 </a>
 

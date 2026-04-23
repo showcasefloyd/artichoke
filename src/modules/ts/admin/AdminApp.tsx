@@ -135,7 +135,7 @@ const AdminApp: React.FC = () => {
                             <div className="mb-3">
                                 <h6>Issues</h6>
                                 {issueList.length > 0 && (
-                                    <ul className="list-unstyled mb-2">
+                                    <ul className="issues-div mb-2">
                                         {issueList.map(i => (
                                             <li key={i.issue_id}>
                                                 <a href="#" onClick={e => { e.preventDefault(); setError(''); setView({ mode: 'editIssue', issueId: i.issue_id }); }}>#{i.issue}</a>
