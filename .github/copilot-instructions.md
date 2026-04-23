@@ -38,8 +38,8 @@
 - The `node_modules` directory is mounted as a named Docker volume to avoid host/container permission conflicts — do not delete this volume without rebuilding.
 
 ## Known Bugs
-- Deleting an issue deletes the entire series (see [README.md](README.md) for details).
-- Issue condition does not persist correctly.
+- ~~Deleting an issue deletes the entire series~~ — fixed; covered by `Series::delete()` and FK `ON DELETE CASCADE`.
+- ~~Issue condition does not persist correctly~~ — fixed; `insert()` and `update()` in `Issue.php` both persist `bkcondition`.
 
 ## Conventions
 - Edit source files, not generated assets:

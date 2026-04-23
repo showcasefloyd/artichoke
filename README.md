@@ -127,8 +127,8 @@ Webpack-Dev-Server working. To run use NPM scripts.
 The project now requires Webpack to compile the JavaScript. All configurations can be found in the `webpack.config.js`in the project's root.
 
 ### Bugs
-1. Delete issue, delete the entire series
-2. When updating a Comic issue condition does not stay
+~~1. Delete issue, delete the entire series~~ (fixed)
+~~2. When updating a Comic issue condition does not stay~~ (fixed)
 
 ## Requirements
 1. A user can browse all titles, series and issues in a collection

@@ -1,13 +1,13 @@
-@use 'admin';
+@import 'admin';
 
 @import "../../node_modules/bootstrap/scss/bootstrap.scss";
 
-body {
-	font-family: Arial, Helvetica, sans-serif;
-	font-size: 14px;
-	margin: 0;
-	padding: 0;
-}
+// Set font path before importing bootstrap-icons scss
+$bootstrap-icons-font-dir: "../../node_modules/bootstrap-icons/font/fonts";
+
+// Import bootstrap-icons scss (not .css — importing .css produces a network request, not a bundle)
+@import "../../node_modules/bootstrap-icons/font/bootstrap-icons.scss";
+
 
 a {
 	text-decoration: none;
