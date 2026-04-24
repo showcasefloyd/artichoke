@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Publisher } from '../app/App';
+import { Publisher, SeriesType } from '../app/App';
 
 interface SeriesData {
     id: number;
@@ -23,7 +23,9 @@ interface Props {
 const SeriesEditor: React.FC<Props> = ({ seriesId, onSaved, onDeleted }) => {
     const [data, setData] = useState<SeriesData | null>(null);
     const [publishers, setPublishers] = useState<Publisher[]>([]);
+    const [seriesTypes, setSeriesTypes] = useState<SeriesType[]>([]);
     const [loadingPublishers, setLoadingPublishers] = useState(true);
+    const [loadingSeriesTypes, setLoadingSeriesTypes] = useState(true);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
@@ -41,6 +43,14 @@ const SeriesEditor: React.FC<Props> = ({ seriesId, onSaved, onDeleted }) => {
             .then(res => { if (!res.ok) throw new Error(`Failed to load publishers (${res.status})`); return res.json(); })
             .then(data => { setPublishers(data.publishers ?? []); setLoadingPublishers(false); })
             .catch(e => { setError(String(e.message ?? e)); setLoadingPublishers(false); });
+    }, []);
+
+    useEffect(() => {
+        setLoadingSeriesTypes(true);
+        fetch('/series-types')
+            .then(res => { if (!res.ok) throw new Error(`Failed to load series types (${res.status})`); return res.json(); })
+            .then(data => { setSeriesTypes(data.series_types ?? []); setLoadingSeriesTypes(false); })
+            .catch(e => { setError(String(e.message ?? e)); setLoadingSeriesTypes(false); });
     }, []);
 
     const set = (field: keyof SeriesData) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
@@ -111,14 +121,34 @@ const SeriesEditor: React.FC<Props> = ({ seriesId, onSaved, onDeleted }) => {
                         </select>
                     )}
                 </div>
-                {field('Type', 'type')}
+                <div className="mb-3">
+                    <label className="form-label" htmlFor="input-series-type">Type</label>
+                    {loadingSeriesTypes ? (
+                        <p className="form-text">Loading series types&hellip;</p>
+                    ) : (
+                        <select
+                            className="form-select"
+                            id="input-series-type"
+                            value={data.type ?? ''}
+                            onChange={set('type')}
+                        >
+                            <option value="">-- none --</option>
+                            {seriesTypes.find(t => t.name === data.type) ? null : (
+                                <option value={data.type}>{data.type}</option>
+                            )}
+                            {seriesTypes.map(t => (
+                                <option key={t.id} value={t.name}>{t.name}</option>
+                            ))}
+                        </select>
+                    )}
+                </div>
                 {field('Default Price', 'defaultPrice')}
                 {field('First Issue', 'firstIssue')}
                 {field('Final Issue', 'finalIssue')}
                 {field('Subscribed', 'subscribed')}
                 {field('Comments', 'comments')}
                 <div className="mb-3">
-                    <button type="submit" className="btn btn-primary me-2" disabled={loadingPublishers || publishers.length === 0}>Save</button>
+                    <button type="submit" className="btn btn-primary me-2" disabled={loadingPublishers || publishers.length === 0 || loadingSeriesTypes}>Save</button>
                     <button type="button" className="btn btn-danger" onClick={handleDelete}>Delete</button>
                 </div>
             </form>

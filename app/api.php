@@ -6,6 +6,7 @@ include_once "ComicDB/Serieses.php";
 include_once "ComicDB/Issue.php";
 include_once "ComicDB/Publisher.php";
 include_once "ComicDB/Publishers.php";
+include_once "ComicDB/SeriesTypes.php";
 
 // Grab all Titles (used by GET /list)
 function grabList()
@@ -508,6 +509,20 @@ EOT;
         ];
     }
     return json_encode(['publishers' => $list]);
+}
+
+function grabSeriesTypes()
+{
+    $typesList = new ComicDB_SeriesTypes();
+    $types = $typesList->getAll();
+    $list = [];
+    foreach ($types as $type) {
+        $list[] = [
+            'id' => (int) $type->id(),
+            'name' => $type->name(),
+        ];
+    }
+    return json_encode(['series_types' => $list]);
 }
 
 function createPublisher($dataJson)

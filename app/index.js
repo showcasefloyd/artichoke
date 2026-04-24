@@ -219,6 +219,16 @@ app.get('/publishers', function (req, res) {
    });
 });
 
+// Series Type
+app.get('/series-types', function (req, res) {
+   console.log('GET SERIES TYPES');
+   execPhp(__dirname + '/api.php', function (error, php, data) {
+      php.grabseriestypes(function (err, result) {
+         sendPhpResult(res, err, result);
+      });
+   });
+});
+
 app.get('/publisher/:id', function (req, res) {
    console.log('GET PUBLISHER', req.params.id);
    execPhp(__dirname + '/api.php', function (error, php, data) {

@@ -29,6 +29,11 @@ export interface Publisher {
     title_count?: number;
 }
 
+export interface SeriesType {
+    id: number;
+    name: string;
+}
+
 export interface SeriesListItem {
     id: number;
     titleId: number;

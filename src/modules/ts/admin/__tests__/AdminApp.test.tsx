@@ -12,6 +12,12 @@ beforeEach(() => {
                 json: () => Promise.resolve({ publishers: [] }),
             } as Response);
         }
+        if (url.startsWith('/series-types')) {
+            return Promise.resolve({
+                ok: true,
+                json: () => Promise.resolve({ series_types: [] }),
+            } as Response);
+        }
         if (url.startsWith('/list')) {
             return Promise.resolve({
                 ok: true,

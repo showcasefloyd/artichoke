@@ -104,6 +104,49 @@ class ComicDB_Series extends ComicDB_Object {
 		return $this->comments;
 	}
 
+	protected function normalizeDecimal($value) {
+		if (! isset($value) || $value === '') {
+			return null;
+		}
+		$normalized = str_replace(',', '.', trim((string) $value));
+		if (! is_numeric($normalized)) {
+			return null;
+		}
+		return (float) $normalized;
+	}
+
+	protected function normalizeSeriesTypeName($type, $db) {
+		if (! isset($type)) {
+			return null;
+		}
+		$type = trim((string) $type);
+		if ($type === '') {
+			return null;
+		}
+		$typeEscaped = $db->real_escape_string($type);
+		$query = <<<EOT
+	  SELECT name
+		FROM series_type
+	   WHERE LOWER(name) = LOWER('$typeEscaped')
+	   LIMIT 1
+EOT;
+		if(!$result = $db->query($query)){
+			die('There was an error running the query [' . $db->error . ']');
+		}
+		$row = $result->fetch_assoc();
+		if ($row && isset($row['name'])) {
+			return $row['name'];
+		}
+		$insert = <<<EOT
+	INSERT INTO series_type (name)
+	VALUES ('$typeEscaped')
+EOT;
+		if(!$db->query($insert)){
+			die('There was an error running the query [' . $db->error . ']');
+		}
+		return $type;
+	}
+
 	// public methods
 
 	public function issues() {
@@ -157,6 +200,7 @@ EOT;
 
 	protected function insert() {
 		$data = array();
+		$db = ComicDB_DB::db();
 
 		// mandatory fields
 		$data['title'] = $this->titleId();
@@ -164,13 +208,14 @@ EOT;
 		$data['publisher'] = "'" . $this->publisher() . "'";
 
 		// optional fields
-		$type = $this->type();
-		if ($this->type) {
-			$data['type'] = "'$type'";
+		$type = $this->normalizeSeriesTypeName($this->type(), $db);
+		if ($type !== null) {
+			$typeEscaped = $db->real_escape_string($type);
+			$data['type'] = "'$typeEscaped'";
 		}
 
-		$defaultPrice = $this->defaultPrice();
-		if ($this->defaultPrice() && $defaultPrice >= 0) {
+		$defaultPrice = $this->normalizeDecimal($this->defaultPrice());
+		if ($defaultPrice !== null && $defaultPrice >= 0) {
 			$data['default_price'] = $defaultPrice;
 		}
 
@@ -206,7 +251,6 @@ EOT;
 		$vals = implode(', ', $values);
 		$query .= " ($cols) VALUES ($vals)";
 
-		$db = ComicDB_DB::db();
 		if(!$result = $db->query($query)){
 			die('There was an error running the query [' . $db->error . ']');
 		}
@@ -229,6 +273,7 @@ EOT;
 
 	protected function update() {
 		$data = array();
+		$db = ComicDB_DB::db();
 
 		$titleId = $this->titleId();
 		if ($titleId) {
@@ -247,15 +292,16 @@ EOT;
 			$data['publisher'] = "'$publisher'";
 		}
 
-		$type = $this->type();
-		if ($type) {
-			$data['type'] = "'$type'";
+		$type = $this->normalizeSeriesTypeName($this->type(), $db);
+		if ($type !== null) {
+			$typeEscaped = $db->real_escape_string($type);
+			$data['type'] = "'$typeEscaped'";
 		} else {
 			$data['type'] = "NULL";
 		}
 
-		$defaultPrice = $this->defaultPrice();
-		if ($defaultPrice != "" && $defaultPrice >= 0) {
+		$defaultPrice = $this->normalizeDecimal($this->defaultPrice());
+		if ($defaultPrice !== null && $defaultPrice >= 0) {
 			$data['default_price'] = $defaultPrice;
 		} else {
 			$data['default_price'] = "NULL";
@@ -302,7 +348,6 @@ UPDATE series
  WHERE id=$id
 EOT;
 
-		$db = ComicDB_DB::db();
 		return $db->query($query);
 	}
 
