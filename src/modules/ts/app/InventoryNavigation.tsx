@@ -1,62 +1,102 @@
-import * as React from 'react';
+import React from 'react';
+import { IssueListItem, Publisher, SeriesListItem } from './App';
 
 import './InventoryColumn.scss';
 
-interface InventoryColumnProps {
-    title: string;
-};
+interface InventoryNavigationProps {
+    publishers: Publisher[];
+    series: SeriesListItem[];
+    issues: IssueListItem[];
+    selectedPublisherId: number | null;
+    selectedSeriesId: number | null;
+    selectedIssueId: number | null;
+    loadingPublishers: boolean;
+    loadingSeries: boolean;
+    loadingIssues: boolean;
+    onPublisherClick: (id: number) => void;
+    onSeriesClick: (id: number) => void;
+    onIssueClick: (id: number) => void;
+}
 
-// This is a placeholder for the inventory navigation column. It will eventually
-// display the list of publishers, titles, and issues in the user's inventory.
-const InventoryColumn: React.FC<InventoryColumnProps> = ({ title }) => {
-    const [data, setData] = React.useState<any[]>([]);
-    const [loading, setLoading] = React.useState<boolean>(true);
-
-    React.useEffect(() => {
-        if (title === 'Publishers') {
-            fetch('/publishers').then(res => { if (!res.ok) throw new Error(`Failed to load ${title} (${res.status})`); return res.json(); })
-                .then(json => {
-                    setData(json.publishers ?? [])
-                    setLoading(false);
-                })
-                .catch(err => console.error(`Error loading ${title}:`, err));
-        } else {
-            setLoading(true);
-            setData([]);
-        };
-    }, [title]);
-
-    return (
-        <div className="col-3 inventory-column">
-            <h3>{title}</h3>
-            <ul className="list-group">
-            {loading ? (
-                <p>Loading</p>
-            ) : (
-                data.map((item: any, index: number) => (
-                    <div key={index} className="inventory-item">
-                        <li className="list-group-item">{item.name} {item.title_count ? `(${item.title_count} titles)` : ''}</li>
-                    </div>
-                ))
-            )}
-            </ul>
-        </div>
-    )
-};
-
-// This component is a placeholder for the inventory navigation column.
-// Based on the Miller Columns, it will allow users to navigate their
-// inventory by Publisher, then Title, and then Issue.
-
-const InventoryNavigation: React.FC = () => (
+const InventoryNavigation: React.FC<InventoryNavigationProps> = ({
+    publishers,
+    series,
+    issues,
+    selectedPublisherId,
+    selectedSeriesId,
+    selectedIssueId,
+    loadingPublishers,
+    loadingSeries,
+    loadingIssues,
+    onPublisherClick,
+    onSeriesClick,
+    onIssueClick,
+}) => (
     <>
-        <InventoryColumn title="Publishers" />
-        <InventoryColumn title="Titles" />
-        <InventoryColumn title="Issues" />
+        <div className="col-4 inventory-column">
+            <h3>Publishers</h3>
+            {loadingPublishers ? (
+                <p>Loading...</p>
+            ) : (
+                <ul className="list-group">
+                    {publishers.map(publisher => (
+                        <li key={publisher.id} className="list-group-item">
+                            <button
+                                type="button"
+                                className={`inventory-item-btn${selectedPublisherId === publisher.id ? ' active' : ''}`}
+                                onClick={() => onPublisherClick(publisher.id)}
+                            >
+                                {publisher.name}
+                                {typeof publisher.title_count === 'number' ? ` (${publisher.title_count})` : ''}
+                            </button>
+                        </li>
+                    ))}
+                </ul>
+            )}
+        </div>
+
+        <div className="col-4 inventory-column">
+            <h3>Series</h3>
+            {loadingSeries ? (
+                <p>Loading...</p>
+            ) : (
+                <ul className="list-group">
+                    {series.map(book => (
+                        <li key={book.id} className="list-group-item">
+                            <button
+                                type="button"
+                                className={`inventory-item-btn${selectedSeriesId === book.id ? ' active' : ''}`}
+                                onClick={() => onSeriesClick(book.id)}
+                            >
+                                {book.name}
+                            </button>
+                        </li>
+                    ))}
+                </ul>
+            )}
+        </div>
+
+        <div className="col-4 inventory-column">
+            <h3>Issues</h3>
+            {loadingIssues ? (
+                <p>Loading...</p>
+            ) : (
+                <ul className="list-group">
+                    {issues.map(issue => (
+                        <li key={issue.id} className="list-group-item">
+                            <button
+                                type="button"
+                                className={`inventory-item-btn${selectedIssueId === issue.id ? ' active' : ''}`}
+                                onClick={() => onIssueClick(issue.id)}
+                            >
+                                #{issue.number}
+                            </button>
+                        </li>
+                    ))}
+                </ul>
+            )}
+        </div>
     </>
-)
-
-
+);
 
 export default InventoryNavigation;
-

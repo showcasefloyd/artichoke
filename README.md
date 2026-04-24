@@ -43,6 +43,20 @@ These scripts wrap Docker Compose:
 * `npm run stack:up` -> `docker compose up -d --build`
 * `npm run stack:down` -> `docker compose down`
 
+### MySQL data persistence (important)
+
+MySQL data is persisted in the named Docker volume `db_data` mounted at `/var/lib/mysql` inside the DB container. This means data survives container restarts and `docker compose down`, as long as the same Compose project name is used.
+
+This repo pins the Compose project name in `docker-compose.yml` (`name: js-artichoke`) so Docker reuses the same volume consistently.
+
+Data is removed only if you explicitly remove volumes (for example `docker compose down -v`).
+
+To export a backup:
+
+```bash
+docker compose exec db mysqldump -u root -proot comicdb > comicdb.sql
+```
+
 ### Reset DB volume (fresh bootstrap)
 
 ```bash

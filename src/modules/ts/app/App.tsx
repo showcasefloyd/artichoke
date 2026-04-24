@@ -1,6 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import TitleList from './TitleList';
-import IssueGrid from './IssueGrid';
 import IssueDetail from './IssueDetail';
 import InventoryNavigation from './InventoryNavigation';
 
@@ -31,6 +29,23 @@ export interface Publisher {
     title_count?: number;
 }
 
+export interface SeriesListItem {
+    id: number;
+    titleId: number;
+    name: string;
+    publisher: string;
+    titleName: string;
+}
+
+export interface IssueListItem {
+    id: number;
+    number: string;
+    seriesId: number;
+    seriesName: string;
+    titleId: number;
+    titleName: string;
+}
+
 export interface IssueDetail {
     number: string;
     printrun: string;
@@ -50,46 +65,87 @@ export interface IssueDetail {
 }
 
 const App: React.FC = () => {
-    const [titles, setTitles] = useState<Title[]>([]);
-    const [openTitleId, setOpenTitleId] = useState<number | null>(null);
-    const [seriesData, setSeriesData] = useState<SeriesResponse | null>(null);
-    const [issues, setIssues] = useState<IssueGridItem[]>([]);
+    const [publishers, setPublishers] = useState<Publisher[]>([]);
+    const [series, setSeries] = useState<SeriesListItem[]>([]);
+    const [issues, setIssues] = useState<IssueListItem[]>([]);
+    const [selectedPublisherId, setSelectedPublisherId] = useState<number | null>(null);
+    const [selectedSeriesId, setSelectedSeriesId] = useState<number | null>(null);
+    const [selectedIssueId, setSelectedIssueId] = useState<number | null>(null);
+    const [loadingPublishers, setLoadingPublishers] = useState<boolean>(true);
+    const [loadingSeries, setLoadingSeries] = useState<boolean>(false);
+    const [loadingIssues, setLoadingIssues] = useState<boolean>(false);
+    const [loadingIssueDetail, setLoadingIssueDetail] = useState<boolean>(false);
     const [issue, setIssue] = useState<IssueDetail | null>(null);
     const [error, setError] = useState<string>('');
 
     useEffect(() => {
-        fetch('/list')
-            .then(res => { if (!res.ok) throw new Error(`Failed to load titles (${res.status})`); return res.json(); })
-            .then(data => setTitles(data.titles ?? []))
-            .catch(e => setError(String(e.message ?? e)));
+        setLoadingPublishers(true);
+        fetch('/publishers')
+            .then(res => { if (!res.ok) throw new Error(`Failed to load publishers (${res.status})`); return res.json(); })
+            .then(data => {
+                setPublishers(data.publishers ?? []);
+                setLoadingPublishers(false);
+            })
+            .catch(e => {
+                setError(String(e.message ?? e));
+                setLoadingPublishers(false);
+            });
     }, []);
 
-    const grabSeries = (id: number) => {
-        setOpenTitleId(id);
+    const grabSeries = (publisherId: number) => {
+        setSelectedPublisherId(publisherId);
+        setSelectedSeriesId(null);
+        setSelectedIssueId(null);
+        setSeries([]);
         setIssues([]);
         setIssue(null);
         setError('');
-        fetch(`/list/${id}`)
+        setLoadingSeries(true);
+        fetch(`/series?publisherId=${publisherId}`)
             .then(res => { if (!res.ok) throw new Error(`Failed to load series (${res.status})`); return res.json(); })
-            .then(data => setSeriesData(data))
-            .catch(e => setError(String(e.message ?? e)));
+            .then(data => {
+                setSeries(data.series ?? []);
+                setLoadingSeries(false);
+            })
+            .catch(e => {
+                setError(String(e.message ?? e));
+                setLoadingSeries(false);
+            });
     };
 
-    const grabIssues = (id: number) => {
+    const grabIssues = (seriesId: number) => {
+        setSelectedSeriesId(seriesId);
+        setSelectedIssueId(null);
         setIssue(null);
+        setIssues([]);
         setError('');
-        fetch(`/issues/${id}`)
+        setLoadingIssues(true);
+        fetch(`/issues?seriesId=${seriesId}`)
             .then(res => { if (!res.ok) throw new Error(`Failed to load issues (${res.status})`); return res.json(); })
-            .then(data => setIssues(data))
-            .catch(e => setError(String(e.message ?? e)));
+            .then(data => {
+                setIssues(data.issues ?? []);
+                setLoadingIssues(false);
+            })
+            .catch(e => {
+                setError(String(e.message ?? e));
+                setLoadingIssues(false);
+            });
     };
 
     const grabIssue = (id: number) => {
+        setSelectedIssueId(id);
         setError('');
+        setLoadingIssueDetail(true);
         fetch(`/issue/${id}`)
             .then(res => { if (!res.ok) throw new Error(`Failed to load issue (${res.status})`); return res.json(); })
-            .then(data => setIssue(data))
-            .catch(e => setError(String(e.message ?? e)));
+            .then(data => {
+                setIssue(data);
+                setLoadingIssueDetail(false);
+            })
+            .catch(e => {
+                setError(String(e.message ?? e));
+                setLoadingIssueDetail(false);
+            });
     };
 
     return (
@@ -108,27 +164,33 @@ const App: React.FC = () => {
                     </div>
                 </div>
             )}
+
             <div className="row">
-                <InventoryNavigation />
+                <InventoryNavigation
+                    publishers={publishers}
+                    series={series}
+                    issues={issues}
+                    selectedPublisherId={selectedPublisherId}
+                    selectedSeriesId={selectedSeriesId}
+                    selectedIssueId={selectedIssueId}
+                    loadingPublishers={loadingPublishers}
+                    loadingSeries={loadingSeries}
+                    loadingIssues={loadingIssues}
+                    onPublisherClick={grabSeries}
+                    onSeriesClick={grabIssues}
+                    onIssueClick={grabIssue}
+                />
             </div>
 
             <div className="row">
-
-                <div className="col-3">
-                    <TitleList
-                        titles={titles}
-                        openTitleId={openTitleId}
-                        seriesData={seriesData}
-                        onTitleClick={grabSeries}
-                        onSeriesClick={grabIssues}
-                    />
-                </div>
-
-                <div className="col-9">
-                    <div id="main-top">
-                        <IssueGrid issues={issues} onIssueClick={grabIssue} />
-                    </div>
+                <div className="col">
                     <div id="main-bottom">
+                        {selectedSeriesId && issues.length === 0 && !loadingIssues && (
+                            <p>No issues found for this series.</p>
+                        )}
+                        {selectedIssueId && loadingIssueDetail && (
+                            <p>Loading issue detail...</p>
+                        )}
                         {issue && <IssueDetail issue={issue} />}
                     </div>
                 </div>

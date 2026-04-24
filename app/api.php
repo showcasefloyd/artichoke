@@ -55,10 +55,20 @@ function grabSeriesList($dataJson)
 {
     $filters = json_decode($dataJson, true);
     $titleId = isset($filters['titleId']) ? (int) $filters['titleId'] : 0;
+    $publisherId = isset($filters['publisherId']) ? (int) $filters['publisherId'] : 0;
     $db = ComicDB_DB::db();
-    $where = '';
+    $whereClauses = [];
     if ($titleId > 0) {
-        $where = "WHERE s.title = $titleId";
+        $whereClauses[] = "s.title = $titleId";
+    }
+
+    if ($publisherId > 0) {
+        $whereClauses[] = "p.id = $publisherId";
+    }
+
+    $where = '';
+    if (count($whereClauses) > 0) {
+        $where = 'WHERE ' . implode(' AND ', $whereClauses);
     }
     $query = <<<EOT
       SELECT s.id,
@@ -68,6 +78,7 @@ function grabSeriesList($dataJson)
              t.name AS title_name
         FROM series s
    LEFT JOIN titles t ON t.id = s.title
+   LEFT JOIN publisher p ON p.name = s.publisher
       $where
     ORDER BY t.name ASC, s.name ASC
 EOT;
