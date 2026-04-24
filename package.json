@@ -10,7 +10,8 @@
     "stack:down": "docker compose down",
     "dev-server": "nodemon app/index.js",
     "dev-client": "webpack serve",
-    "wp": "webpack --watch --progress",
+    "wp:build": "webpack --progress",
+    "wp:watch": "webpack --watch --progress",
     "wpprod": "webpack --mode production --progress"
   },
   "keywords": [
