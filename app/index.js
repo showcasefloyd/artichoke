@@ -118,6 +118,15 @@ app.delete('/title/:id', function (req, res) {
 });
 
 // Series CRUD
+app.get('/series', function (req, res) {
+   console.log('GET SERIES LIST', req.query);
+   execPhp(__dirname + '/api.php', function (error, php, data) {
+      php.grabserieslist(JSON.stringify(req.query), function (err, result) {
+         sendPhpResult(res, err, result);
+      });
+   });
+});
+
 app.get('/series/:id', function (req, res) {
    console.log('GET SERIES', req.params.id);
    execPhp(__dirname + '/api.php', function (error, php, data) {
@@ -155,6 +164,15 @@ app.delete('/series/:id', function (req, res) {
 });
 
 // Issue CRUD
+app.get('/issues', function (req, res) {
+   console.log('GET ISSUES LIST', req.query);
+   execPhp(__dirname + '/api.php', function (error, php, data) {
+      php.grabissueslist(JSON.stringify(req.query), function (err, result) {
+         sendPhpResult(res, err, result);
+      });
+   });
+});
+
 app.get('/issue/:id/raw', function (req, res) {
    console.log('GET ISSUE RAW', req.params.id);
    execPhp(__dirname + '/api.php', function (error, php, data) {

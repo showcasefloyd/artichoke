@@ -51,6 +51,45 @@ function grabSeries($id)
     return json_encode($data);
 }
 
+function grabSeriesList($dataJson)
+{
+    $filters = json_decode($dataJson, true);
+    $titleId = isset($filters['titleId']) ? (int) $filters['titleId'] : 0;
+    $db = ComicDB_DB::db();
+    $where = '';
+    if ($titleId > 0) {
+        $where = "WHERE s.title = $titleId";
+    }
+    $query = <<<EOT
+      SELECT s.id,
+             s.title AS title_id,
+             s.name,
+             s.publisher,
+             t.name AS title_name
+        FROM series s
+   LEFT JOIN titles t ON t.id = s.title
+      $where
+    ORDER BY t.name ASC, s.name ASC
+EOT;
+    $result = $db->query($query);
+    if (! $result) {
+        die('There was an error running the query [' . $db->error . ']');
+    }
+
+    $list = [];
+    while ($row = $result->fetch_assoc()) {
+        $list[] = [
+            'id' => (int) $row['id'],
+            'titleId' => (int) $row['title_id'],
+            'name' => $row['name'],
+            'publisher' => $row['publisher'],
+            'titleName' => $row['title_name'] ?? '',
+        ];
+    }
+
+    return json_encode(['series' => $list]);
+}
+
 function grabSerieById($id)
 {
     $series = new ComicDB_Series($id);
@@ -344,6 +383,59 @@ function deleteIssue($id)
     $issue->restore();
     $issue->remove();
     return json_encode(['deleted' => true, 'id' => (int) $id]);
+}
+
+function grabIssuesList($dataJson)
+{
+    $filters = json_decode($dataJson, true);
+    $titleId = isset($filters['titleId']) ? (int) $filters['titleId'] : 0;
+    $seriesId = isset($filters['seriesId']) ? (int) $filters['seriesId'] : 0;
+    $db = ComicDB_DB::db();
+    $whereClauses = [];
+    if ($titleId > 0) {
+        $whereClauses[] = "s.title = $titleId";
+    }
+
+    if ($seriesId > 0) {
+        $whereClauses[] = "i.series = $seriesId";
+    }
+
+    $where = '';
+    if (count($whereClauses) > 0) {
+        $where = 'WHERE ' . implode(' AND ', $whereClauses);
+    }
+
+    $query = <<<EOT
+      SELECT i.id,
+             i.number,
+             i.series AS series_id,
+             s.name AS series_name,
+             s.title AS title_id,
+             t.name AS title_name
+        FROM issues i
+   LEFT JOIN series s ON s.id = i.series
+   LEFT JOIN titles t ON t.id = s.title
+      $where
+    ORDER BY t.name ASC, s.name ASC, i.number ASC
+EOT;
+    $result = $db->query($query);
+    if (! $result) {
+        die('There was an error running the query [' . $db->error . ']');
+    }
+
+    $list = [];
+    while ($row = $result->fetch_assoc()) {
+        $list[] = [
+            'id' => (int) $row['id'],
+            'number' => $row['number'],
+            'seriesId' => (int) $row['series_id'],
+            'seriesName' => $row['series_name'] ?? '',
+            'titleId' => (int) $row['title_id'],
+            'titleName' => $row['title_name'] ?? '',
+        ];
+    }
+
+    return json_encode(['issues' => $list]);
 }
 
 function grabIssueRaw($id)
