@@ -118,6 +118,15 @@ app.delete('/title/:id', function (req, res) {
 });
 
 // Series CRUD
+app.get('/series', function (req, res) {
+   console.log('GET SERIES LIST', req.query);
+   execPhp(__dirname + '/api.php', function (error, php, data) {
+      php.grabserieslist(JSON.stringify(req.query), function (err, result) {
+         sendPhpResult(res, err, result);
+      });
+   });
+});
+
 app.get('/series/:id', function (req, res) {
    console.log('GET SERIES', req.params.id);
    execPhp(__dirname + '/api.php', function (error, php, data) {
@@ -155,6 +164,15 @@ app.delete('/series/:id', function (req, res) {
 });
 
 // Issue CRUD
+app.get('/issues', function (req, res) {
+   console.log('GET ISSUES LIST', req.query);
+   execPhp(__dirname + '/api.php', function (error, php, data) {
+      php.grabissueslist(JSON.stringify(req.query), function (err, result) {
+         sendPhpResult(res, err, result);
+      });
+   });
+});
+
 app.get('/issue/:id/raw', function (req, res) {
    console.log('GET ISSUE RAW', req.params.id);
    execPhp(__dirname + '/api.php', function (error, php, data) {
@@ -192,10 +210,56 @@ app.delete('/issue/:id', function (req, res) {
 });
 
 // Publisher
+app.get('/publishers', function (req, res) {
+   console.log('GET PUBLISHERS');
+   execPhp(__dirname + '/api.php', function (error, php, data) {
+      php.grabpublishers(function (err, result) {
+         sendPhpResult(res, err, result);
+      });
+   });
+});
+
+// Series Type
+app.get('/series-types', function (req, res) {
+   console.log('GET SERIES TYPES');
+   execPhp(__dirname + '/api.php', function (error, php, data) {
+      php.grabseriestypes(function (err, result) {
+         sendPhpResult(res, err, result);
+      });
+   });
+});
+
 app.get('/publisher/:id', function (req, res) {
    console.log('GET PUBLISHER', req.params.id);
    execPhp(__dirname + '/api.php', function (error, php, data) {
       php.grabpublisher(req.params.id, function (err, result) {
+         sendPhpResult(res, err, result);
+      });
+   });
+});
+
+app.post('/publisher', function (req, res) {
+   console.log('CREATE PUBLISHER', req.body);
+   execPhp(__dirname + '/api.php', function (error, php, data) {
+      php.createpublisher(JSON.stringify(req.body), function (err, result) {
+         sendPhpResult(res, err, result);
+      });
+   });
+});
+
+app.put('/publisher/:id', function (req, res) {
+   console.log('UPDATE PUBLISHER', req.params.id, req.body);
+   execPhp(__dirname + '/api.php', function (error, php, data) {
+      php.updatepublisher(req.params.id, JSON.stringify(req.body), function (err, result) {
+         sendPhpResult(res, err, result);
+      });
+   });
+});
+
+app.delete('/publisher/:id', function (req, res) {
+   console.log('DELETE PUBLISHER', req.params.id);
+   execPhp(__dirname + '/api.php', function (error, php, data) {
+      php.deletepublisher(req.params.id, function (err, result) {
          sendPhpResult(res, err, result);
       });
    });

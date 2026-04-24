@@ -22,11 +22,9 @@ class ComicDB_PrintRuns {
 	    return $print_runs;
 	}
 
-	$query = <<<EOT
-  SELECT id, name
-    FROM print_run
-ORDER BY name ASC
-EOT;
+	$query = "SELECT id, name\n"
+		. "  FROM print_run\n"
+		. " ORDER BY name ASC";
 
 	$db = ComicDB_DB::db();
 	if(!$result = $db->query($query)){

@@ -40,12 +40,13 @@ describe('TitleEditor', () => {
     it('shows an error when the name field is empty and save is clicked', async () => {
         render(<TitleEditor titleId={5} onSaved={jest.fn()} onDeleted={jest.fn()} />);
         await waitFor(() => screen.getByDisplayValue('Test Title'));
+        (fetch as jest.Mock).mockClear();
 
         await userEvent.clear(screen.getByRole('textbox'));
         await userEvent.click(screen.getByRole('button', { name: /save/i }));
 
         expect(screen.getByText('Name is required')).toBeInTheDocument();
-        expect(fetch).not.toHaveBeenCalledWith('/title/5', expect.objectContaining({ method: 'PUT' }));
+        expect(fetch).not.toHaveBeenCalled();
     });
 
     it('shows success banner after a successful save', async () => {

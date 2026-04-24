@@ -33,11 +33,9 @@ class ComicDB_Guide extends ComicDB_Object {
     // interface methods
 
     function select() {
-	$query = <<<EOT
-  SELECT id, name
-    FROM guide
-   WHERE id=$this->id
-EOT;
+	$query = "SELECT id, name\n"
+		. "  FROM guide\n"
+		. " WHERE id=$this->id";
 
 	$db = ComicDB_DB::db();
 

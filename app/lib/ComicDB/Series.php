@@ -9,6 +9,8 @@ class ComicDB_Series extends ComicDB_Object {
 
 	public $titleId;
 	public $name;
+	public $volume;
+	public $startYear;
 	public $publisher;
 	public $type;
 	public $defaultPrice;
@@ -54,6 +56,22 @@ class ComicDB_Series extends ComicDB_Object {
 			$this->isDirty = 1;
 		}
 		return $this->publisher;
+	}
+
+	public function volume($volume=null) {
+		if (isset($volume)) {
+			$this->volume = $volume;
+			$this->isDirty = 1;
+		}
+		return $this->volume;
+	}
+
+	public function startYear($startYear=null) {
+		if (isset($startYear)) {
+			$this->startYear = $startYear;
+			$this->isDirty = 1;
+		}
+		return $this->startYear;
 	}
 
 	public function type($type=null) {
@@ -104,6 +122,45 @@ class ComicDB_Series extends ComicDB_Object {
 		return $this->comments;
 	}
 
+	protected function normalizeDecimal($value) {
+		if (! isset($value) || $value === '') {
+			return null;
+		}
+		$normalized = str_replace(',', '.', trim((string) $value));
+		if (! is_numeric($normalized)) {
+			return null;
+		}
+		return (float) $normalized;
+	}
+
+	protected function normalizeSeriesTypeName($type, $db) {
+		if (! isset($type)) {
+			return null;
+		}
+		$type = trim((string) $type);
+		if ($type === '') {
+			return null;
+		}
+		$typeEscaped = $db->real_escape_string($type);
+		$query = "SELECT name\n"
+			. "  FROM series_type\n"
+			. " WHERE LOWER(name) = LOWER('$typeEscaped')\n"
+			. " LIMIT 1";
+		if(!$result = $db->query($query)){
+			die('There was an error running the query [' . $db->error . ']');
+		}
+		$row = $result->fetch_assoc();
+		if ($row && isset($row['name'])) {
+			return $row['name'];
+		}
+		$insert = "INSERT INTO series_type (name)\n"
+			. "VALUES ('$typeEscaped')";
+		if(!$db->query($insert)){
+			die('There was an error running the query [' . $db->error . ']');
+		}
+		return $type;
+	}
+
 	// public methods
 
 	public function issues() {
@@ -130,33 +187,35 @@ class ComicDB_Series extends ComicDB_Object {
 	// interface methods
 
 	protected function select() {
-		$query = <<<EOT
-	    SELECT *
-    FROM series
-   WHERE id=$this->id
-EOT;
+		$query = "SELECT id, title, name, volume, start_year, publisher, type,\n"
+			. "       default_price, first_issue, final_issue, subscribed, comments\n"
+			. "  FROM series\n"
+			. " WHERE id=$this->id";
 		$db = ComicDB_DB::db();
 		if(!$result = $db->query($query)){
 		    die('There was an error running the query [' . $db->error . ']');
 		}
-		$row = $result->fetch_array();
+		$row = $result->fetch_assoc();
 
-		$this->id($row[0]);
-		$this->titleId($row[1]);
-		$this->name($row[2]);
-		$this->publisher($row[3]);
-		$this->type($row[4]);
-		$this->defaultPrice($row[5]);
-		$this->firstIssue($row[6]);
-		$this->finalIssue($row[7]);
-		$this->subscribed($row[8]);
-		$this->comments($row[9]);
+		$this->id($row['id']);
+		$this->titleId($row['title']);
+		$this->name($row['name']);
+		$this->volume($row['volume']);
+		$this->startYear($row['start_year']);
+		$this->publisher($row['publisher']);
+		$this->type($row['type']);
+		$this->defaultPrice($row['default_price']);
+		$this->firstIssue($row['first_issue']);
+		$this->finalIssue($row['final_issue']);
+		$this->subscribed($row['subscribed']);
+		$this->comments($row['comments']);
 
 		return;
 	}
 
 	protected function insert() {
 		$data = array();
+		$db = ComicDB_DB::db();
 
 		// mandatory fields
 		$data['title'] = $this->titleId();
@@ -164,13 +223,24 @@ EOT;
 		$data['publisher'] = "'" . $this->publisher() . "'";
 
 		// optional fields
-		$type = $this->type();
-		if ($this->type) {
-			$data['type'] = "'$type'";
+		$volume = $this->volume();
+		if ($volume != "" && $volume > 0) {
+			$data['volume'] = (int) $volume;
 		}
 
-		$defaultPrice = $this->defaultPrice();
-		if ($this->defaultPrice() && $defaultPrice >= 0) {
+		$startYear = $this->startYear();
+		if ($startYear != "" && $startYear > 0) {
+			$data['start_year'] = (int) $startYear;
+		}
+
+		$type = $this->normalizeSeriesTypeName($this->type(), $db);
+		if ($type !== null) {
+			$typeEscaped = $db->real_escape_string($type);
+			$data['type'] = "'$typeEscaped'";
+		}
+
+		$defaultPrice = $this->normalizeDecimal($this->defaultPrice());
+		if ($defaultPrice !== null && $defaultPrice >= 0) {
 			$data['default_price'] = $defaultPrice;
 		}
 
@@ -206,18 +276,15 @@ EOT;
 		$vals = implode(', ', $values);
 		$query .= " ($cols) VALUES ($vals)";
 
-		$db = ComicDB_DB::db();
 		if(!$result = $db->query($query)){
 			die('There was an error running the query [' . $db->error . ']');
 		}
 
 		// is there a better portable way of retrieving the id?
-		$query = <<<EOT
-  SELECT id
-    FROM series
-ORDER BY id DESC
-   LIMIT 1
-EOT;
+		$query = "SELECT id\n"
+			. "  FROM series\n"
+			. " ORDER BY id DESC\n"
+			. "  LIMIT 1";
 		if(!$result = $db->query($query)){
 			die('There was an error running the query [' . $db->error . ']');
 		}
@@ -229,6 +296,7 @@ EOT;
 
 	protected function update() {
 		$data = array();
+		$db = ComicDB_DB::db();
 
 		$titleId = $this->titleId();
 		if ($titleId) {
@@ -247,15 +315,30 @@ EOT;
 			$data['publisher'] = "'$publisher'";
 		}
 
-		$type = $this->type();
-		if ($type) {
-			$data['type'] = "'$type'";
+		$volume = $this->volume();
+		if ($volume != "" && $volume > 0) {
+			$data['volume'] = (int) $volume;
+		} else {
+			$data['volume'] = "NULL";
+		}
+
+		$startYear = $this->startYear();
+		if ($startYear != "" && $startYear > 0) {
+			$data['start_year'] = (int) $startYear;
+		} else {
+			$data['start_year'] = "NULL";
+		}
+
+		$type = $this->normalizeSeriesTypeName($this->type(), $db);
+		if ($type !== null) {
+			$typeEscaped = $db->real_escape_string($type);
+			$data['type'] = "'$typeEscaped'";
 		} else {
 			$data['type'] = "NULL";
 		}
 
-		$defaultPrice = $this->defaultPrice();
-		if ($defaultPrice != "" && $defaultPrice >= 0) {
+		$defaultPrice = $this->normalizeDecimal($this->defaultPrice());
+		if ($defaultPrice !== null && $defaultPrice >= 0) {
 			$data['default_price'] = $defaultPrice;
 		} else {
 			$data['default_price'] = "NULL";
@@ -296,13 +379,10 @@ EOT;
 		$set = implode(', ', $terms);
 
 		$id = $this->id();
-		$query = <<<EOT
-UPDATE series
-   SET $set
- WHERE id=$id
-EOT;
+		$query = "UPDATE series\n"
+			. "   SET $set\n"
+			. " WHERE id=$id";
 
-		$db = ComicDB_DB::db();
 		return $db->query($query);
 	}
 
@@ -316,10 +396,8 @@ EOT;
 
 		// then remove the series itself
 		$id = $this->id();
-		$query = <<<EOT
-DELETE FROM series
-	WHERE id=$id
-EOT;
+		$query = "DELETE FROM series\n"
+			. " WHERE id=$id";
 
 		$db = ComicDB_DB::db();
 		return $db->query($query);

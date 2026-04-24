@@ -24,15 +24,13 @@ class ComicDB_Issues {
 			return $issues;
 		}
 
-		$query = <<<EOT
-  SELECT id, series, number, sort, printrun, quantity,
-		 UNIX_TIMESTAMP(cover_date), location, type, status, bkcondition,
-		 cover_price, purchase_price, UNIX_TIMESTAMP(purchase_date),
-	 guide_value, guide, issue_value, comments
-	FROM issues
-   WHERE series=$this->seriesId
-ORDER BY number ASC
-EOT;
+		$query = "SELECT id, series, number, sort, printrun, quantity,\n"
+			. "       UNIX_TIMESTAMP(cover_date), location, type, status, bkcondition,\n"
+			. "       cover_price, purchase_price, UNIX_TIMESTAMP(purchase_date),\n"
+			. "       guide_value, guide, issue_value, comments\n"
+			. "  FROM issues\n"
+			. " WHERE series=$this->seriesId\n"
+			. " ORDER BY number ASC";
 		$db = ComicDB_DB::db();
 		if(!$result = $db->query($query)){
 			die('There was an error running the query, yo [' . $db->error . ']'.  $query);
@@ -73,10 +71,8 @@ EOT;
 	}
 
 	public function removeAll() {
-		$query = <<<EOT
-DELETE FROM issues
-	  WHERE series=$this->seriesId
-EOT;
+		$query = "DELETE FROM issues\n"
+			. " WHERE series=$this->seriesId";
 
 		$db = ComicDB_DB::db();
 		return $db->query($query);

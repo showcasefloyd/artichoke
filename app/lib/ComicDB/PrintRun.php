@@ -29,11 +29,9 @@ class ComicDB_PrintRun extends ComicDB_Object {
     // interface methods
 
     function select() {
-	$query = <<<EOT
-  SELECT id, name
-    FROM print_run
-   WHERE id=$this->id
-EOT;
+	$query = "SELECT id, name\n"
+		. "  FROM print_run\n"
+		. " WHERE id=$this->id";
 
 	$db = ComicDB_DB::db();
 

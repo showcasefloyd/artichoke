@@ -25,11 +25,9 @@ class ComicDB_Publishers {
 		}
 
 
-	$query = <<<EOT
-	  SELECT id, name
-	  FROM publisher
-	  ORDER BY name ASC
-EOT;
+	$query = "SELECT id, name\n"
+		. "FROM publisher\n"
+		. "ORDER BY name ASC";
 
 		$db = ComicDB_DB::db();
 		if(!$result = $db->query($query)){

@@ -22,11 +22,9 @@ class ComicDB_Guides {
 	    return $guides;
 	}
 
-	$query = <<<EOT
-  SELECT id, name
-    FROM guide
-ORDER BY name ASC
-EOT;
+	$query = "SELECT id, name\n"
+		. "  FROM guide\n"
+		. " ORDER BY name ASC";
 
 	$db = ComicDB_DB::db();
 	if(!$result = $db->query($query)){

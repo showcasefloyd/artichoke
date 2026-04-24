@@ -29,11 +29,9 @@ class ComicDB_IssueType extends ComicDB_Object {
     // interface methods
 
     function select() {
-	$query = <<<EOT
-  SELECT id, name
-    FROM issue_type
-   WHERE id=$this->id
-EOT;
+	$query = "SELECT id, name\n"
+		. "  FROM issue_type\n"
+		. " WHERE id=$this->id";
 
 	$db = ComicDB_DB::db();
 

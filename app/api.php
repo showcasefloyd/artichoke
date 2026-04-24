@@ -5,6 +5,8 @@ include_once "ComicDB/Title.php";
 include_once "ComicDB/Serieses.php";
 include_once "ComicDB/Issue.php";
 include_once "ComicDB/Publisher.php";
+include_once "ComicDB/Publishers.php";
+include_once "ComicDB/SeriesTypes.php";
 
 // Grab all Titles (used by GET /list)
 function grabList()
@@ -50,6 +52,60 @@ function grabSeries($id)
     return json_encode($data);
 }
 
+function grabSeriesList($dataJson)
+{
+    $filters = json_decode($dataJson, true);
+    $titleId = isset($filters['titleId']) ? (int) $filters['titleId'] : 0;
+    $publisherId = isset($filters['publisherId']) ? (int) $filters['publisherId'] : 0;
+    $db = ComicDB_DB::db();
+    $whereClauses = [];
+    if ($titleId > 0) {
+        $whereClauses[] = "s.title = $titleId";
+    }
+
+    if ($publisherId > 0) {
+        $whereClauses[] = "p.id = $publisherId";
+    }
+
+    $where = '';
+    if (count($whereClauses) > 0) {
+        $where = 'WHERE ' . implode(' AND ', $whereClauses);
+    }
+    $query = <<<EOT
+      SELECT s.id,
+             s.title AS title_id,
+             s.name,
+             s.volume,
+             s.start_year,
+             s.publisher,
+             t.name AS title_name
+        FROM series s
+   LEFT JOIN titles t ON t.id = s.title
+   LEFT JOIN publisher p ON p.name = s.publisher
+      $where
+    ORDER BY t.name ASC, s.name ASC
+EOT;
+    $result = $db->query($query);
+    if (! $result) {
+        die('There was an error running the query [' . $db->error . ']');
+    }
+
+    $list = [];
+    while ($row = $result->fetch_assoc()) {
+        $list[] = [
+            'id' => (int) $row['id'],
+            'titleId' => (int) $row['title_id'],
+            'name' => $row['name'],
+            'volume' => isset($row['volume']) ? (int) $row['volume'] : 0,
+            'startYear' => isset($row['start_year']) ? (int) $row['start_year'] : 0,
+            'publisher' => $row['publisher'],
+            'titleName' => $row['title_name'] ?? '',
+        ];
+    }
+
+    return json_encode(['series' => $list]);
+}
+
 function grabSerieById($id)
 {
     $series = new ComicDB_Series($id);
@@ -58,6 +114,8 @@ function grabSerieById($id)
         'id'           => $series->id(),
         'titleId'      => $series->titleId(),
         'name'         => $series->name(),
+        'volume'       => $series->volume(),
+        'startYear'    => $series->startYear(),
         'publisher'    => $series->publisher(),
         'type'         => $series->type(),
         'defaultPrice' => $series->defaultPrice(),
@@ -103,6 +161,12 @@ function createSeries($dataJson)
     $series = new ComicDB_Series();
     $series->titleId($data['titleId']);
     $series->name($data['name']);
+    if (isset($data['volume'])) {
+        $series->volume($data['volume']);
+    }
+    if (isset($data['startYear'])) {
+        $series->startYear($data['startYear']);
+    }
     $series->publisher($data['publisher']);
     if (isset($data['type'])) {
         $series->type($data['type']);
@@ -148,6 +212,14 @@ function updateSeries($id, $dataJson)
 
     if (isset($data['publisher'])) {
         $series->publisher($data['publisher']);
+    }
+
+    if (isset($data['volume'])) {
+        $series->volume($data['volume']);
+    }
+
+    if (isset($data['startYear'])) {
+        $series->startYear($data['startYear']);
     }
 
     if (isset($data['type'])) {
@@ -345,6 +417,59 @@ function deleteIssue($id)
     return json_encode(['deleted' => true, 'id' => (int) $id]);
 }
 
+function grabIssuesList($dataJson)
+{
+    $filters = json_decode($dataJson, true);
+    $titleId = isset($filters['titleId']) ? (int) $filters['titleId'] : 0;
+    $seriesId = isset($filters['seriesId']) ? (int) $filters['seriesId'] : 0;
+    $db = ComicDB_DB::db();
+    $whereClauses = [];
+    if ($titleId > 0) {
+        $whereClauses[] = "s.title = $titleId";
+    }
+
+    if ($seriesId > 0) {
+        $whereClauses[] = "i.series = $seriesId";
+    }
+
+    $where = '';
+    if (count($whereClauses) > 0) {
+        $where = 'WHERE ' . implode(' AND ', $whereClauses);
+    }
+
+    $query = <<<EOT
+      SELECT i.id,
+             i.number,
+             i.series AS series_id,
+             s.name AS series_name,
+             s.title AS title_id,
+             t.name AS title_name
+        FROM issues i
+   LEFT JOIN series s ON s.id = i.series
+   LEFT JOIN titles t ON t.id = s.title
+      $where
+    ORDER BY t.name ASC, s.name ASC, i.number ASC
+EOT;
+    $result = $db->query($query);
+    if (! $result) {
+        die('There was an error running the query [' . $db->error . ']');
+    }
+
+    $list = [];
+    while ($row = $result->fetch_assoc()) {
+        $list[] = [
+            'id' => (int) $row['id'],
+            'number' => $row['number'],
+            'seriesId' => (int) $row['series_id'],
+            'seriesName' => $row['series_name'] ?? '',
+            'titleId' => (int) $row['title_id'],
+            'titleName' => $row['title_name'] ?? '',
+        ];
+    }
+
+    return json_encode(['issues' => $list]);
+}
+
 function grabIssueRaw($id)
 {
     $issue = new ComicDB_Issue($id);
@@ -381,6 +506,121 @@ function grabPublisher($id)
         'id'   => $publisher->id(),
         'name' => $publisher->name(),
     ]);
+}
+
+// Grab all Publishers with title count
+function grabPublishers()
+{
+    $db = ComicDB_DB::db();
+    $query = <<<EOT
+      SELECT p.id, p.name, COUNT(DISTINCT s.title) AS title_count
+        FROM publisher p
+   LEFT JOIN series s ON s.publisher = p.name
+    GROUP BY p.id, p.name
+    ORDER BY p.name ASC
+EOT;
+    $result = $db->query($query);
+    $list = [];
+    while ($row = $result->fetch_assoc()) {
+        $list[] = [
+            'id'          => (int) $row['id'],
+            'name'        => $row['name'],
+            'title_count' => (int) $row['title_count'],
+        ];
+    }
+    return json_encode(['publishers' => $list]);
+}
+
+function grabSeriesTypes()
+{
+    $typesList = new ComicDB_SeriesTypes();
+    $types = $typesList->getAll();
+    $list = [];
+    foreach ($types as $type) {
+        $list[] = [
+            'id' => (int) $type->id(),
+            'name' => $type->name(),
+        ];
+    }
+    return json_encode(['series_types' => $list]);
+}
+
+function createPublisher($dataJson)
+{
+    $data = json_decode($dataJson, true);
+    if (!isset($data['name']) || trim($data['name']) === '') {
+        return json_encode(['error' => 'Publisher name is required.']);
+    }
+    $publisher = new ComicDB_Publisher();
+    $publisher->name($data['name']);
+    $publisher->save();
+    return json_encode(['id' => $publisher->id(), 'name' => $publisher->name()]);
+}
+
+function updatePublisher($id, $dataJson)
+{
+    $data = json_decode($dataJson, true);
+    $publisher = new ComicDB_Publisher();
+    $publisher->id($id);
+    $publisher->restore();
+    $oldName = $publisher->name();
+
+    if (isset($data['name'])) {
+        if (trim($data['name']) === '') {
+            return json_encode(['error' => 'Publisher name is required.']);
+        }
+        $publisher->name($data['name']);
+    }
+
+    $publisher->save();
+
+    $newName = $publisher->name();
+    if ($oldName !== $newName) {
+        $db = ComicDB_DB::db();
+        $oldNameEscaped = $db->real_escape_string($oldName);
+        $newNameEscaped = $db->real_escape_string($newName);
+        $query = <<<EOT
+          UPDATE series
+             SET publisher = '$newNameEscaped'
+           WHERE publisher = '$oldNameEscaped'
+EOT;
+        if (! $db->query($query)) {
+            die('There was an error running the query [' . $db->error . ']');
+        }
+    }
+
+    return json_encode(['id' => $publisher->id(), 'name' => $publisher->name()]);
+}
+
+function deletePublisher($id)
+{
+    $publisher = new ComicDB_Publisher();
+    $publisher->id($id);
+    $publisher->restore();
+    $name = $publisher->name();
+    $db = ComicDB_DB::db();
+    $nameEscaped = $db->real_escape_string($name);
+    $countQuery = <<<EOT
+      SELECT COUNT(*) AS series_count
+        FROM series
+       WHERE publisher = '$nameEscaped'
+EOT;
+    $countResult = $db->query($countQuery);
+    if (! $countResult) {
+        die('There was an error running the query [' . $db->error . ']');
+    }
+    $row = $countResult->fetch_assoc();
+    $seriesCount = (int) $row['series_count'];
+    if ($seriesCount > 0) {
+        return json_encode([
+            'deleted' => false,
+            'id' => (int) $id,
+            'error' => "Cannot delete publisher in use by $seriesCount series.",
+        ]);
+    }
+
+    $publisher->remove();
+    return json_encode(['deleted' => true, 'id' => (int) $id]);
 }
 
 function grabIssues($id)

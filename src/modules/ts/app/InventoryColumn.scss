@@ -1,0 +1,18 @@
+.inventory-column {
+    flex:1;
+    border-right: 1px solid #ccc;
+    padding: 1rem;
+    overflow-y: auto;
+}
+
+.inventory-item-btn {
+    width: 100%;
+    border: 0;
+    background: transparent;
+    text-align: left;
+    padding: 0;
+}
+
+.inventory-item-btn.active {
+    font-weight: 700;
+}
