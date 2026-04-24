@@ -124,12 +124,10 @@ class ComicDB_Series extends ComicDB_Object {
 			return null;
 		}
 		$typeEscaped = $db->real_escape_string($type);
-		$query = <<<EOT
-	  SELECT name
-		FROM series_type
-	   WHERE LOWER(name) = LOWER('$typeEscaped')
-	   LIMIT 1
-EOT;
+		$query = "SELECT name\n"
+			. "  FROM series_type\n"
+			. " WHERE LOWER(name) = LOWER('$typeEscaped')\n"
+			. " LIMIT 1";
 		if(!$result = $db->query($query)){
 			die('There was an error running the query [' . $db->error . ']');
 		}
@@ -137,10 +135,8 @@ EOT;
 		if ($row && isset($row['name'])) {
 			return $row['name'];
 		}
-		$insert = <<<EOT
-	INSERT INTO series_type (name)
-	VALUES ('$typeEscaped')
-EOT;
+		$insert = "INSERT INTO series_type (name)\n"
+			. "VALUES ('$typeEscaped')";
 		if(!$db->query($insert)){
 			die('There was an error running the query [' . $db->error . ']');
 		}
@@ -173,11 +169,9 @@ EOT;
 	// interface methods
 
 	protected function select() {
-		$query = <<<EOT
-	    SELECT *
-    FROM series
-   WHERE id=$this->id
-EOT;
+		$query = "SELECT *\n"
+			. "  FROM series\n"
+			. " WHERE id=$this->id";
 		$db = ComicDB_DB::db();
 		if(!$result = $db->query($query)){
 		    die('There was an error running the query [' . $db->error . ']');
@@ -256,12 +250,10 @@ EOT;
 		}
 
 		// is there a better portable way of retrieving the id?
-		$query = <<<EOT
-  SELECT id
-    FROM series
-ORDER BY id DESC
-   LIMIT 1
-EOT;
+		$query = "SELECT id\n"
+			. "  FROM series\n"
+			. " ORDER BY id DESC\n"
+			. "  LIMIT 1";
 		if(!$result = $db->query($query)){
 			die('There was an error running the query [' . $db->error . ']');
 		}
@@ -342,11 +334,9 @@ EOT;
 		$set = implode(', ', $terms);
 
 		$id = $this->id();
-		$query = <<<EOT
-UPDATE series
-   SET $set
- WHERE id=$id
-EOT;
+		$query = "UPDATE series\n"
+			. "   SET $set\n"
+			. " WHERE id=$id";
 
 		return $db->query($query);
 	}
@@ -361,10 +351,8 @@ EOT;
 
 		// then remove the series itself
 		$id = $this->id();
-		$query = <<<EOT
-DELETE FROM series
-	WHERE id=$id
-EOT;
+		$query = "DELETE FROM series\n"
+			. " WHERE id=$id";
 
 		$db = ComicDB_DB::db();
 		return $db->query($query);

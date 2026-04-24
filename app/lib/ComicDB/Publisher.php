@@ -30,11 +30,9 @@ class ComicDB_Publisher extends ComicDB_Object {
     // interface methods
 
     function select() {
-	$query = <<<EOT
-  SELECT id, name
-    FROM publisher
-   WHERE id=$this->id
-EOT;
+	$query = "SELECT id, name\n"
+		. "  FROM publisher\n"
+		. " WHERE id=$this->id";
 
 	$db = ComicDB_DB::db();
 	if (! $result = $db->query($query)) {
@@ -52,21 +50,17 @@ EOT;
 	$id = $this->id();
 	$db = ComicDB_DB::db();
 	$name = $db->real_escape_string($this->name());
-	$query = <<<EOT
-  UPDATE publisher
-     SET name='$name'
-   WHERE id=$id
-EOT;
+	$query = "UPDATE publisher\n"
+		. "   SET name='$name'\n"
+		. " WHERE id=$id";
 
 	return $db->query($query);
     }
 
     function delete() {
 	$id = $this->id();
-	$query = <<<EOT
-  DELETE FROM publisher
-   WHERE id=$id
-EOT;
+	$query = "DELETE FROM publisher\n"
+		. " WHERE id=$id";
 
 	$db = ComicDB_DB::db();
 	return $db->query($query);
@@ -75,21 +69,17 @@ EOT;
     function insert() {
 	$db = ComicDB_DB::db();
 	$name = $db->real_escape_string($this->name());
-	$query = <<<EOT
-  INSERT INTO publisher
-       VALUES (NULL, '$name')
-EOT;
+	$query = "INSERT INTO publisher\n"
+		. "     VALUES (NULL, '$name')";
 
 	if (! $db->query($query)) {
 	    die('There was an error running the query [' . $db->error . ']');
 	}
 
-	$query = <<<EOT
-  SELECT id
-    FROM publisher
-ORDER BY id DESC
-   LIMIT 1
-EOT;
+	$query = "SELECT id\n"
+		. "  FROM publisher\n"
+		. " ORDER BY id DESC\n"
+		. "  LIMIT 1";
 	if (! $result = $db->query($query)) {
 	    die('There was an error running the query [' . $db->error . ']');
 	}

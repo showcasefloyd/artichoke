@@ -25,13 +25,11 @@ class ComicDB_Serieses {
 			return $series;
 		}
 
-		$query = <<<EOT
-		SELECT id, title, name, publisher, type, default_price, first_issue,
-			final_issue, subscribed, comments
-		FROM series
-		WHERE title=$this->titleId
-		ORDER BY name ASC
-EOT;
+		$query = "SELECT id, title, name, publisher, type, default_price, first_issue,\n"
+			. "       final_issue, subscribed, comments\n"
+			. "  FROM series\n"
+			. " WHERE title=$this->titleId\n"
+			. " ORDER BY name ASC";
 
 		$db = ComicDB_DB::db();
 
@@ -81,10 +79,8 @@ EOT;
 		}
 
 		// then remove all series
-		$query = <<<EOT
-DELETE FROM series
-	WHERE title=$this->titleId
-EOT;
+		$query = "DELETE FROM series\n"
+			. " WHERE title=$this->titleId";
 
 		$db = ComicDB_DB::db();
 		return $db->query($query);

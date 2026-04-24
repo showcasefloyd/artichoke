@@ -55,10 +55,8 @@ class ComicDB_Title extends ComicDB_Object
     public function insert()
     {
         $name  = $this->name();
-        $query = <<<EOT
-			INSERT INTO titles
-		     VALUES (NULL, '$name')
-EOT;
+        $query = "INSERT INTO titles\n"
+            . "     VALUES (NULL, '$name')";
 
         $db = ComicDB_DB::db();
         if (! $db->query($query)) {
@@ -66,12 +64,10 @@ EOT;
         }
 
         // is there a better portable way of retrieving the id?
-        $query = <<<EOT
-			  SELECT id
-		    FROM titles
-			ORDER BY id DESC
-			  LIMIT 1
-EOT;
+        $query = "SELECT id\n"
+            . "  FROM titles\n"
+            . " ORDER BY id DESC\n"
+            . "  LIMIT 1";
 
         if (! $result = $db->query($query)) {
             die('There was an error running the query [' . $db->error . ']');
@@ -87,11 +83,9 @@ EOT;
     {
         $id    = $this->id();
         $name  = $this->name();
-        $query = <<<EOT
-				UPDATE titles
-				SET name='$name'
-				WHERE id=$id
-EOT;
+        $query = "UPDATE titles\n"
+            . "   SET name='$name'\n"
+            . " WHERE id=$id";
 
         $db = ComicDB_DB::db();
         return $db->query($query);
@@ -108,10 +102,8 @@ EOT;
 
         // then remove the title itself
         $id    = $this->id();
-        $query = <<<EOT
-				DELETE FROM titles
-			    WHERE id=$id
-EOT;
+        $query = "DELETE FROM titles\n"
+            . " WHERE id=$id";
 
         $db = ComicDB_DB::db();
         return $db->query($query);

@@ -22,11 +22,9 @@ class ComicDB_SeriesTypes {
 	    return $series_types;
 	}
 
-	$query = <<<EOT
-  SELECT id, name
-    FROM series_type
-ORDER BY name ASC
-EOT;
+	$query = "SELECT id, name\n"
+		. "  FROM series_type\n"
+		. " ORDER BY name ASC";
 
 	$db = ComicDB_DB::db();
 	if(!$result = $db->query($query)){

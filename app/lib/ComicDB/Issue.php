@@ -196,14 +196,12 @@ class ComicDB_Issue extends ComicDB_Object {
 	function select() {
 		$id = $this->id();
 
-		$query = <<<EOT
-  SELECT id, series, number, sort, printrun, quantity,
-		 UNIX_TIMESTAMP(cover_date), location, type, status, bkcondition,
-		 cover_price, purchase_price, UNIX_TIMESTAMP(purchase_date),
-		 guide_value, guide, issue_value, comments
-	FROM issues
-   WHERE id=$id
-EOT;
+		$query = "SELECT id, series, number, sort, printrun, quantity,\n"
+			. "       UNIX_TIMESTAMP(cover_date), location, type, status, bkcondition,\n"
+			. "       cover_price, purchase_price, UNIX_TIMESTAMP(purchase_date),\n"
+			. "       guide_value, guide, issue_value, comments\n"
+			. "  FROM issues\n"
+			. " WHERE id=$id";
 
 		$db = ComicDB_DB::db();
 
@@ -340,12 +338,10 @@ EOT;
 		}
 
 		// is there a better portable way of retrieving the id?
-		$query = <<<EOT
-  SELECT id
-	FROM issues
-ORDER BY id DESC
-   LIMIT 1
-EOT;
+		$query = "SELECT id\n"
+			. "  FROM issues\n"
+			. " ORDER BY id DESC\n"
+			. "  LIMIT 1";
 		//$id = $db->getOne($query);
 		//$id = $db->insert_id;
 		if(!$result = $db->query($query)){
@@ -487,11 +483,9 @@ EOT;
 		$set = implode(', ', $terms);
 
 		$id = $this->id();
-		$query = <<<EOT
-UPDATE issues
-   SET $set
- WHERE id=$id
-EOT;
+		$query = "UPDATE issues\n"
+			. "   SET $set\n"
+			. " WHERE id=$id";
 
 		$db = ComicDB_DB::db();
 		return $db->query($query);
@@ -500,10 +494,8 @@ EOT;
 	function delete() {
 		$id = $this->id();
 
-		$query = <<<EOT
-DELETE FROM issues
-	  WHERE id=$id
-EOT;
+		$query = "DELETE FROM issues\n"
+			. " WHERE id=$id";
 
 		$db = ComicDB_DB::db();
 		return $db->query($query);

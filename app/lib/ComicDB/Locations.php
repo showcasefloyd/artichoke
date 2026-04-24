@@ -22,11 +22,9 @@ class ComicDB_Locations {
 	    return $locations;
 	}
 
-	$query = <<<EOT
-  SELECT id, name
-    FROM location
-ORDER BY name ASC
-EOT;
+	$query = "SELECT id, name\n"
+		. "  FROM location\n"
+		. " ORDER BY name ASC";
 
 	$db = ComicDB_DB::db();
 	if(!$result = $db->query($query)){
