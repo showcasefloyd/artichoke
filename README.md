@@ -1,13 +1,8 @@
 # Artichoke ComicBook Catalog
 
-
-
-
 ## Docker Development (Recommended)
 
 This repository now includes a Docker Compose setup that runs:
-
-
 
 * MySQL on port `3307`
 * Adminer on port `8100`
@@ -103,13 +98,6 @@ PHP Package manager).
 
 * Development uses Webpack + webpack-dev-server (`npm run dev-client`) and the backend Node/PHP bridge (`npm run dev-server`).
 
-## Update: May 30, 2019
-
-This branch is way ahead of the Master branch and at this point `DOES NOT REQUIRE GULP`. It is using Webpack and Webpack-Dev-Server. Webpack is basically running an Express Server which then calls out api.php script.
-
-Webpack also handles bundling of SASS and JavaScript files.
-
-__Note__ `src` is where Angular modules are before compiling
 
 ## Development Workflow
 
@@ -126,28 +114,6 @@ The stack uses **webpack 5** with a React + TypeScript frontend. Source files li
 
 `nodemon` watches `app/index.js` and restarts the Express server on changes automatically.
 
-## Updates: To Do April 2026
-- Convert home page into Miller Columns
-
-
-## Update: July 2017
-
-`npm run dev-client` and then `npm run wp`
-
-## Update: June 2017
-
-Webpack-Dev-Server working. To run use NPM scripts.
-
-`npm run dev-client` and `npm run dev-server`
-
-## Update: May 2017
-
-The project now requires Webpack to compile the JavaScript. All configurations can be found in the `webpack.config.js`in the project's root.
-
-### Bugs
-~~1. Delete issue, delete the entire series~~ (fixed)
-~~2. When updating a Comic issue condition does not stay~~ (fixed)
-
 ## Requirements
 1. A user can browse all titles, series and issues in a collection
 2. A user can see meta data about the any issue
@@ -155,12 +121,26 @@ The project now requires Webpack to compile the JavaScript. All configurations c
 4. An admin can add and remove titles, series and issue
 5. An admin needs to be authenticated
 
-## Upgrades
-1. Refactor old SQL - remove EOF lines
-2. Implement new Grid Class
-3. Add autoload function spl_autoloaf
-4. Add photos
-5. Add multiple issues at once
-
 ### Dependencies
 **Node, NPM, Webpack 5, TypeScript, React, Bootstrap 5, SASS, Express, PHP (ComicDB)**
+
+### Updates: To Do April 2026
+Convert home page into Miller Columns
+
+### Update: July 2017
+`npm run dev-client` and then `npm run wp`
+
+### Update: June 2017
+Webpack-Dev-Server working. To run use NPM scripts.
+
+`npm run dev-client` and `npm run dev-server`
+
+### Update: May 2017
+The project now requires Webpack to compile the JavaScript. All configurations can be found in the `webpack.config.js`in the project's root.
+
+#### Future Product Roadmap
+
+Data visualizations. Big picture - To show the depth and breath of a Title and all it's series as well has how many issues and story lines a series connects. How cross over series are connected and how series fall into different eras of publishing. Ages (Golden, Silver, Bronze) and launces (New 52, Marvel Knights)
+
+1) Being able to showing entire series as a data grid own copies highlighted and uncollected books show as grayed out.
+2) Show multiple grids connected across volumes (Daredevil Vol 1, Daredevil Vol 2, Daredevil Vol 2). How renumbering of each volume and legacy numbers work

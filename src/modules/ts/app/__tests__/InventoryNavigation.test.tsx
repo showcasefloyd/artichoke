@@ -11,7 +11,7 @@ const publishers: Publisher[] = [
 ];
 
 const series: SeriesListItem[] = [
-    { id: 10, name: 'Batman Vol. 1', publisher: 'DC', titleId: 100, titleName: 'Batman' },
+    { id: 10, name: 'Batman Vol. 1', volume: 1, startYear: 1940, publisher: 'DC', titleId: 100, titleName: 'Batman' },
 ];
 
 const issues: IssueListItem[] = [

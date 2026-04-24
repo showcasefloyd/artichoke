@@ -69,6 +69,8 @@ const InventoryNavigation: React.FC<InventoryNavigationProps> = ({
                                 onClick={() => onSeriesClick(book.id)}
                             >
                                 {book.name}
+                                {book.volume > 0 ? ` Vol. ${book.volume}` : ''}
+                                {book.startYear > 0 ? ` (${book.startYear})` : ''}
                             </button>
                         </li>
                     ))}

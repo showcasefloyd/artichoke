@@ -38,6 +38,8 @@ export interface SeriesListItem {
     id: number;
     titleId: number;
     name: string;
+    volume: number;
+    startYear: number;
     publisher: string;
     titleName: string;
 }
@@ -106,6 +108,7 @@ const App: React.FC = () => {
         setIssue(null);
         setError('');
         setLoadingSeries(true);
+        
         fetch(`/series?publisherId=${publisherId}`)
             .then(res => { if (!res.ok) throw new Error(`Failed to load series (${res.status})`); return res.json(); })
             .then(data => {
