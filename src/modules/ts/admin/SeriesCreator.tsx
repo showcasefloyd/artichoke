@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { Publisher } from '../app/App';
 
 interface Props {
     titleId: number;
@@ -9,7 +10,27 @@ interface Props {
 const SeriesCreator: React.FC<Props> = ({ titleId, onCreated, onCancel }) => {
     const [name, setName] = useState('');
     const [publisher, setPublisher] = useState('');
+    const [publishers, setPublishers] = useState<Publisher[]>([]);
+    const [loadingPublishers, setLoadingPublishers] = useState(true);
     const [error, setError] = useState('');
+
+    useEffect(() => {
+        setLoadingPublishers(true);
+        fetch('/publishers')
+            .then(res => { if (!res.ok) throw new Error(`Failed to load publishers (${res.status})`); return res.json(); })
+            .then(data => {
+                const list = data.publishers ?? [];
+                setPublishers(list);
+                if (!publisher && list.length > 0) {
+                    setPublisher(list[0].name);
+                }
+                setLoadingPublishers(false);
+            })
+            .catch(e => {
+                setError(String(e.message ?? e));
+                setLoadingPublishers(false);
+            });
+    }, []);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -47,17 +68,23 @@ const SeriesCreator: React.FC<Props> = ({ titleId, onCreated, onCancel }) => {
                     <label className="form-label" htmlFor="inputPublisher">
                         Publisher <span className="mandatory-field-marker">*</span>
                     </label>
-                    <input
-                        type="text"
-                        className="form-control"
-                        id="inputPublisher"
-                        value={publisher}
-                        placeholder="Publisher name"
-                        onChange={e => setPublisher(e.target.value)}
-                    />
+                    {loadingPublishers ? (
+                        <p className="form-text">Loading publishers&hellip;</p>
+                    ) : (
+                        <select
+                            className="form-select"
+                            id="inputPublisher"
+                            value={publisher}
+                            onChange={e => setPublisher(e.target.value)}
+                        >
+                            {publishers.map(p => (
+                                <option key={p.id} value={p.name}>{p.name}</option>
+                            ))}
+                        </select>
+                    )}
                 </div>
                 <div className="mb-3">
-                    <button type="submit" className="btn btn-primary me-2">Save</button>
+                    <button type="submit" className="btn btn-primary me-2" disabled={loadingPublishers || publishers.length === 0}>Save</button>
                     <button type="button" className="btn btn-secondary" onClick={onCancel}>Cancel</button>
                 </div>
             </form>

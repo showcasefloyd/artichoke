@@ -28,6 +28,7 @@ export interface IssueGridItem {
 export interface Publisher {
     id: number;
     name: string;
+    title_count?: number;
 }
 
 export interface IssueDetail {

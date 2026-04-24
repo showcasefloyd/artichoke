@@ -210,6 +210,33 @@ app.get('/publisher/:id', function (req, res) {
    });
 });
 
+app.post('/publisher', function (req, res) {
+   console.log('CREATE PUBLISHER', req.body);
+   execPhp(__dirname + '/api.php', function (error, php, data) {
+      php.createpublisher(JSON.stringify(req.body), function (err, result) {
+         sendPhpResult(res, err, result);
+      });
+   });
+});
+
+app.put('/publisher/:id', function (req, res) {
+   console.log('UPDATE PUBLISHER', req.params.id, req.body);
+   execPhp(__dirname + '/api.php', function (error, php, data) {
+      php.updatepublisher(req.params.id, JSON.stringify(req.body), function (err, result) {
+         sendPhpResult(res, err, result);
+      });
+   });
+});
+
+app.delete('/publisher/:id', function (req, res) {
+   console.log('DELETE PUBLISHER', req.params.id);
+   execPhp(__dirname + '/api.php', function (error, php, data) {
+      php.deletepublisher(req.params.id, function (err, result) {
+         sendPhpResult(res, err, result);
+      });
+   });
+});
+
 // Error-handling middleware — must have 4 params so Express treats it as error handler
 app.use(function (err, req, res, next) { // eslint-disable-line no-unused-vars
    console.error('Unhandled error:', err);

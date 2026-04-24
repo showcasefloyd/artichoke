@@ -5,6 +5,7 @@ include_once "ComicDB/Title.php";
 include_once "ComicDB/Serieses.php";
 include_once "ComicDB/Issue.php";
 include_once "ComicDB/Publisher.php";
+include_once "ComicDB/Publishers.php";
 
 // Grab all Titles (used by GET /list)
 function grabList()
@@ -404,6 +405,84 @@ EOT;
         ];
     }
     return json_encode(['publishers' => $list]);
+}
+
+function createPublisher($dataJson)
+{
+    $data = json_decode($dataJson, true);
+    if (!isset($data['name']) || trim($data['name']) === '') {
+        return json_encode(['error' => 'Publisher name is required.']);
+    }
+    $publisher = new ComicDB_Publisher();
+    $publisher->name($data['name']);
+    $publisher->save();
+    return json_encode(['id' => $publisher->id(), 'name' => $publisher->name()]);
+}
+
+function updatePublisher($id, $dataJson)
+{
+    $data = json_decode($dataJson, true);
+    $publisher = new ComicDB_Publisher();
+    $publisher->id($id);
+    $publisher->restore();
+    $oldName = $publisher->name();
+
+    if (isset($data['name'])) {
+        if (trim($data['name']) === '') {
+            return json_encode(['error' => 'Publisher name is required.']);
+        }
+        $publisher->name($data['name']);
+    }
+
+    $publisher->save();
+
+    $newName = $publisher->name();
+    if ($oldName !== $newName) {
+        $db = ComicDB_DB::db();
+        $oldNameEscaped = $db->real_escape_string($oldName);
+        $newNameEscaped = $db->real_escape_string($newName);
+        $query = <<<EOT
+          UPDATE series
+             SET publisher = '$newNameEscaped'
+           WHERE publisher = '$oldNameEscaped'
+EOT;
+        if (! $db->query($query)) {
+            die('There was an error running the query [' . $db->error . ']');
+        }
+    }
+
+    return json_encode(['id' => $publisher->id(), 'name' => $publisher->name()]);
+}
+
+function deletePublisher($id)
+{
+    $publisher = new ComicDB_Publisher();
+    $publisher->id($id);
+    $publisher->restore();
+    $name = $publisher->name();
+    $db = ComicDB_DB::db();
+    $nameEscaped = $db->real_escape_string($name);
+    $countQuery = <<<EOT
+      SELECT COUNT(*) AS series_count
+        FROM series
+       WHERE publisher = '$nameEscaped'
+EOT;
+    $countResult = $db->query($countQuery);
+    if (! $countResult) {
+        die('There was an error running the query [' . $db->error . ']');
+    }
+    $row = $countResult->fetch_assoc();
+    $seriesCount = (int) $row['series_count'];
+    if ($seriesCount > 0) {
+        return json_encode([
+            'deleted' => false,
+            'id' => (int) $id,
+            'error' => "Cannot delete publisher in use by $seriesCount series.",
+        ]);
+    }
+
+    $publisher->remove();
+    return json_encode(['deleted' => true, 'id' => (int) $id]);
 }
 
 function grabIssues($id)

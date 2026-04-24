@@ -18,7 +18,7 @@ const TitleList: React.FC<Props> = ({ titles, openTitleId, seriesData, onTitleCl
                     {title.name}
                 </a>
 
-                {seriesData && seriesData.series_id === title.id && (
+                {seriesData && openTitleId === title.id && seriesData.series_id === title.id && (
                     <ul id="series-list">
                         {seriesData.series.map(book => (
                             <li key={book.id}>

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Publisher } from '../app/App';
 
 interface SeriesData {
     id: number;
@@ -21,6 +22,8 @@ interface Props {
 
 const SeriesEditor: React.FC<Props> = ({ seriesId, onSaved, onDeleted }) => {
     const [data, setData] = useState<SeriesData | null>(null);
+    const [publishers, setPublishers] = useState<Publisher[]>([]);
+    const [loadingPublishers, setLoadingPublishers] = useState(true);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
@@ -32,7 +35,15 @@ const SeriesEditor: React.FC<Props> = ({ seriesId, onSaved, onDeleted }) => {
             .then(d => { setData(d); setLoading(false); });
     }, [seriesId]);
 
-    const set = (field: keyof SeriesData) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    useEffect(() => {
+        setLoadingPublishers(true);
+        fetch('/publishers')
+            .then(res => { if (!res.ok) throw new Error(`Failed to load publishers (${res.status})`); return res.json(); })
+            .then(data => { setPublishers(data.publishers ?? []); setLoadingPublishers(false); })
+            .catch(e => { setError(String(e.message ?? e)); setLoadingPublishers(false); });
+    }, []);
+
+    const set = (field: keyof SeriesData) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
         setData(prev => prev ? { ...prev, [field]: e.target.value } : prev);
 
     const handleSave = (e: React.FormEvent) => {
@@ -78,7 +89,28 @@ const SeriesEditor: React.FC<Props> = ({ seriesId, onSaved, onDeleted }) => {
             {success && <div className="alert alert-success">{success}</div>}
             <form onSubmit={handleSave}>
                 {field('Name *', 'name')}
-                {field('Publisher', 'publisher')}
+                <div className="mb-3">
+                    <label className="form-label" htmlFor="input-publisher">
+                        Publisher <span className="mandatory-field-marker">*</span>
+                    </label>
+                    {loadingPublishers ? (
+                        <p className="form-text">Loading publishers&hellip;</p>
+                    ) : (
+                        <select
+                            className="form-select"
+                            id="input-publisher"
+                            value={data.publisher ?? ''}
+                            onChange={set('publisher')}
+                        >
+                            {publishers.find(p => p.name === data.publisher) ? null : (
+                                <option value={data.publisher}>{data.publisher}</option>
+                            )}
+                            {publishers.map(p => (
+                                <option key={p.id} value={p.name}>{p.name}</option>
+                            ))}
+                        </select>
+                    )}
+                </div>
                 {field('Type', 'type')}
                 {field('Default Price', 'defaultPrice')}
                 {field('First Issue', 'firstIssue')}
@@ -86,7 +118,7 @@ const SeriesEditor: React.FC<Props> = ({ seriesId, onSaved, onDeleted }) => {
                 {field('Subscribed', 'subscribed')}
                 {field('Comments', 'comments')}
                 <div className="mb-3">
-                    <button type="submit" className="btn btn-primary me-2">Save</button>
+                    <button type="submit" className="btn btn-primary me-2" disabled={loadingPublishers || publishers.length === 0}>Save</button>
                     <button type="button" className="btn btn-danger" onClick={handleDelete}>Delete</button>
                 </div>
             </form>

@@ -5,6 +5,9 @@ import SeriesEditor from './SeriesEditor';
 import SeriesCreator from './SeriesCreator';
 import IssueEditor from './IssueEditor';
 import IssueCreator from './IssueCreator';
+import PublisherEditor from './PublisherEditor';
+import PublisherCreator from './PublisherCreator';
+import { Publisher } from '../app/App';
 
 export interface Title {
     id: number;
@@ -24,6 +27,8 @@ interface IssueItem {
 
 export type AdminView =
     | { mode: 'idle' }
+    | { mode: 'editPublisher'; publisherId: number }
+    | { mode: 'newPublisher' }
     | { mode: 'editTitle'; titleId: number }
     | { mode: 'newTitle' }
     | { mode: 'editSeries'; seriesId: number }
@@ -32,6 +37,8 @@ export type AdminView =
     | { mode: 'newIssue'; seriesId: number };
 
 const AdminApp: React.FC = () => {
+    const [publishers, setPublishers] = useState<Publisher[]>([]);
+    const [selectedPublisherId, setSelectedPublisherId] = useState<number | null>(null);
     const [titles, setTitles] = useState<Title[]>([]);
     const [selectedTitleId, setSelectedTitleId] = useState<number | null>(null);
     const [seriesList, setSeriesList] = useState<SeriesBook[]>([]);
@@ -44,6 +51,13 @@ const AdminApp: React.FC = () => {
         fetch('/list')
             .then(res => { if (!res.ok) throw new Error(`Failed to load titles (${res.status})`); return res.json(); })
             .then(data => setTitles(data.titles ?? []))
+            .catch(e => setError(String(e.message ?? e)));
+    };
+
+    const loadPublishers = () => {
+        fetch('/publishers')
+            .then(res => { if (!res.ok) throw new Error(`Failed to load publishers (${res.status})`); return res.json(); })
+            .then(data => setPublishers(data.publishers ?? []))
             .catch(e => setError(String(e.message ?? e)));
     };
 
@@ -61,7 +75,10 @@ const AdminApp: React.FC = () => {
             .catch(e => setError(String(e.message ?? e)));
     };
 
-    useEffect(() => { loadTitles(); }, []);
+    useEffect(() => {
+        loadPublishers();
+        loadTitles();
+    }, []);
 
     const handleTitleSelect = (id: number | null) => {
         setSelectedTitleId(id);
@@ -84,6 +101,13 @@ const AdminApp: React.FC = () => {
         setView({ mode: 'editTitle', titleId: selectedTitleId });
     };
 
+    const handleLoadPublisher = () => {
+        if (!selectedPublisherId) { setError('Please select a publisher first'); return; }
+        setError('');
+        loadPublishers();
+        setView({ mode: 'editPublisher', publisherId: selectedPublisherId });
+    };
+
     return (
         <div className="container-fluid">
             <div className="row">
@@ -96,6 +120,25 @@ const AdminApp: React.FC = () => {
             <div className="row">
                 <div className="col-3" id="left-menu">
                     <div id="admin-titles-list">
+                        <div className="mb-3">
+                            <select
+                                className="form-select"
+                                value={selectedPublisherId ?? ''}
+                                onChange={e => setSelectedPublisherId(Number(e.target.value) || null)}
+                            >
+                                <option value="">-- select a publisher --</option>
+                                {publishers.map(p => (
+                                    <option key={p.id} value={p.id}>{p.name}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div className="mb-3">
+                            <h6>Publishers</h6>
+                            <button className="btn btn-primary btn-sm me-1" onClick={handleLoadPublisher}>Load Publisher</button>
+                            <button className="btn btn-warning btn-sm" onClick={() => { setError(''); setView({ mode: 'newPublisher' }); }}>New Publisher</button>
+                        </div>
+
                         <div className="mb-3">
                             <select
                                 className="form-select"
@@ -152,6 +195,19 @@ const AdminApp: React.FC = () => {
                 <div className="col-9">
                     {error && <div className="alert alert-warning">{error}</div>}
                     {view.mode === 'idle' && <p className="text-muted">Select a title from the list to get started.</p>}
+                    {view.mode === 'editPublisher' && (
+                        <PublisherEditor
+                            publisherId={view.publisherId}
+                            onSaved={() => loadPublishers()}
+                            onDeleted={() => { loadPublishers(); setSelectedPublisherId(null); setView({ mode: 'idle' }); }}
+                        />
+                    )}
+                    {view.mode === 'newPublisher' && (
+                        <PublisherCreator
+                            onCreated={(id) => { loadPublishers(); setSelectedPublisherId(id); setView({ mode: 'editPublisher', publisherId: id }); }}
+                            onCancel={() => setView({ mode: 'idle' })}
+                        />
+                    )}
                     {view.mode === 'editTitle' && (
                         <TitleEditor
                             titleId={view.titleId}
