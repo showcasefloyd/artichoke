@@ -40,8 +40,16 @@ interface SeriesItem {
     id: number;
     titleId: number;
     name: string;
+    volume?: number;
+    startYear?: number;
     publisher: string;
     titleName: string;
+}
+
+function formatSeriesLabel(series: SeriesItem): string {
+    const volumePart = series.volume ? ` (Vol ${series.volume})` : '';
+    const yearPart = series.startYear ? ` ${series.startYear}` : '';
+    return `${series.titleName}: ${series.name}${volumePart}${yearPart}`;
 }
 
 const AdminApp: React.FC = () => {
@@ -247,7 +255,7 @@ const AdminApp: React.FC = () => {
                                 >
                                     <option value="">-- select a series --</option>
                                     {seriesList.map(s => (
-                                        <option key={s.id} value={s.id}>{s.titleName} / {s.name}</option>
+                                        <option key={s.id} value={s.id}>{formatSeriesLabel(s)}</option>
                                     ))}
                                 </select>
                                 <button className="btn btn-primary btn-sm me-1" onClick={handleLoadSeries}>Load Series</button>
@@ -288,7 +296,7 @@ const AdminApp: React.FC = () => {
                                 >
                                     <option value="">-- all series --</option>
                                     {issueSeriesList.map(s => (
-                                        <option key={s.id} value={s.id}>{s.titleName} / {s.name}</option>
+                                        <option key={s.id} value={s.id}>{formatSeriesLabel(s)}</option>
                                     ))}
                                 </select>
                                 <select

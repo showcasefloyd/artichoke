@@ -25,8 +25,8 @@ class ComicDB_Serieses {
 			return $series;
 		}
 
-		$query = "SELECT id, title, name, publisher, type, default_price, first_issue,\n"
-			. "       final_issue, subscribed, comments\n"
+		$query = "SELECT id, title, name, volume, start_year, publisher, type,\n"
+			. "       default_price, first_issue, final_issue, subscribed, comments\n"
 			. "  FROM series\n"
 			. " WHERE title=$this->titleId\n"
 			. " ORDER BY name ASC";
@@ -49,6 +49,8 @@ class ComicDB_Serieses {
 			$s->id($row['id']);
 			$s->titleId($row['title']);
 			$s->name($row['name']);
+			$s->volume($row['volume']);
+			$s->startYear($row['start_year']);
 			$s->publisher($row['publisher']);
 			$s->type($row['type']);
 			$s->defaultPrice($row['default_price']);

@@ -75,6 +75,8 @@ function grabSeriesList($dataJson)
       SELECT s.id,
              s.title AS title_id,
              s.name,
+             s.volume,
+             s.start_year,
              s.publisher,
              t.name AS title_name
         FROM series s
@@ -94,6 +96,8 @@ EOT;
             'id' => (int) $row['id'],
             'titleId' => (int) $row['title_id'],
             'name' => $row['name'],
+            'volume' => isset($row['volume']) ? (int) $row['volume'] : 0,
+            'startYear' => isset($row['start_year']) ? (int) $row['start_year'] : 0,
             'publisher' => $row['publisher'],
             'titleName' => $row['title_name'] ?? '',
         ];
@@ -110,6 +114,8 @@ function grabSerieById($id)
         'id'           => $series->id(),
         'titleId'      => $series->titleId(),
         'name'         => $series->name(),
+        'volume'       => $series->volume(),
+        'startYear'    => $series->startYear(),
         'publisher'    => $series->publisher(),
         'type'         => $series->type(),
         'defaultPrice' => $series->defaultPrice(),
@@ -155,6 +161,12 @@ function createSeries($dataJson)
     $series = new ComicDB_Series();
     $series->titleId($data['titleId']);
     $series->name($data['name']);
+    if (isset($data['volume'])) {
+        $series->volume($data['volume']);
+    }
+    if (isset($data['startYear'])) {
+        $series->startYear($data['startYear']);
+    }
     $series->publisher($data['publisher']);
     if (isset($data['type'])) {
         $series->type($data['type']);
@@ -200,6 +212,14 @@ function updateSeries($id, $dataJson)
 
     if (isset($data['publisher'])) {
         $series->publisher($data['publisher']);
+    }
+
+    if (isset($data['volume'])) {
+        $series->volume($data['volume']);
+    }
+
+    if (isset($data['startYear'])) {
+        $series->startYear($data['startYear']);
     }
 
     if (isset($data['type'])) {

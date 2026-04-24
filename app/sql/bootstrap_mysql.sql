@@ -15,6 +15,8 @@ CREATE TABLE IF NOT EXISTS series (
   id INT UNSIGNED NOT NULL AUTO_INCREMENT,
   title INT UNSIGNED NOT NULL,
   name VARCHAR(255) NOT NULL,
+  volume INT NULL,
+  start_year INT NULL,
   publisher VARCHAR(255) NOT NULL,
   type VARCHAR(100) NULL,
   default_price DECIMAL(10,2) NULL,
@@ -122,8 +124,8 @@ INSERT IGNORE INTO series_type (name) VALUES
 INSERT IGNORE INTO titles (id, name) VALUES
   (1, 'Sample Title');
 
-INSERT IGNORE INTO series (id, title, name, publisher, type, default_price, first_issue, final_issue, subscribed, comments) VALUES
-  (1, 1, 'Sample Series', 'Marvel', 'Ongoing', 3.99, 1, 12, 0, 'Bootstrap sample series');
+INSERT IGNORE INTO series (id, title, name, volume, start_year, publisher, type, default_price, first_issue, final_issue, subscribed, comments) VALUES
+  (1, 1, 'Sample Series', 1, 2024, 'Marvel', 'Ongoing', 3.99, 1, 12, 0, 'Bootstrap sample series');
 
 INSERT IGNORE INTO issues (
   id, series, number, sort, printrun, quantity, cover_date, location, type, status,

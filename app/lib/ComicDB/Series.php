@@ -9,6 +9,8 @@ class ComicDB_Series extends ComicDB_Object {
 
 	public $titleId;
 	public $name;
+	public $volume;
+	public $startYear;
 	public $publisher;
 	public $type;
 	public $defaultPrice;
@@ -54,6 +56,22 @@ class ComicDB_Series extends ComicDB_Object {
 			$this->isDirty = 1;
 		}
 		return $this->publisher;
+	}
+
+	public function volume($volume=null) {
+		if (isset($volume)) {
+			$this->volume = $volume;
+			$this->isDirty = 1;
+		}
+		return $this->volume;
+	}
+
+	public function startYear($startYear=null) {
+		if (isset($startYear)) {
+			$this->startYear = $startYear;
+			$this->isDirty = 1;
+		}
+		return $this->startYear;
 	}
 
 	public function type($type=null) {
@@ -169,25 +187,28 @@ class ComicDB_Series extends ComicDB_Object {
 	// interface methods
 
 	protected function select() {
-		$query = "SELECT *\n"
+		$query = "SELECT id, title, name, volume, start_year, publisher, type,\n"
+			. "       default_price, first_issue, final_issue, subscribed, comments\n"
 			. "  FROM series\n"
 			. " WHERE id=$this->id";
 		$db = ComicDB_DB::db();
 		if(!$result = $db->query($query)){
 		    die('There was an error running the query [' . $db->error . ']');
 		}
-		$row = $result->fetch_array();
+		$row = $result->fetch_assoc();
 
-		$this->id($row[0]);
-		$this->titleId($row[1]);
-		$this->name($row[2]);
-		$this->publisher($row[3]);
-		$this->type($row[4]);
-		$this->defaultPrice($row[5]);
-		$this->firstIssue($row[6]);
-		$this->finalIssue($row[7]);
-		$this->subscribed($row[8]);
-		$this->comments($row[9]);
+		$this->id($row['id']);
+		$this->titleId($row['title']);
+		$this->name($row['name']);
+		$this->volume($row['volume']);
+		$this->startYear($row['start_year']);
+		$this->publisher($row['publisher']);
+		$this->type($row['type']);
+		$this->defaultPrice($row['default_price']);
+		$this->firstIssue($row['first_issue']);
+		$this->finalIssue($row['final_issue']);
+		$this->subscribed($row['subscribed']);
+		$this->comments($row['comments']);
 
 		return;
 	}
@@ -202,6 +223,16 @@ class ComicDB_Series extends ComicDB_Object {
 		$data['publisher'] = "'" . $this->publisher() . "'";
 
 		// optional fields
+		$volume = $this->volume();
+		if ($volume != "" && $volume > 0) {
+			$data['volume'] = (int) $volume;
+		}
+
+		$startYear = $this->startYear();
+		if ($startYear != "" && $startYear > 0) {
+			$data['start_year'] = (int) $startYear;
+		}
+
 		$type = $this->normalizeSeriesTypeName($this->type(), $db);
 		if ($type !== null) {
 			$typeEscaped = $db->real_escape_string($type);
@@ -282,6 +313,20 @@ class ComicDB_Series extends ComicDB_Object {
 		$publisher = $this->publisher();
 		if ($publisher) {
 			$data['publisher'] = "'$publisher'";
+		}
+
+		$volume = $this->volume();
+		if ($volume != "" && $volume > 0) {
+			$data['volume'] = (int) $volume;
+		} else {
+			$data['volume'] = "NULL";
+		}
+
+		$startYear = $this->startYear();
+		if ($startYear != "" && $startYear > 0) {
+			$data['start_year'] = (int) $startYear;
+		} else {
+			$data['start_year'] = "NULL";
 		}
 
 		$type = $this->normalizeSeriesTypeName($this->type(), $db);

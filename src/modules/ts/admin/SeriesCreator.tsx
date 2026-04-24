@@ -9,6 +9,8 @@ interface Props {
 
 const SeriesCreator: React.FC<Props> = ({ titleId, onCreated, onCancel }) => {
     const [name, setName] = useState('');
+    const [volume, setVolume] = useState('');
+    const [startYear, setStartYear] = useState('');
     const [publisher, setPublisher] = useState('');
     const [seriesType, setSeriesType] = useState('');
     const [publishers, setPublishers] = useState<Publisher[]>([]);
@@ -60,7 +62,7 @@ const SeriesCreator: React.FC<Props> = ({ titleId, onCreated, onCancel }) => {
         fetch('/series', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ titleId, name, publisher, type: seriesType }),
+            body: JSON.stringify({ titleId, name, volume, startYear, publisher, type: seriesType }),
         })
             .then(res => res.json())
             .then(data => { setError(''); onCreated(data.id, data.name); });
@@ -103,6 +105,31 @@ const SeriesCreator: React.FC<Props> = ({ titleId, onCreated, onCancel }) => {
                             ))}
                         </select>
                     )}
+                </div>
+                <div className="mb-3">
+                    <label className="form-label" htmlFor="inputSeriesVolume">Volume</label>
+                    <input
+                        type="number"
+                        className="form-control"
+                        id="inputSeriesVolume"
+                        value={volume}
+                        min={1}
+                        placeholder="1"
+                        onChange={e => setVolume(e.target.value)}
+                    />
+                </div>
+                <div className="mb-3">
+                    <label className="form-label" htmlFor="inputSeriesStartYear">Start Year</label>
+                    <input
+                        type="number"
+                        className="form-control"
+                        id="inputSeriesStartYear"
+                        value={startYear}
+                        min={1900}
+                        max={2999}
+                        placeholder="1986"
+                        onChange={e => setStartYear(e.target.value)}
+                    />
                 </div>
                 <div className="mb-3">
                     <label className="form-label" htmlFor="inputSeriesType">Series Type</label>

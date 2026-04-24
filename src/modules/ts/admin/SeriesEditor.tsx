@@ -5,6 +5,8 @@ interface SeriesData {
     id: number;
     titleId: number;
     name: string;
+    volume: string;
+    startYear: string;
     publisher: string;
     type: string;
     defaultPrice: string;
@@ -99,6 +101,8 @@ const SeriesEditor: React.FC<Props> = ({ seriesId, onSaved, onDeleted }) => {
             {success && <div className="alert alert-success">{success}</div>}
             <form onSubmit={handleSave}>
                 {field('Name *', 'name')}
+                {field('Volume', 'volume')}
+                {field('Start Year', 'startYear')}
                 <div className="mb-3">
                     <label className="form-label" htmlFor="input-publisher">
                         Publisher <span className="mandatory-field-marker">*</span>
