@@ -1,8 +1,16 @@
 .inventory-column {
     flex:1;
     border-right: 1px solid #ccc;
+    border-bottom: 1px solid #ccc;
     padding: 1rem;
-    overflow-y: auto;
+    height: 300px;
+    display: flex;
+    flex-direction: column;
+
+    .inventory-overflow {
+        height: 100%;
+        overflow-y: auto;
+    }
 }
 
 .inventory-item-btn {
@@ -15,4 +23,5 @@
 
 .inventory-item-btn.active {
     font-weight: 700;
+    background-color: antiquewhite;
 }

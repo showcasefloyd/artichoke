@@ -38,7 +38,7 @@ const InventoryNavigation: React.FC<InventoryNavigationProps> = ({
             {loadingPublishers ? (
                 <p>Loading...</p>
             ) : (
-                <ul className="list-group">
+                <ul className="list-group inventory-overflow">
                     {publishers.map(publisher => (
                         <li key={publisher.id} className="list-group-item">
                             <button
@@ -60,7 +60,7 @@ const InventoryNavigation: React.FC<InventoryNavigationProps> = ({
             {loadingSeries ? (
                 <p>Loading...</p>
             ) : (
-                <ul className="list-group">
+                <ul className="list-group inventory-overflow">
                     {series.map(book => (
                         <li key={book.id} className="list-group-item">
                             <button
@@ -83,7 +83,7 @@ const InventoryNavigation: React.FC<InventoryNavigationProps> = ({
             {loadingIssues ? (
                 <p>Loading...</p>
             ) : (
-                <ul className="list-group">
+                <ul className="list-group inventory-overflow">
                     {issues.map(issue => (
                         <li key={issue.id} className="list-group-item">
                             <button
