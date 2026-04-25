@@ -136,6 +136,15 @@ app.get('/series/:id', function (req, res) {
    });
 });
 
+app.get('/series/:id/grid', function (req, res) {
+   console.log('GET SERIES GRID', req.params.id);
+   execPhp(__dirname + '/api.php', function (error, php, data) {
+      php.grabseriesgrid(req.params.id, function (err, result) {
+         sendPhpResult(res, err, result);
+      });
+   });
+});
+
 app.post('/series', function (req, res) {
    console.log('CREATE SERIES', req.body);
    execPhp(__dirname + '/api.php', function (error, php, data) {

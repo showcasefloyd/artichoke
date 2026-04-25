@@ -32,6 +32,23 @@ beforeEach(() => {
             } as Response);
         }
 
+        if (url === '/series/10/grid') {
+            return Promise.resolve({
+                ok: true,
+                json: () => Promise.resolve({
+                    seriesId: 10,
+                    firstIssue: 1,
+                    finalIssue: 3,
+                    gridable: true,
+                    issues: [
+                        { issue: '1', own: 'Y', issue_id: 1000 },
+                        { issue: '2', own: 'N', issue_id: 0 },
+                        { issue: '3', own: 'N', issue_id: 0 },
+                    ],
+                }),
+            } as Response);
+        }
+
         if (url.startsWith('/issues?')) {
             return Promise.resolve({
                 ok: true,
@@ -70,5 +87,12 @@ describe('App', () => {
         await waitFor(() => expect(fetch).toHaveBeenCalledWith('/series?publisherId=1&minimumIssueCount=1'));
         expect(await screen.findByRole('button', { name: 'Batman' })).toBeInTheDocument();
         expect(screen.queryByRole('button', { name: 'No Issues Series' })).not.toBeInTheDocument();
+
+        await userEvent.click(screen.getByRole('button', { name: 'Batman' }));
+
+        await waitFor(() => expect(fetch).toHaveBeenCalledWith('/series/10/grid'));
+        expect(await screen.findByText('ComicBook Series Grid')).toBeInTheDocument();
+        expect(screen.getByRole('link', { name: '1' })).toBeInTheDocument();
+        expect(screen.queryByRole('link', { name: '2' })).not.toBeInTheDocument();
     });
 });

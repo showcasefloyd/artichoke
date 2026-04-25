@@ -19,6 +19,7 @@ describe('IssueGrid', () => {
 
     it('renders all issue numbers', () => {
         render(<IssueGrid issues={issues} onIssueClick={jest.fn()} />);
+        expect(screen.getByText('ComicBook Series Grid')).toBeInTheDocument();
         expect(screen.getByText('1')).toBeInTheDocument();
         expect(screen.getByText('2')).toBeInTheDocument();
         expect(screen.getByText('3')).toBeInTheDocument();
@@ -42,5 +43,11 @@ describe('IssueGrid', () => {
         render(<IssueGrid issues={issues} onIssueClick={onIssueClick} />);
         await userEvent.click(screen.getByText('1'));
         expect(onIssueClick).toHaveBeenCalledWith(1);
+    });
+
+    it('does not render a link when an owned issue is missing issue_id', () => {
+        render(<IssueGrid issues={[{ issue: '4', own: 'Y' }]} onIssueClick={jest.fn()} />);
+        expect(screen.queryByRole('link', { name: '4' })).not.toBeInTheDocument();
+        expect(screen.getByText('4').tagName).toBe('SPAN');
     });
 });

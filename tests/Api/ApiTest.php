@@ -176,4 +176,88 @@ class ApiTest extends ComicDBTestCase
         $this->assertTrue($result['deleted']);
         $this->assertEquals($created['id'], $result['id']);
     }
+
+    public function testGrabSeriesGridReturnsOwnedAndMissingSlots(): void
+    {
+        $title  = json_decode(createTitle('Grid Parent Title'), true);
+        $series = json_decode(createSeries(json_encode([
+            'titleId' => $title['id'],
+            'name' => 'Grid Parent Series',
+            'publisher' => 'Grid Pub',
+            'firstIssue' => 1,
+            'finalIssue' => 4,
+        ])), true);
+
+        $ownedOne = json_decode(createIssue(json_encode([
+            'seriesId' => $series['id'],
+            'number' => '1',
+        ])), true);
+        createIssue(json_encode([
+            'seriesId' => $series['id'],
+            'number' => '2A',
+        ]));
+        json_decode(createIssue(json_encode([
+            'seriesId' => $series['id'],
+            'number' => '3',
+        ])), true);
+
+        $json = grabSeriesGrid($series['id']);
+        $result = json_decode($json, true);
+
+        $this->assertTrue($result['gridable']);
+        $this->assertSame(1, $result['firstIssue']);
+        $this->assertSame(4, $result['finalIssue']);
+        $this->assertCount(4, $result['issues']);
+        $this->assertSame(1, $result['issues'][0]['issue']);
+        $this->assertSame('Y', $result['issues'][0]['own']);
+        $this->assertEquals($ownedOne['id'], $result['issues'][0]['issue_id']);
+        $this->assertSame('N', $result['issues'][1]['own']);
+        $this->assertSame(0, $result['issues'][1]['issue_id']);
+    }
+
+    public function testGrabSeriesGridReturnsNotGridableForSingleIssueRun(): void
+    {
+        $title  = json_decode(createTitle('Single Grid Title'), true);
+        $series = json_decode(createSeries(json_encode([
+            'titleId' => $title['id'],
+            'name' => 'Single Grid Series',
+            'publisher' => 'Grid Pub',
+            'firstIssue' => 1,
+            'finalIssue' => 1,
+        ])), true);
+
+        $json = grabSeriesGrid($series['id']);
+        $result = json_decode($json, true);
+
+        $this->assertFalse($result['gridable']);
+        $this->assertSame([], $result['issues']);
+    }
+
+    public function testGrabSeriesGridSupportsIssueZeroStart(): void
+    {
+        $title  = json_decode(createTitle('Zero Start Title'), true);
+        $series = json_decode(createSeries(json_encode([
+            'titleId' => $title['id'],
+            'name' => 'Zero Start Series',
+            'publisher' => 'Grid Pub',
+            'firstIssue' => 0,
+            'finalIssue' => 2,
+        ])), true);
+
+        $ownedZero = json_decode(createIssue(json_encode([
+            'seriesId' => $series['id'],
+            'number' => '0',
+        ])), true);
+
+        $json = grabSeriesGrid($series['id']);
+        $result = json_decode($json, true);
+
+        $this->assertTrue($result['gridable']);
+        $this->assertSame(0, $result['firstIssue']);
+        $this->assertSame(2, $result['finalIssue']);
+        $this->assertCount(3, $result['issues']);
+        $this->assertSame(0, $result['issues'][0]['issue']);
+        $this->assertSame('Y', $result['issues'][0]['own']);
+        $this->assertEquals($ownedZero['id'], $result['issues'][0]['issue_id']);
+    }
 }

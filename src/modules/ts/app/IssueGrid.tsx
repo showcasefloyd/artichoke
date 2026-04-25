@@ -11,19 +11,23 @@ const IssueGrid: React.FC<Props> = ({ issues, onIssueClick }) => {
 
     return (
         <>
-            <h3>Issues</h3>
+            <h3>ComicBook Series Grid</h3>
             <div id="comicgrid" className="clearfix">
-                {issues.map(issue => (
-                    <div
-                        key={issue.issue_id}
-                        className={`issue-box${issue.own === 'Y' ? ' own' : ''}`}
-                    >
-                        {issue.own === 'Y'
-                            ? <a href="#" onClick={e => { e.preventDefault(); onIssueClick(issue.issue_id); }}>{issue.issue}</a>
-                            : <span>{issue.issue}</span>
-                        }
-                    </div>
-                ))}
+                {issues.map((issue, index) => {
+                    const issueId = issue.issue_id;
+                    const isOwnedIssue = issue.own === 'Y' && typeof issueId === 'number' && issueId > 0;
+                    return (
+                        <div
+                            key={`${issue.issue}-${index}`}
+                            className={`issue-box${issue.own === 'Y' ? ' own' : ''}`}
+                        >
+                            {isOwnedIssue
+                                ? <a href="#" onClick={e => { e.preventDefault(); onIssueClick(issueId); }}>{issue.issue}</a>
+                                : <span>{issue.issue}</span>
+                            }
+                        </div>
+                    );
+                })}
             </div>
         </>
     );

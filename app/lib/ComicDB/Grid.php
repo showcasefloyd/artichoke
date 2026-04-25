@@ -68,28 +68,51 @@ class Grid {
 	   the issues matching any I have */
 	private function calculateSeriesRun($issues)
 	{
+		$firstIssue = $this->parseIssueNumber($this->firstIssue);
+		$lastIssue = $this->parseIssueNumber($this->lastIssue);
+		if ($firstIssue === null || $lastIssue === null || $lastIssue <= $firstIssue) {
+			return array();
+		}
+
 		$collection = array();
-		for($i = $this->firstIssue; $i <= $this->lastIssue; $i++){
+		$issueIndex = array();
+		for($i = $firstIssue; $i <= $lastIssue; $i++){
 			$book = array();
 			$book['issue'] = $i;
 			$book['own'] = "N";
+			$book['issue_id'] = 0;
 			$collection[] = $book;
+			$issueIndex[$i] = count($collection) - 1;
 		}
 
 		// each book we have
 		foreach($issues as $k => $v){
-			// Search array for the value
-			foreach($collection as  $key  => $book){
-				if($book['issue'] == $v->number){
-					// Update the specific array
-					$collection[$key]['own'] = "Y";
-					$collection[$key]['issue_id'] =  $v->id;
-					break;
-				}
+			$issueNumber = $this->parseIssueNumber($v->number);
+			if ($issueNumber === null || !isset($issueIndex[$issueNumber])) {
+				continue;
 			}
+			$key = $issueIndex[$issueNumber];
+			$collection[$key]['own'] = "Y";
+			$collection[$key]['issue_id'] =  (int) $v->id;
 		}
 
 		return $collection;
+	}
+
+	private function parseIssueNumber($value)
+	{
+		if (!isset($value)) {
+			return null;
+		}
+		$normalized = trim((string) $value);
+		if ($normalized === '' || !ctype_digit($normalized)) {
+			return null;
+		}
+		$issueNumber = (int) $normalized;
+		if ($issueNumber < 0) {
+			return null;
+		}
+		return $issueNumber;
 	}
 
 	//	private function displayGridHeader()

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import IssueDetail from './IssueDetail';
+import IssueGrid from './IssueGrid';
 import InventoryNavigation from './InventoryNavigation';
 
 export interface Title {
@@ -20,7 +21,15 @@ export interface SeriesResponse {
 export interface IssueGridItem {
     issue: string;
     own: 'Y' | 'N';
-    issue_id: number;
+    issue_id?: number;
+}
+
+export interface SeriesGridResponse {
+    seriesId: number;
+    firstIssue: number | null;
+    finalIssue: number | null;
+    gridable: boolean;
+    issues: IssueGridItem[];
 }
 
 export interface Publisher {
@@ -76,6 +85,7 @@ const App: React.FC = () => {
     const [publishers, setPublishers] = useState<Publisher[]>([]);
     const [series, setSeries] = useState<SeriesListItem[]>([]);
     const [issues, setIssues] = useState<IssueListItem[]>([]);
+    const [seriesGrid, setSeriesGrid] = useState<SeriesGridResponse | null>(null);
     const [selectedPublisherId, setSelectedPublisherId] = useState<number | null>(null);
     const [selectedSeriesId, setSelectedSeriesId] = useState<number | null>(null);
     const [selectedIssueId, setSelectedIssueId] = useState<number | null>(null);
@@ -83,6 +93,7 @@ const App: React.FC = () => {
     const [loadingSeries, setLoadingSeries] = useState<boolean>(false);
     const [loadingIssues, setLoadingIssues] = useState<boolean>(false);
     const [loadingIssueDetail, setLoadingIssueDetail] = useState<boolean>(false);
+    const [loadingSeriesGrid, setLoadingSeriesGrid] = useState<boolean>(false);
     const [issue, setIssue] = useState<IssueDetail | null>(null);
     const [error, setError] = useState<string>('');
 
@@ -107,6 +118,7 @@ const App: React.FC = () => {
         setSelectedIssueId(null);
         setSeries([]);
         setIssues([]);
+        setSeriesGrid(null);
         setIssue(null);
         setError('');
         setLoadingSeries(true);
@@ -129,8 +141,11 @@ const App: React.FC = () => {
         setSelectedIssueId(null);
         setIssue(null);
         setIssues([]);
+        setSeriesGrid(null);
         setError('');
         setLoadingIssues(true);
+        setLoadingSeriesGrid(true);
+
         fetch(`/issues?seriesId=${seriesId}`)
             .then(res => { if (!res.ok) throw new Error(`Failed to load issues (${res.status})`); return res.json(); })
             .then(data => {
@@ -140,6 +155,17 @@ const App: React.FC = () => {
             .catch(e => {
                 setError(String(e.message ?? e));
                 setLoadingIssues(false);
+            });
+
+        fetch(`/series/${seriesId}/grid`)
+            .then(res => { if (!res.ok) throw new Error(`Failed to load series grid (${res.status})`); return res.json(); })
+            .then(data => {
+                setSeriesGrid(data);
+                setLoadingSeriesGrid(false);
+            })
+            .catch(e => {
+                setError(String(e.message ?? e));
+                setLoadingSeriesGrid(false);
             });
     };
 
@@ -196,8 +222,17 @@ const App: React.FC = () => {
             <div className="row">
                 <div className="col">
                     <div id="main-bottom">
+                        {selectedSeriesId && loadingSeriesGrid && (
+                            <p>Loading series grid...</p>
+                        )}
+                        {selectedSeriesId && !loadingSeriesGrid && seriesGrid && !seriesGrid.gridable && (
+                            <p>Series grid unavailable (requires at least 2 numbered issues).</p>
+                        )}
+                        {seriesGrid && seriesGrid.gridable && (
+                            <IssueGrid issues={seriesGrid.issues} onIssueClick={grabIssue} />
+                        )}
                         {selectedSeriesId && issues.length === 0 && !loadingIssues && (
-                            <p>No issues found for this series.</p>
+                            <p>No owned issues found for this series.</p>
                         )}
                         {selectedIssueId && loadingIssueDetail && (
                             <p>Loading issue detail...</p>

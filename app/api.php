@@ -631,21 +631,34 @@ EOT;
     return json_encode(['deleted' => true, 'id' => (int) $id]);
 }
 
-function grabIssues($id)
+function buildSeriesGridPayload($id)
 {
-    //$issuesArray = array();
     $series = new ComicDB_Series($id);
     $series->restore();
 
-    //New test of Grid of comic DB Grid
-    $grid     = new Grid($series);
-    $gridData = $grid->displayGrid();
+    $firstIssue = $series->firstIssue();
+    $finalIssue = $series->finalIssue();
+    $grid       = new Grid($series);
+    $gridData   = $grid->displayGrid();
 
-    // Return title object
-    $title  = $series->title();
-    $issues = $series->issues();
+    return [
+        'seriesId' => (int) $id,
+        'firstIssue' => is_numeric($firstIssue) ? (int) $firstIssue : null,
+        'finalIssue' => is_numeric($finalIssue) ? (int) $finalIssue : null,
+        'gridable' => count($gridData) > 0,
+        'issues' => $gridData,
+    ];
+}
 
-    return json_encode($gridData);
+function grabSeriesGrid($id)
+{
+    return json_encode(buildSeriesGridPayload($id));
+}
+
+function grabIssues($id)
+{
+    $payload = buildSeriesGridPayload($id);
+    return json_encode($payload['issues']);
 }
 
 function grabIssue($id)
