@@ -539,6 +539,143 @@ EOT;
     return json_encode(['publishers' => $list]);
 }
 
+function grabDashboard()
+{
+    $db = ComicDB_DB::db();
+
+    $totalsQuery = <<<EOT
+      SELECT (SELECT COUNT(*) FROM publisher) AS publishers,
+             (SELECT COUNT(*) FROM titles) AS titles,
+             (SELECT COUNT(*) FROM series) AS series,
+             (SELECT COUNT(*) FROM issues) AS issues_owned
+EOT;
+    $totalsResult = $db->query($totalsQuery);
+    if (! $totalsResult) {
+        die('There was an error running the query [' . $db->error . ']');
+    }
+    $totalsRow = $totalsResult->fetch_assoc();
+
+    $valuesQuery = <<<EOT
+      SELECT COALESCE(SUM(issue_value), 0) AS issue_value,
+             COALESCE(SUM(purchase_price), 0) AS purchase_price,
+             COALESCE(SUM(cover_price), 0) AS cover_price
+        FROM issues
+EOT;
+    $valuesResult = $db->query($valuesQuery);
+    if (! $valuesResult) {
+        die('There was an error running the query [' . $db->error . ']');
+    }
+    $valuesRow = $valuesResult->fetch_assoc();
+
+    $statusQuery = <<<EOT
+      SELECT status, COUNT(*) AS total
+        FROM issues
+    GROUP BY status
+EOT;
+    $statusResult = $db->query($statusQuery);
+    if (! $statusResult) {
+        die('There was an error running the query [' . $db->error . ']');
+    }
+    $statusCounts = [0 => 0, 1 => 0, 2 => 0];
+    while ($row = $statusResult->fetch_assoc()) {
+        $status = isset($row['status']) ? (int) $row['status'] : -1;
+        if (array_key_exists($status, $statusCounts)) {
+            $statusCounts[$status] = (int) $row['total'];
+        }
+    }
+    $statusBreakdown = [
+        ['status' => 'Collected', 'count' => $statusCounts[0]],
+        ['status' => 'For Sale', 'count' => $statusCounts[1]],
+        ['status' => 'Wish List', 'count' => $statusCounts[2]],
+    ];
+
+    $topPublishersQuery = <<<EOT
+      SELECT s.publisher AS name, COUNT(i.id) AS issue_count
+        FROM series s
+   LEFT JOIN issues i ON i.series = s.id
+    GROUP BY s.publisher
+    ORDER BY issue_count DESC, s.publisher ASC
+       LIMIT 5
+EOT;
+    $topPublishersResult = $db->query($topPublishersQuery);
+    if (! $topPublishersResult) {
+        die('There was an error running the query [' . $db->error . ']');
+    }
+    $topPublishers = [];
+    while ($row = $topPublishersResult->fetch_assoc()) {
+        $topPublishers[] = [
+            'name' => $row['name'] ?? 'Unknown',
+            'issueCount' => (int) $row['issue_count'],
+        ];
+    }
+
+    $topTitlesQuery = <<<EOT
+      SELECT t.name, COUNT(i.id) AS issue_count
+        FROM titles t
+   LEFT JOIN series s ON s.title = t.id
+   LEFT JOIN issues i ON i.series = s.id
+    GROUP BY t.id, t.name
+    ORDER BY issue_count DESC, t.name ASC
+       LIMIT 5
+EOT;
+    $topTitlesResult = $db->query($topTitlesQuery);
+    if (! $topTitlesResult) {
+        die('There was an error running the query [' . $db->error . ']');
+    }
+    $topTitles = [];
+    while ($row = $topTitlesResult->fetch_assoc()) {
+        $topTitles[] = [
+            'name' => $row['name'] ?? 'Unknown',
+            'issueCount' => (int) $row['issue_count'],
+        ];
+    }
+
+    $missingQuery = <<<EOT
+      SELECT COALESCE(SUM(GREATEST(expected_total - issue_count, 0)), 0) AS estimated_missing_issues,
+             COALESCE(SUM(CASE WHEN expected_total > issue_count THEN 1 ELSE 0 END), 0) AS series_with_gaps
+        FROM (
+              SELECT s.id,
+                     CASE
+                         WHEN s.first_issue IS NOT NULL
+                          AND s.final_issue IS NOT NULL
+                          AND s.final_issue >= s.first_issue
+                         THEN (s.final_issue - s.first_issue + 1)
+                         ELSE 0
+                     END AS expected_total,
+                     COUNT(i.id) AS issue_count
+                FROM series s
+           LEFT JOIN issues i ON i.series = s.id
+            GROUP BY s.id, s.first_issue, s.final_issue
+             ) expected
+EOT;
+    $missingResult = $db->query($missingQuery);
+    if (! $missingResult) {
+        die('There was an error running the query [' . $db->error . ']');
+    }
+    $missingRow = $missingResult->fetch_assoc();
+
+    return json_encode([
+        'totals' => [
+            'publishers' => (int) $totalsRow['publishers'],
+            'titles' => (int) $totalsRow['titles'],
+            'series' => (int) $totalsRow['series'],
+            'issuesOwned' => (int) $totalsRow['issues_owned'],
+        ],
+        'values' => [
+            'issueValue' => (float) $valuesRow['issue_value'],
+            'purchasePrice' => (float) $valuesRow['purchase_price'],
+            'coverPrice' => (float) $valuesRow['cover_price'],
+        ],
+        'statusBreakdown' => $statusBreakdown,
+        'topPublishers' => $topPublishers,
+        'topTitles' => $topTitles,
+        'missing' => [
+            'estimatedMissingIssues' => (int) $missingRow['estimated_missing_issues'],
+            'seriesWithGaps' => (int) $missingRow['series_with_gaps'],
+        ],
+    ]);
+}
+
 function grabSeriesTypes()
 {
     $typesList = new ComicDB_SeriesTypes();

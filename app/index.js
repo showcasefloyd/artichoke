@@ -228,6 +228,15 @@ app.get('/publishers', function (req, res) {
    });
 });
 
+app.get('/dashboard', function (req, res) {
+   console.log('GET DASHBOARD');
+   execPhp(__dirname + '/api.php', function (error, php, data) {
+      php.grabdashboard(function (err, result) {
+         sendPhpResult(res, err, result);
+      });
+   });
+});
+
 // Series Type
 app.get('/series-types', function (req, res) {
    console.log('GET SERIES TYPES');

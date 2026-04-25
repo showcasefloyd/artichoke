@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import IssueDetail from './IssueDetail';
 import IssueGrid from './IssueGrid';
 import InventoryNavigation from './InventoryNavigation';
+import CollectorDashboard from './CollectorDashboard';
 
 export interface Title {
     id: number;
@@ -81,6 +82,37 @@ export interface IssueDetail {
     comments: string;
 }
 
+export interface DashboardStatusItem {
+    status: string;
+    count: number;
+}
+
+export interface DashboardCountItem {
+    name: string;
+    issueCount: number;
+}
+
+export interface DashboardResponse {
+    totals: {
+        publishers: number;
+        titles: number;
+        series: number;
+        issuesOwned: number;
+    };
+    values: {
+        issueValue: number;
+        purchasePrice: number;
+        coverPrice: number;
+    };
+    statusBreakdown: DashboardStatusItem[];
+    topPublishers: DashboardCountItem[];
+    topTitles: DashboardCountItem[];
+    missing: {
+        estimatedMissingIssues: number;
+        seriesWithGaps: number;
+    };
+}
+
 const App: React.FC = () => {
     const [publishers, setPublishers] = useState<Publisher[]>([]);
     const [series, setSeries] = useState<SeriesListItem[]>([]);
@@ -95,6 +127,8 @@ const App: React.FC = () => {
     const [loadingIssueDetail, setLoadingIssueDetail] = useState<boolean>(false);
     const [loadingSeriesGrid, setLoadingSeriesGrid] = useState<boolean>(false);
     const [showGridModal, setShowGridModal] = useState<boolean>(false);
+    const [dashboard, setDashboard] = useState<DashboardResponse | null>(null);
+    const [loadingDashboard, setLoadingDashboard] = useState<boolean>(true);
     const [issue, setIssue] = useState<IssueDetail | null>(null);
     const [error, setError] = useState<string>('');
 
@@ -110,6 +144,18 @@ const App: React.FC = () => {
             .catch(e => {
                 setError(String(e.message ?? e));
                 setLoadingPublishers(false);
+            });
+
+        setLoadingDashboard(true);
+        fetch('/dashboard')
+            .then(res => { if (!res.ok) throw new Error(`Failed to load dashboard (${res.status})`); return res.json(); })
+            .then(data => {
+                setDashboard(data);
+                setLoadingDashboard(false);
+            })
+            .catch(e => {
+                setError(String(e.message ?? e));
+                setLoadingDashboard(false);
             });
     }, []);
 
@@ -204,6 +250,12 @@ const App: React.FC = () => {
                     </div>
                 </div>
             )}
+
+            <div className="row">
+                <div className="col">
+                    <CollectorDashboard data={dashboard} loading={loadingDashboard} />
+                </div>
+            </div>
 
             <div className="row">
                 <InventoryNavigation

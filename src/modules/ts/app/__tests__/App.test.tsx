@@ -20,6 +20,24 @@ beforeEach(() => {
             } as Response);
         }
 
+        if (url === '/dashboard') {
+            return Promise.resolve({
+                ok: true,
+                json: () => Promise.resolve({
+                    totals: { publishers: 2, titles: 3, series: 4, issuesOwned: 5 },
+                    values: { issueValue: 150.5, purchasePrice: 120.25, coverPrice: 95.0 },
+                    statusBreakdown: [
+                        { status: 'Collected', count: 4 },
+                        { status: 'For Sale', count: 1 },
+                        { status: 'Wish List', count: 0 },
+                    ],
+                    topPublishers: [{ name: 'DC', issueCount: 4 }],
+                    topTitles: [{ name: 'Batman', issueCount: 3 }],
+                    missing: { estimatedMissingIssues: 8, seriesWithGaps: 2 },
+                }),
+            } as Response);
+        }
+
         if (url.startsWith('/series?publisherId=1')) {
             return Promise.resolve({
                 ok: true,
@@ -78,6 +96,10 @@ afterEach(() => {
 describe('App', () => {
     it('shows only publishers with titles and only series with issues', async () => {
         render(<App />);
+
+        await waitFor(() => expect(fetch).toHaveBeenCalledWith('/dashboard'));
+        expect(await screen.findByRole('heading', { name: 'Collector Dashboard' })).toBeInTheDocument();
+        expect(screen.getByText('Estimated Missing Issues:')).toBeInTheDocument();
 
         await waitFor(() => expect(screen.getByRole('button', { name: 'DC (2)' })).toBeInTheDocument());
         expect(screen.queryByRole('button', { name: 'Empty Pub (0)' })).not.toBeInTheDocument();
