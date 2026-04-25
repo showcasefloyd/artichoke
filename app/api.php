@@ -267,72 +267,41 @@ function deleteSeries($id)
     return json_encode(['deleted' => true, 'id' => (int) $id]);
 }
 
+function applyIssueData(ComicDB_Issue $issue, array $data)
+{
+    $fieldMap = [
+        'seriesId' => 'seriesId',
+        'number' => 'number',
+        'sort' => 'sort',
+        'printRun' => 'printRun',
+        'quantity' => 'quantity',
+        'coverDate' => 'coverDate',
+        'location' => 'location',
+        'type' => 'type',
+        'status' => 'status',
+        'condition' => 'condition',
+        'coverPrice' => 'coverPrice',
+        'purchasePrice' => 'purchasePrice',
+        'purchaseDate' => 'purchaseDate',
+        'guideValue' => 'guideValue',
+        'guide' => 'guide',
+        'issueValue' => 'issueValue',
+        'comments' => 'comments',
+    ];
+
+    foreach ($fieldMap as $key => $method) {
+        if (isset($data[$key])) {
+            $issue->$method($data[$key]);
+        }
+    }
+}
+
 // Create an Issue
 function createIssue($dataJson)
 {
     $data  = json_decode($dataJson, true);
     $issue = new ComicDB_Issue();
-    $issue->seriesId($data['seriesId']);
-    $issue->number($data['number']);
-    if (isset($data['sort'])) {
-        $issue->sort($data['sort']);
-    }
-
-    if (isset($data['printRun'])) {
-        $issue->printRun($data['printRun']);
-    }
-
-    if (isset($data['quantity'])) {
-        $issue->quantity($data['quantity']);
-    }
-
-    if (isset($data['coverDate'])) {
-        $issue->coverDate($data['coverDate']);
-    }
-
-    if (isset($data['location'])) {
-        $issue->location($data['location']);
-    }
-
-    if (isset($data['type'])) {
-        $issue->type($data['type']);
-    }
-
-    if (isset($data['status'])) {
-        $issue->status($data['status']);
-    }
-
-    if (isset($data['condition'])) {
-        $issue->condition($data['condition']);
-    }
-
-    if (isset($data['coverPrice'])) {
-        $issue->coverPrice($data['coverPrice']);
-    }
-
-    if (isset($data['purchasePrice'])) {
-        $issue->purchasePrice($data['purchasePrice']);
-    }
-
-    if (isset($data['purchaseDate'])) {
-        $issue->purchaseDate($data['purchaseDate']);
-    }
-
-    if (isset($data['guideValue'])) {
-        $issue->guideValue($data['guideValue']);
-    }
-
-    if (isset($data['guide'])) {
-        $issue->guide($data['guide']);
-    }
-
-    if (isset($data['issueValue'])) {
-        $issue->issueValue($data['issueValue']);
-    }
-
-    if (isset($data['comments'])) {
-        $issue->comments($data['comments']);
-    }
+    applyIssueData($issue, $data);
 
     $issue->save();
     return json_encode(['id' => $issue->id(), 'number' => $issue->number()]);
@@ -344,73 +313,7 @@ function updateIssue($id, $dataJson)
     $data  = json_decode($dataJson, true);
     $issue = new ComicDB_Issue($id);
     $issue->restore();
-    if (isset($data['seriesId'])) {
-        $issue->seriesId($data['seriesId']);
-    }
-
-    if (isset($data['number'])) {
-        $issue->number($data['number']);
-    }
-
-    if (isset($data['sort'])) {
-        $issue->sort($data['sort']);
-    }
-
-    if (isset($data['printRun'])) {
-        $issue->printRun($data['printRun']);
-    }
-
-    if (isset($data['quantity'])) {
-        $issue->quantity($data['quantity']);
-    }
-
-    if (isset($data['coverDate'])) {
-        $issue->coverDate($data['coverDate']);
-    }
-
-    if (isset($data['location'])) {
-        $issue->location($data['location']);
-    }
-
-    if (isset($data['type'])) {
-        $issue->type($data['type']);
-    }
-
-    if (isset($data['status'])) {
-        $issue->status($data['status']);
-    }
-
-    if (isset($data['condition'])) {
-        $issue->condition($data['condition']);
-    }
-
-    if (isset($data['coverPrice'])) {
-        $issue->coverPrice($data['coverPrice']);
-    }
-
-    if (isset($data['purchasePrice'])) {
-        $issue->purchasePrice($data['purchasePrice']);
-    }
-
-    if (isset($data['purchaseDate'])) {
-        $issue->purchaseDate($data['purchaseDate']);
-    }
-
-    if (isset($data['guideValue'])) {
-        $issue->guideValue($data['guideValue']);
-    }
-
-    if (isset($data['guide'])) {
-        $issue->guide($data['guide']);
-    }
-
-    if (isset($data['issueValue'])) {
-        $issue->issueValue($data['issueValue']);
-    }
-
-    if (isset($data['comments'])) {
-        $issue->comments($data['comments']);
-    }
+    applyIssueData($issue, $data);
 
     $issue->save();
     return json_encode(['id' => $issue->id(), 'number' => $issue->number()]);
