@@ -183,7 +183,7 @@ const AdminApp: React.FC = () => {
             <div className="row">
                 <div className="col-sm-12">
                     <h3 className="page-header">[ Artichoke, Comic Book Database &gt;&gt; Administration Panel ]</h3>
-                    <div className="page-header-menu"><a href="/">Catalog</a></div>
+                    <div className="page-header-menu"><a className="btn btn-warning" href="/">Catalog</a></div>
                 </div>
             </div>
 

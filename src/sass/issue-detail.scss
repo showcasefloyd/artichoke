@@ -2,39 +2,52 @@
     display: flex;
     flex-direction: column;
 
-    #comicgrid {
-        //border: 1px solid #ccc;
-        margin-top: 4px;
-        display: flex;
-        flex-flow: row wrap;
-
-    }
-
-    .issue-box {
-        flex-basis: 10%;
-        border: 1px solid #ccc;
-        border-left: 1px solid #ccc;
-        border-bottom: 1px solid #ccc;
-        float: left;
-        color: #ccc;
-        padding: 10px;
-    }
-
-    .own {
-        background-color: #8cd8ff;
-    }
-
-
-
-    .series-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 1rem;
-        height: 50vh;
-        overflow-y: auto;
+    .series-grid-controls {
+        margin: 0 1rem;
     }
 
     .issue-detail {
         margin: 1rem;
+    }
+}
+
+.issue-grid-modal {
+    .modal-body {
+        padding: 0.75rem;
+    }
+
+    .issue-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(44px, 1fr));
+        gap: 0.35rem;
+    }
+
+    .issue-box {
+        border: 1px solid #d1d5db;
+        border-radius: 0.25rem;
+        text-align: center;
+        font-size: 0.75rem;
+        line-height: 1;
+        padding: 0.35rem 0.15rem;
+        color: #6c757d;
+        background: #f8f9fa;
+        min-height: 1.75rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        &.own {
+            background-color: #d9f2ff;
+            border-color: #8ecff1;
+            color: #0d3d56;
+            font-weight: 600;
+        }
+
+        a,
+        span {
+            color: inherit;
+            font-size: 0.75rem;
+            line-height: 1;
+        }
     }
 }

@@ -91,6 +91,8 @@ describe('App', () => {
         await userEvent.click(screen.getByRole('button', { name: 'Batman' }));
 
         await waitFor(() => expect(fetch).toHaveBeenCalledWith('/series/10/grid'));
+        expect(await screen.findByRole('button', { name: 'See Grid' })).toBeInTheDocument();
+        await userEvent.click(screen.getByRole('button', { name: 'See Grid' }));
         expect(await screen.findByText('ComicBook Series Grid')).toBeInTheDocument();
         expect(screen.getByRole('link', { name: '1' })).toBeInTheDocument();
         expect(screen.queryByRole('link', { name: '2' })).not.toBeInTheDocument();

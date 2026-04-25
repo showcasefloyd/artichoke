@@ -1,4 +1,12 @@
 import React, { useEffect, useState } from 'react';
+import {
+    dateInputToTimestamp,
+    monthInputToTimestamp,
+    timestampToDateInput,
+    timestampToMonthInput,
+    toDayMonthYearLabel,
+    toMonthYearLabel,
+} from './issueDates';
 
 interface IssueData {
     id: number;
@@ -7,14 +15,14 @@ interface IssueData {
     sort: string;
     printRun: string;
     quantity: string;
-    coverDate: string;
+    coverDate: string | number;
     location: string;
     type: string;
     status: string;
     condition: string;
     coverPrice: string;
     purchasePrice: string;
-    purchaseDate: string;
+    purchaseDate: string | number;
     guideValue: string;
     guide: string;
     issueValue: string;
@@ -42,6 +50,16 @@ const IssueEditor: React.FC<Props> = ({ issueId, onSaved, onDeleted }) => {
 
     const set = (field: keyof IssueData) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
         setData(prev => prev ? { ...prev, [field]: e.target.value } : prev);
+
+    const setPurchaseDate = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const timestamp = dateInputToTimestamp(e.target.value);
+        setData(prev => prev ? { ...prev, purchaseDate: timestamp ? String(timestamp) : '' } : prev);
+    };
+
+    const setCoverDate = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const timestamp = monthInputToTimestamp(e.target.value);
+        setData(prev => prev ? { ...prev, coverDate: timestamp ? String(timestamp) : '' } : prev);
+    };
 
     const handleSave = (e: React.FormEvent) => {
         e.preventDefault();
@@ -89,7 +107,17 @@ const IssueEditor: React.FC<Props> = ({ issueId, onSaved, onDeleted }) => {
                 {field('Sort Order', 'sort')}
                 {field('Print Run', 'printRun')}
                 {field('Quantity', 'quantity')}
-                {field('Cover Date (timestamp)', 'coverDate')}
+                <div className="mb-3">
+                    <label className="form-label" htmlFor="input-cover-date">Cover Date (Month / Year)</label>
+                    <input
+                        type="month"
+                        className="form-control"
+                        id="input-cover-date"
+                        value={timestampToMonthInput(data.coverDate)}
+                        onChange={setCoverDate}
+                    />
+                    <small className="text-muted">Display format: {toMonthYearLabel(data.coverDate)}</small>
+                </div>
                 {field('Location', 'location')}
                 {field('Type', 'type')}
                 <div className="mb-3">
@@ -103,7 +131,17 @@ const IssueEditor: React.FC<Props> = ({ issueId, onSaved, onDeleted }) => {
                 {field('Condition', 'condition')}
                 {field('Cover Price', 'coverPrice')}
                 {field('Purchase Price', 'purchasePrice')}
-                {field('Purchase Date (timestamp)', 'purchaseDate')}
+                <div className="mb-3">
+                    <label className="form-label" htmlFor="input-purchase-date">Purchase Date (Day / Month / Year)</label>
+                    <input
+                        type="date"
+                        className="form-control"
+                        id="input-purchase-date"
+                        value={timestampToDateInput(data.purchaseDate)}
+                        onChange={setPurchaseDate}
+                    />
+                    <small className="text-muted">Display format: {toDayMonthYearLabel(data.purchaseDate)}</small>
+                </div>
                 {field('Guide Value', 'guideValue')}
                 {field('Price Guide', 'guide')}
                 {field('Issue Value', 'issueValue')}

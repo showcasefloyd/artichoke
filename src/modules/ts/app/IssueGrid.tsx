@@ -4,14 +4,15 @@ import { IssueGridItem } from './App';
 interface Props {
     issues: IssueGridItem[];
     onIssueClick: (id: number) => void;
+    showTitle?: boolean;
 }
 
-const IssueGrid: React.FC<Props> = ({ issues, onIssueClick }) => {
+const IssueGrid: React.FC<Props> = ({ issues, onIssueClick, showTitle = true }) => {
     if (issues.length === 0) return null;
 
     return (
         <>
-            <h3>ComicBook Series Grid</h3>
+            {showTitle && <h3>ComicBook Series Grid</h3>}
             <div className="issue-grid">
                 {issues.map((issue, index) => {
                     const issueId = issue.issue_id;

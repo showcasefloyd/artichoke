@@ -94,6 +94,7 @@ const App: React.FC = () => {
     const [loadingIssues, setLoadingIssues] = useState<boolean>(false);
     const [loadingIssueDetail, setLoadingIssueDetail] = useState<boolean>(false);
     const [loadingSeriesGrid, setLoadingSeriesGrid] = useState<boolean>(false);
+    const [showGridModal, setShowGridModal] = useState<boolean>(false);
     const [issue, setIssue] = useState<IssueDetail | null>(null);
     const [error, setError] = useState<string>('');
 
@@ -119,6 +120,7 @@ const App: React.FC = () => {
         setSeries([]);
         setIssues([]);
         setSeriesGrid(null);
+        setShowGridModal(false);
         setIssue(null);
         setError('');
         setLoadingSeries(true);
@@ -142,6 +144,7 @@ const App: React.FC = () => {
         setIssue(null);
         setIssues([]);
         setSeriesGrid(null);
+        setShowGridModal(false);
         setError('');
         setLoadingIssues(true);
         setLoadingSeriesGrid(true);
@@ -190,7 +193,7 @@ const App: React.FC = () => {
             <div className="row">
                 <div className="col">
                     <h3 className="page-header">[ Artichoke, Comic Book Database &gt;&gt; Catalogue ]</h3>
-                    <div className="page-header-menu"><a href="/admin">Admin</a></div>
+                    <div className="page-header-menu"><a className="btn btn-warning" href="/admin">Admin</a></div>
                 </div>
             </div>
 
@@ -222,19 +225,18 @@ const App: React.FC = () => {
             <div className="row">
                 <div className="col">
                     <div id="main-bottom">
-                        <div className="series-grid">
-
-                            {selectedSeriesId && loadingSeriesGrid && (
-                                <p>Loading series grid...</p>
-                            )}
-                            {selectedSeriesId && !loadingSeriesGrid && seriesGrid && !seriesGrid.gridable && (
-                                <p>Series grid unavailable (requires at least 2 numbered issues).</p>
-                            )}
-                            {seriesGrid && seriesGrid.gridable && (
-                                <IssueGrid issues={seriesGrid.issues} onIssueClick={grabIssue} />
+                        <div className="series-grid-controls">
+                            {selectedSeriesId && (
+                                <button
+                                    type="button"
+                                    className="btn btn-primary"
+                                    onClick={() => setShowGridModal(true)}
+                                >
+                                    See Grid
+                                </button>
                             )}
                             {selectedSeriesId && issues.length === 0 && !loadingIssues && (
-                                <p>No owned issues found for this series.</p>
+                                <p className="mb-0 mt-2">No owned issues found for this series.</p>
                             )}
                         </div>
                         <div className="issue-detail">
@@ -247,6 +249,43 @@ const App: React.FC = () => {
                     </div>
                 </div>
             </div>
+            {showGridModal && selectedSeriesId && (
+                <>
+                    <div
+                        className="modal fade show d-block issue-grid-modal"
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="series-grid-modal-title"
+                        onClick={() => setShowGridModal(false)}
+                    >
+                        <div className="modal-dialog modal-lg modal-dialog-scrollable" onClick={e => e.stopPropagation()}>
+                            <div className="modal-content">
+                                <div className="modal-header">
+                                    <h5 className="modal-title" id="series-grid-modal-title">ComicBook Series Grid</h5>
+                                    <button
+                                        type="button"
+                                        className="btn-close"
+                                        aria-label="Close"
+                                        onClick={() => setShowGridModal(false)}
+                                    />
+                                </div>
+                                <div className="modal-body">
+                                    {loadingSeriesGrid && (
+                                        <p>Loading series grid...</p>
+                                    )}
+                                    {!loadingSeriesGrid && seriesGrid && !seriesGrid.gridable && (
+                                        <p>Series grid unavailable (requires at least 2 numbered issues).</p>
+                                    )}
+                                    {seriesGrid && seriesGrid.gridable && (
+                                        <IssueGrid issues={seriesGrid.issues} onIssueClick={grabIssue} showTitle={false} />
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="modal-backdrop fade show" />
+                </>
+            )}
         </div>
     );
 };
