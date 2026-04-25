@@ -42,6 +42,7 @@ export interface SeriesListItem {
     startYear: number;
     publisher: string;
     titleName: string;
+    issueCount?: number;
 }
 
 export interface IssueListItem {
@@ -90,7 +91,8 @@ const App: React.FC = () => {
         fetch('/publishers')
             .then(res => { if (!res.ok) throw new Error(`Failed to load publishers (${res.status})`); return res.json(); })
             .then(data => {
-                setPublishers(data.publishers ?? []);
+                const publisherList: Publisher[] = data.publishers ?? [];
+                setPublishers(publisherList.filter(publisher => (publisher.title_count ?? 0) > 0));
                 setLoadingPublishers(false);
             })
             .catch(e => {
@@ -109,10 +111,11 @@ const App: React.FC = () => {
         setError('');
         setLoadingSeries(true);
         
-        fetch(`/series?publisherId=${publisherId}`)
+        fetch(`/series?publisherId=${publisherId}&minimumIssueCount=1`)
             .then(res => { if (!res.ok) throw new Error(`Failed to load series (${res.status})`); return res.json(); })
             .then(data => {
-                setSeries(data.series ?? []);
+                const seriesList: SeriesListItem[] = data.series ?? [];
+                setSeries(seriesList.filter(book => (book.issueCount ?? 0) > 0));
                 setLoadingSeries(false);
             })
             .catch(e => {

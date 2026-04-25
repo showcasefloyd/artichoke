@@ -65,7 +65,7 @@ describe('InventoryNavigation', () => {
         );
 
         await userEvent.click(screen.getByRole('button', { name: 'DC (2)' }));
-        await userEvent.click(screen.getByRole('button', { name: 'Batman Vol. 1' }));
+        await userEvent.click(screen.getByRole('button', { name: /Batman Vol\. 1/ }));
         await userEvent.click(screen.getByRole('button', { name: '#1' }));
 
         expect(onPublisherClick).toHaveBeenCalledWith(1);

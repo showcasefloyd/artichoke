@@ -71,6 +71,9 @@ function grabSeriesList($dataJson)
     if (count($whereClauses) > 0) {
         $where = 'WHERE ' . implode(' AND ', $whereClauses);
     }
+    $minimumIssueCount = isset($filters['minimumIssueCount']) ? (int) $filters['minimumIssueCount'] : 0;
+    $having = "HAVING COUNT(i.id) >= $minimumIssueCount";
+
     $query = <<<EOT
       SELECT s.id,
              s.title AS title_id,
@@ -78,12 +81,16 @@ function grabSeriesList($dataJson)
              s.volume,
              s.start_year,
              s.publisher,
-             t.name AS title_name
+             t.name AS title_name,
+             COUNT(i.id) AS issue_count
         FROM series s
    LEFT JOIN titles t ON t.id = s.title
-   LEFT JOIN publisher p ON p.name = s.publisher
-      $where
-    ORDER BY t.name ASC, s.name ASC
+    LEFT JOIN publisher p ON p.name = s.publisher
+    LEFT JOIN issues i ON i.series = s.id
+        $where
+     GROUP BY s.id, s.title, s.name, s.volume, s.start_year, s.publisher, t.name
+      $having
+     ORDER BY t.name ASC, s.name ASC
 EOT;
     $result = $db->query($query);
     if (! $result) {
@@ -100,6 +107,7 @@ EOT;
             'startYear' => isset($row['start_year']) ? (int) $row['start_year'] : 0,
             'publisher' => $row['publisher'],
             'titleName' => $row['title_name'] ?? '',
+            'issueCount' => isset($row['issue_count']) ? (int) $row['issue_count'] : 0,
         ];
     }
 
