@@ -1,6 +1,40 @@
 #main-bottom {
     display: flex;
     flex-direction: column;
-    height: 50vh;
-    overflow-y: auto;
+
+    #comicgrid {
+        //border: 1px solid #ccc;
+        margin-top: 4px;
+        display: flex;
+        flex-flow: row wrap;
+
+    }
+
+    .issue-box {
+        flex-basis: 10%;
+        border: 1px solid #ccc;
+        border-left: 1px solid #ccc;
+        border-bottom: 1px solid #ccc;
+        float: left;
+        color: #ccc;
+        padding: 10px;
+    }
+
+    .own {
+        background-color: #8cd8ff;
+    }
+
+
+
+    .series-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        height: 50vh;
+        overflow-y: auto;
+    }
+
+    .issue-detail {
+        margin: 1rem;
+    }
 }

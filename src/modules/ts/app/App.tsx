@@ -122,7 +122,7 @@ const App: React.FC = () => {
         setIssue(null);
         setError('');
         setLoadingSeries(true);
-        
+
         fetch(`/series?publisherId=${publisherId}&minimumIssueCount=1`)
             .then(res => { if (!res.ok) throw new Error(`Failed to load series (${res.status})`); return res.json(); })
             .then(data => {
@@ -222,22 +222,28 @@ const App: React.FC = () => {
             <div className="row">
                 <div className="col">
                     <div id="main-bottom">
-                        {selectedSeriesId && loadingSeriesGrid && (
-                            <p>Loading series grid...</p>
-                        )}
-                        {selectedSeriesId && !loadingSeriesGrid && seriesGrid && !seriesGrid.gridable && (
-                            <p>Series grid unavailable (requires at least 2 numbered issues).</p>
-                        )}
-                        {seriesGrid && seriesGrid.gridable && (
-                            <IssueGrid issues={seriesGrid.issues} onIssueClick={grabIssue} />
-                        )}
-                        {selectedSeriesId && issues.length === 0 && !loadingIssues && (
-                            <p>No owned issues found for this series.</p>
-                        )}
-                        {selectedIssueId && loadingIssueDetail && (
-                            <p>Loading issue detail...</p>
-                        )}
-                        {issue && <IssueDetail issue={issue} />}
+                        <div className="series-grid">
+
+                            {selectedSeriesId && loadingSeriesGrid && (
+                                <p>Loading series grid...</p>
+                            )}
+                            {selectedSeriesId && !loadingSeriesGrid && seriesGrid && !seriesGrid.gridable && (
+                                <p>Series grid unavailable (requires at least 2 numbered issues).</p>
+                            )}
+                            {seriesGrid && seriesGrid.gridable && (
+                                <IssueGrid issues={seriesGrid.issues} onIssueClick={grabIssue} />
+                            )}
+                            {selectedSeriesId && issues.length === 0 && !loadingIssues && (
+                                <p>No owned issues found for this series.</p>
+                            )}
+                        </div>
+                        <div className="issue-detail">
+                            {selectedIssueId && loadingIssueDetail && (
+                                <p>Loading issue detail...</p>
+                            )}
+                            {issue && <IssueDetail issue={issue} />}
+                        </div>
+
                     </div>
                 </div>
             </div>

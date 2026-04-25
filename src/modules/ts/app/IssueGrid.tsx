@@ -12,7 +12,7 @@ const IssueGrid: React.FC<Props> = ({ issues, onIssueClick }) => {
     return (
         <>
             <h3>ComicBook Series Grid</h3>
-            <div id="comicgrid" className="clearfix">
+            <div className="issue-grid">
                 {issues.map((issue, index) => {
                     const issueId = issue.issue_id;
                     const isOwnedIssue = issue.own === 'Y' && typeof issueId === 'number' && issueId > 0;

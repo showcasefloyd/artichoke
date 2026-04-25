@@ -1,4 +1,3 @@
-
 @import "../../node_modules/bootstrap/scss/bootstrap.scss";
 
 // Set font path before importing bootstrap-icons scss
@@ -100,35 +99,13 @@ span.mandatory-field-marker {
 
 
 
-#main-top,
-#main-bottom {
+#main-top {
 
 	height: 300px;
 	overflow: auto;
 	margin-bottom: 1em;
 	border: 1px solid green;
 
-	#comicgrid {
-		//border: 1px solid #ccc;
-		margin-top: 4px;
-		display: flex;
-		flex-flow: row wrap;
-
-	}
-
-	.issue-box {
-		flex-basis: 10%;
-		border: 1px solid #ccc;
-		border-left: 1px solid #ccc;
-		border-bottom: 1px solid #ccc;
-		float: left;
-		color: #ccc;
-		padding: 10px;
-	}
-
-	.own {
-		background-color: #8cd8ff;
-	}
 
 }
 
