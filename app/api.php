@@ -268,16 +268,15 @@ function csvImportResolveMapping($headers, $mappingSuggestions, $mappingInput, &
     return $resolvedMapping;
 }
 
-function previewCsvImport($dataJson)
+function csvImportBuildPreviewPayload($data, $includeRows = false)
 {
-    $data = json_decode($dataJson, true);
     if (!is_array($data)) {
-        return json_encode(['error' => 'Invalid request payload.']);
+        return ['error' => 'Invalid request payload.'];
     }
 
     $csvText = isset($data['csvText']) ? (string) $data['csvText'] : '';
     if (trim($csvText) === '') {
-        return json_encode(['error' => 'CSV text is required.']);
+        return ['error' => 'CSV text is required.'];
     }
 
     $delimiter = resolveCsvImportDelimiter($data['delimiter'] ?? ',');
@@ -301,7 +300,7 @@ function previewCsvImport($dataJson)
     fclose($stream);
 
     if (count($rows) === 0) {
-        return json_encode(['error' => 'No CSV rows detected.']);
+        return ['error' => 'No CSV rows detected.'];
     }
 
     $firstRow = $rows[0];
@@ -392,6 +391,7 @@ function previewCsvImport($dataJson)
     $errorRows = 0;
     $warningRows = 0;
     $rowFindings = [];
+    $allRows = [];
     $maxFindings = 100;
 
     foreach ($dataRows as $rowIndex => $row) {
@@ -468,12 +468,21 @@ function previewCsvImport($dataJson)
             }
         }
 
-        foreach (['storyTitle', 'publisher', 'seriesType', 'printRun', 'condition', 'location', 'guide', 'comments'] as $stringField) {
+        foreach (['storyTitle', 'publisher', 'seriesName', 'seriesType', 'issueNumber', 'printRun', 'condition', 'location', 'guide', 'comments'] as $stringField) {
             if (!isset($fieldToColumnIndex[$stringField])) {
                 continue;
             }
             $normalized[$stringField] = trim((string) ($row[$fieldToColumnIndex[$stringField]] ?? ''));
         }
+
+        $rowNumber = $hasHeader ? ($rowIndex + 2) : ($rowIndex + 1);
+        $rowState = [
+            'rowNumber' => $rowNumber,
+            'errors' => $rowErrors,
+            'warnings' => $rowWarnings,
+            'normalized' => $normalized,
+            'raw' => $rawRow,
+        ];
 
         if (count($rowErrors) > 0) {
             $errorRows++;
@@ -484,18 +493,14 @@ function previewCsvImport($dataJson)
         }
 
         if ((count($rowErrors) > 0 || count($rowWarnings) > 0) && count($rowFindings) < $maxFindings) {
-            $rowNumber = $hasHeader ? ($rowIndex + 2) : ($rowIndex + 1);
-            $rowFindings[] = [
-                'rowNumber' => $rowNumber,
-                'errors' => $rowErrors,
-                'warnings' => $rowWarnings,
-                'normalized' => $normalized,
-                'raw' => $rawRow,
-            ];
+            $rowFindings[] = $rowState;
+        }
+        if ($includeRows) {
+            $allRows[] = $rowState;
         }
     }
 
-    return json_encode([
+    $payload = [
         'headers' => $headers,
         'rowCount' => count($dataRows),
         'sampleRows' => $sampleRows,
@@ -511,7 +516,358 @@ function previewCsvImport($dataJson)
             'sampledFindings' => count($rowFindings),
         ],
         'rowFindings' => $rowFindings,
+    ];
+    if ($includeRows) {
+        $payload['allRows'] = $allRows;
+    }
+    return $payload;
+}
+
+function previewCsvImport($dataJson)
+{
+    $data = json_decode($dataJson, true);
+    return json_encode(csvImportBuildPreviewPayload($data, false));
+}
+
+function csvImportIssueStoryTitleColumnExists($db)
+{
+    $query = "SHOW COLUMNS FROM issues LIKE 'story_title'";
+    $result = $db->query($query);
+    if (! $result) {
+        die('There was an error running the query [' . $db->error . ']');
+    }
+    return $result->num_rows > 0;
+}
+
+function csvImportFindTitleId($db, $titleName)
+{
+    $titleNameEscaped = $db->real_escape_string($titleName);
+    $query = "SELECT id FROM titles WHERE name = '$titleNameEscaped' LIMIT 1";
+    $result = $db->query($query);
+    if (! $result) {
+        die('There was an error running the query [' . $db->error . ']');
+    }
+    $row = $result->fetch_assoc();
+    return $row ? (int) $row['id'] : null;
+}
+
+function csvImportCreateTitle($db, $titleName)
+{
+    $titleNameEscaped = $db->real_escape_string($titleName);
+    $query = "INSERT INTO titles (name) VALUES ('$titleNameEscaped')";
+    if (! $db->query($query)) {
+        if ((int) $db->errno === 1062) {
+            $existing = csvImportFindTitleId($db, $titleName);
+            if ($existing !== null) {
+                return $existing;
+            }
+        }
+        die('There was an error running the query [' . $db->error . ']');
+    }
+    return (int) $db->insert_id;
+}
+
+function csvImportFindSeriesId($db, $titleId, $seriesName, $volume, $startYear)
+{
+    $seriesNameEscaped = $db->real_escape_string($seriesName);
+    $volumeCondition = $volume === null ? 'volume IS NULL' : ('volume=' . (int) $volume);
+    $startYearCondition = $startYear === null ? 'start_year IS NULL' : ('start_year=' . (int) $startYear);
+    $query = "SELECT id FROM series WHERE title=$titleId AND name='$seriesNameEscaped' AND $volumeCondition AND $startYearCondition LIMIT 1";
+    $result = $db->query($query);
+    if (! $result) {
+        die('There was an error running the query [' . $db->error . ']');
+    }
+    $row = $result->fetch_assoc();
+    return $row ? (int) $row['id'] : null;
+}
+
+function csvImportCreateSeries($db, $titleId, $normalized)
+{
+    $seriesName = $db->real_escape_string($normalized['seriesName']);
+    $publisher = isset($normalized['publisher']) && trim($normalized['publisher']) !== '' ? trim($normalized['publisher']) : 'Unknown';
+    $publisherEscaped = $db->real_escape_string($publisher);
+    $columns = ['title', 'name', 'publisher'];
+    $values = [(int) $titleId, "'$seriesName'", "'$publisherEscaped'"];
+    if (isset($normalized['volume']) && $normalized['volume'] !== null) {
+        $columns[] = 'volume';
+        $values[] = (int) $normalized['volume'];
+    }
+    if (isset($normalized['startYear']) && $normalized['startYear'] !== null) {
+        $columns[] = 'start_year';
+        $values[] = (int) $normalized['startYear'];
+    }
+    if (isset($normalized['seriesType']) && trim((string) $normalized['seriesType']) !== '') {
+        $columns[] = 'type';
+        $values[] = "'" . $db->real_escape_string(trim((string) $normalized['seriesType'])) . "'";
+    }
+    $query = "INSERT INTO series (" . implode(', ', $columns) . ") VALUES (" . implode(', ', $values) . ")";
+    if (! $db->query($query)) {
+        die('There was an error running the query [' . $db->error . ']');
+    }
+    return (int) $db->insert_id;
+}
+
+function csvImportUpdateSeriesMetadata($db, $seriesId, $normalized, $mappedFieldSet)
+{
+    $terms = [];
+    if (isset($mappedFieldSet['publisher'])) {
+        $publisher = isset($normalized['publisher']) && trim((string) $normalized['publisher']) !== '' ? trim((string) $normalized['publisher']) : 'Unknown';
+        $terms[] = "publisher='" . $db->real_escape_string($publisher) . "'";
+    }
+    if (isset($mappedFieldSet['seriesType'])) {
+        $seriesType = isset($normalized['seriesType']) ? trim((string) $normalized['seriesType']) : '';
+        if ($seriesType === '') {
+            $terms[] = "type=NULL";
+        } else {
+            $terms[] = "type='" . $db->real_escape_string($seriesType) . "'";
+        }
+    }
+    if (isset($mappedFieldSet['volume'])) {
+        if (!array_key_exists('volume', $normalized) || $normalized['volume'] === null) {
+            $terms[] = "volume=NULL";
+        } else {
+            $terms[] = "volume=" . (int) $normalized['volume'];
+        }
+    }
+    if (isset($mappedFieldSet['startYear'])) {
+        if (!array_key_exists('startYear', $normalized) || $normalized['startYear'] === null) {
+            $terms[] = "start_year=NULL";
+        } else {
+            $terms[] = "start_year=" . (int) $normalized['startYear'];
+        }
+    }
+    if (count($terms) === 0) {
+        return false;
+    }
+    $query = "UPDATE series SET " . implode(', ', $terms) . " WHERE id=$seriesId";
+    if (! $db->query($query)) {
+        die('There was an error running the query [' . $db->error . ']');
+    }
+    return true;
+}
+
+function csvImportFindIssueId($db, $seriesId, $issueNumber, $printRunMapped, $printRun)
+{
+    $issueNumberEscaped = $db->real_escape_string($issueNumber);
+    $query = "SELECT id FROM issues WHERE series=$seriesId AND number='$issueNumberEscaped'";
+    if ($printRunMapped) {
+        if ($printRun === null || trim((string) $printRun) === '') {
+            $query .= " AND (printrun IS NULL OR printrun='')";
+        } else {
+            $query .= " AND printrun='" . $db->real_escape_string(trim((string) $printRun)) . "'";
+        }
+    }
+    $query .= " LIMIT 1";
+    $result = $db->query($query);
+    if (! $result) {
+        die('There was an error running the query [' . $db->error . ']');
+    }
+    $row = $result->fetch_assoc();
+    return $row ? (int) $row['id'] : null;
+}
+
+function csvImportIssueFieldMap()
+{
+    return [
+        'issueNumber' => 'number',
+        'printRun' => 'printrun',
+        'quantity' => 'quantity',
+        'coverDate' => 'cover_date',
+        'purchaseDate' => 'purchase_date',
+        'status' => 'status',
+        'condition' => 'bkcondition',
+        'coverPrice' => 'cover_price',
+        'purchasePrice' => 'purchase_price',
+        'guideValue' => 'guide_value',
+        'guide' => 'guide',
+        'issueValue' => 'issue_value',
+        'location' => 'location',
+        'comments' => 'comments',
+    ];
+}
+
+function csvImportSqlValue($db, $field, $value)
+{
+    if ($value === null || $value === '') {
+        return 'NULL';
+    }
+    $numericFields = ['quantity', 'status', 'coverPrice', 'purchasePrice', 'guideValue', 'issueValue'];
+    if (in_array($field, $numericFields, true)) {
+        return (string) $value;
+    }
+    $escaped = $db->real_escape_string((string) $value);
+    return "'$escaped'";
+}
+
+function csvImportCommit($dataJson)
+{
+    $data = json_decode($dataJson, true);
+    $analysis = csvImportBuildPreviewPayload($data, true);
+    if (isset($analysis['error'])) {
+        return json_encode($analysis);
+    }
+
+    $mode = isset($data['mode']) ? trim((string) $data['mode']) : 'upsert';
+    if (! in_array($mode, ['upsert', 'create-only', 'dry-run'], true)) {
+        $mode = 'upsert';
+    }
+
+    $summary = [
+        'mode' => $mode,
+        'rowCount' => (int) $analysis['rowCount'],
+        'validRows' => (int) $analysis['validation']['validRows'],
+        'errorRows' => (int) $analysis['validation']['errorRows'],
+        'warningRows' => (int) $analysis['validation']['warningRows'],
+        'insertedTitles' => 0,
+        'insertedSeries' => 0,
+        'insertedIssues' => 0,
+        'updatedSeries' => 0,
+        'updatedIssues' => 0,
+        'skippedExistingIssues' => 0,
+        'skippedInvalidRows' => 0,
+    ];
+
+    if ($mode === 'dry-run') {
+        return json_encode([
+            'summary' => $summary,
+            'warnings' => $analysis['warnings'],
+            'rowFindings' => $analysis['rowFindings'],
+            'message' => 'Dry run only: no database writes performed.',
+        ]);
+    }
+
+    $db = ComicDB_DB::db();
+    $storyTitleSupported = csvImportIssueStoryTitleColumnExists($db);
+    $mappedFieldSet = [];
+    foreach ($analysis['resolvedMapping'] as $mapping) {
+        $mappedFieldSet[$mapping['field']] = true;
+    }
+    if (isset($mappedFieldSet['storyTitle']) && ! $storyTitleSupported) {
+        $analysis['warnings'][] = "Mapped field 'storyTitle' is ignored because issues.story_title does not exist in this database.";
+    }
+
+    $titleCache = [];
+    $seriesCache = [];
+    $issueFieldMap = csvImportIssueFieldMap();
+
+    foreach ($analysis['allRows'] as $rowState) {
+        if (count($rowState['errors']) > 0) {
+            $summary['skippedInvalidRows']++;
+            continue;
+        }
+
+        $normalized = $rowState['normalized'];
+        $titleName = isset($normalized['titleName']) ? trim((string) $normalized['titleName']) : '';
+        $seriesName = isset($normalized['seriesName']) ? trim((string) $normalized['seriesName']) : '';
+        $issueNumber = isset($normalized['issueNumber']) ? trim((string) $normalized['issueNumber']) : '';
+        if ($titleName === '' || $seriesName === '' || $issueNumber === '') {
+            $summary['skippedInvalidRows']++;
+            continue;
+        }
+
+        $titleCacheKey = strtolower($titleName);
+        if (isset($titleCache[$titleCacheKey])) {
+            $titleId = $titleCache[$titleCacheKey];
+        } else {
+            $titleId = csvImportFindTitleId($db, $titleName);
+            if ($titleId === null) {
+                $titleId = csvImportCreateTitle($db, $titleName);
+                $summary['insertedTitles']++;
+            }
+            $titleCache[$titleCacheKey] = $titleId;
+        }
+
+        $volume = isset($normalized['volume']) ? $normalized['volume'] : null;
+        $startYear = isset($normalized['startYear']) ? $normalized['startYear'] : null;
+        $seriesCacheKey = $titleId . '|' . strtolower($seriesName) . '|' . ($volume === null ? 'null' : (string) $volume) . '|' . ($startYear === null ? 'null' : (string) $startYear);
+        if (isset($seriesCache[$seriesCacheKey])) {
+            $seriesId = $seriesCache[$seriesCacheKey];
+        } else {
+            $seriesId = csvImportFindSeriesId($db, $titleId, $seriesName, $volume, $startYear);
+            if ($seriesId === null) {
+                $seriesId = csvImportCreateSeries($db, $titleId, $normalized);
+                $summary['insertedSeries']++;
+            } elseif ($mode === 'upsert') {
+                if (csvImportUpdateSeriesMetadata($db, $seriesId, $normalized, $mappedFieldSet)) {
+                    $summary['updatedSeries']++;
+                }
+            }
+            $seriesCache[$seriesCacheKey] = $seriesId;
+        }
+
+        $printRunMapped = isset($mappedFieldSet['printRun']);
+        $printRunValue = $printRunMapped && isset($normalized['printRun']) ? $normalized['printRun'] : null;
+        $issueId = csvImportFindIssueId($db, $seriesId, $issueNumber, $printRunMapped, $printRunValue);
+
+        if ($issueId !== null && $mode === 'create-only') {
+            $summary['skippedExistingIssues']++;
+            continue;
+        }
+
+        if ($issueId === null) {
+            $columns = ['series', 'number'];
+            $values = [(int) $seriesId, "'" . $db->real_escape_string($issueNumber) . "'"];
+            foreach ($issueFieldMap as $field => $column) {
+                if ($field === 'issueNumber' || !isset($mappedFieldSet[$field])) {
+                    continue;
+                }
+                if (!array_key_exists($field, $normalized)) {
+                    continue;
+                }
+                $columns[] = $column;
+                $values[] = csvImportSqlValue($db, $field, $normalized[$field]);
+            }
+            if ($storyTitleSupported && isset($mappedFieldSet['storyTitle']) && array_key_exists('storyTitle', $normalized)) {
+                $columns[] = 'story_title';
+                $values[] = csvImportSqlValue($db, 'storyTitle', $normalized['storyTitle']);
+            }
+            $query = "INSERT INTO issues (" . implode(', ', $columns) . ") VALUES (" . implode(', ', $values) . ")";
+            if (! $db->query($query)) {
+                die('There was an error running the query [' . $db->error . ']');
+            }
+            $summary['insertedIssues']++;
+            continue;
+        }
+
+        $updateTerms = [];
+        foreach ($issueFieldMap as $field => $column) {
+            if ($field === 'issueNumber' || !isset($mappedFieldSet[$field])) {
+                continue;
+            }
+            if (!array_key_exists($field, $normalized)) {
+                $updateTerms[] = "$column=NULL";
+            } else {
+                $updateTerms[] = "$column=" . csvImportSqlValue($db, $field, $normalized[$field]);
+            }
+        }
+        if ($storyTitleSupported && isset($mappedFieldSet['storyTitle'])) {
+            if (!array_key_exists('storyTitle', $normalized)) {
+                $updateTerms[] = "story_title=NULL";
+            } else {
+                $updateTerms[] = "story_title=" . csvImportSqlValue($db, 'storyTitle', $normalized['storyTitle']);
+            }
+        }
+        if (count($updateTerms) === 0) {
+            $summary['skippedExistingIssues']++;
+            continue;
+        }
+        $updateQuery = "UPDATE issues SET " . implode(', ', $updateTerms) . " WHERE id=$issueId";
+        if (! $db->query($updateQuery)) {
+            die('There was an error running the query [' . $db->error . ']');
+        }
+        $summary['updatedIssues']++;
+    }
+
+    return json_encode([
+        'summary' => $summary,
+        'warnings' => $analysis['warnings'],
+        'rowFindings' => $analysis['rowFindings'],
     ]);
+}
+
+function commitCsvImport($dataJson)
+{
+    return csvImportCommit($dataJson);
 }
 
 // Grab all Titles (used by GET /list)

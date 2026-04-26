@@ -194,6 +194,11 @@ app.post('/import/csv/preview', function (req, res) {
    callPhp(res, 'previewcsvimport', [JSON.stringify(req.body)]);
 });
 
+app.post('/import/csv/commit', function (req, res) {
+   console.log('CSV IMPORT COMMIT');
+   callPhp(res, 'commitcsvimport', [JSON.stringify(req.body)]);
+});
+
 // Error-handling middleware — must have 4 params so Express treats it as error handler
 app.use(function (err, req, res, next) { // eslint-disable-line no-unused-vars
    console.error('Unhandled error:', err);

@@ -87,6 +87,28 @@ interface CsvImportPreview {
 }
 
 type CsvImportColumnMapping = Record<string, string>;
+type CsvImportMode = 'upsert' | 'create-only' | 'dry-run';
+
+interface CsvImportCommitResult {
+    summary: {
+        mode: CsvImportMode;
+        rowCount: number;
+        validRows: number;
+        errorRows: number;
+        warningRows: number;
+        insertedTitles: number;
+        insertedSeries: number;
+        insertedIssues: number;
+        updatedSeries: number;
+        updatedIssues: number;
+        skippedExistingIssues: number;
+        skippedInvalidRows: number;
+    };
+    warnings: string[];
+    rowFindings: CsvImportPreview['rowFindings'];
+    message?: string;
+    error?: string;
+}
 
 function formatSeriesLabel(series: SeriesItem): string {
     const volumePart = series.volume ? ` (Vol ${series.volume})` : '';
@@ -114,7 +136,10 @@ const AdminApp: React.FC = () => {
     const [importHasHeader, setImportHasHeader] = useState(true);
     const [importPreview, setImportPreview] = useState<CsvImportPreview | null>(null);
     const [importColumnMapping, setImportColumnMapping] = useState<CsvImportColumnMapping>({});
+    const [importMode, setImportMode] = useState<CsvImportMode>('upsert');
     const [importLoading, setImportLoading] = useState(false);
+    const [importCommitLoading, setImportCommitLoading] = useState(false);
+    const [importCommitResult, setImportCommitResult] = useState<CsvImportCommitResult | null>(null);
     const [importError, setImportError] = useState('');
     const [error, setError] = useState<string>('');
 
@@ -235,6 +260,7 @@ const AdminApp: React.FC = () => {
         setImportLoading(true);
         setImportError('');
         setImportPreview(null);
+        setImportCommitResult(null);
         try {
             const csvText = await importFile.text();
             const response = await fetch('/import/csv/preview', {
@@ -276,6 +302,49 @@ const AdminApp: React.FC = () => {
             setImportError(String((e as Error).message ?? e));
         } finally {
             setImportLoading(false);
+        }
+    };
+
+    const runImportCommit = async () => {
+        if (!importFile) {
+            setImportError('Please choose a CSV file first.');
+            return;
+        }
+        if (!importPreview) {
+            setImportError('Run preview before commit.');
+            return;
+        }
+        setImportCommitLoading(true);
+        setImportError('');
+        setImportCommitResult(null);
+        try {
+            const csvText = await importFile.text();
+            const response = await fetch('/import/csv/commit', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    csvText,
+                    delimiter: importDelimiter,
+                    hasHeader: importHasHeader,
+                    mapping: importColumnMapping,
+                    mode: importMode,
+                }),
+            });
+            if (!response.ok) {
+                throw new Error(`Failed to commit CSV import (${response.status})`);
+            }
+            const payload: CsvImportCommitResult = await response.json();
+            if (payload.error) {
+                throw new Error(payload.error);
+            }
+            setImportCommitResult(payload);
+            loadTitles();
+            loadSeries(seriesFilterTitleId, setSeriesList);
+            loadIssues(issuesFilterTitleId, issuesFilterSeriesId);
+        } catch (e) {
+            setImportError(String((e as Error).message ?? e));
+        } finally {
+            setImportCommitLoading(false);
         }
     };
 
@@ -487,6 +556,26 @@ const AdminApp: React.FC = () => {
                                 <button className="btn btn-primary btn-sm" onClick={runImportPreview} disabled={importLoading || !importFile}>
                                     {importLoading ? 'Previewing…' : 'Preview Mapping'}
                                 </button>
+                                <div className="mt-2">
+                                    <label className="form-label" htmlFor="import-mode">Import mode</label>
+                                    <select
+                                        id="import-mode"
+                                        className="form-select form-select-sm"
+                                        value={importMode}
+                                        onChange={e => setImportMode(e.target.value as CsvImportMode)}
+                                    >
+                                        <option value="upsert">Upsert (insert + update existing)</option>
+                                        <option value="create-only">Create only (skip existing issues)</option>
+                                        <option value="dry-run">Dry run (no writes)</option>
+                                    </select>
+                                </div>
+                                <button
+                                    className="btn btn-success btn-sm mt-2"
+                                    onClick={runImportCommit}
+                                    disabled={importCommitLoading || !importFile || !importPreview}
+                                >
+                                    {importCommitLoading ? 'Committing…' : 'Commit Import'}
+                                </button>
                             </div>
                         )}
                     </div>
@@ -499,6 +588,14 @@ const AdminApp: React.FC = () => {
                         <div>
                             <p className="text-muted mb-2">Upload a CSV to preview detected columns and suggested field mapping. No database writes happen in this step.</p>
                             {importError && <div className="alert alert-danger">{importError}</div>}
+                            {importCommitResult && (
+                                <div className="alert alert-success">
+                                    <div><strong>Import mode:</strong> {importCommitResult.summary.mode}</div>
+                                    <div><strong>Rows:</strong> {importCommitResult.summary.rowCount} total, {importCommitResult.summary.validRows} valid, {importCommitResult.summary.errorRows} errors, {importCommitResult.summary.warningRows} warnings</div>
+                                    <div><strong>Changes:</strong> {importCommitResult.summary.insertedTitles} titles inserted, {importCommitResult.summary.insertedSeries} series inserted, {importCommitResult.summary.updatedSeries} series updated, {importCommitResult.summary.insertedIssues} issues inserted, {importCommitResult.summary.updatedIssues} issues updated, {importCommitResult.summary.skippedExistingIssues} existing issues skipped, {importCommitResult.summary.skippedInvalidRows} invalid rows skipped</div>
+                                    {importCommitResult.message && <div><strong>Note:</strong> {importCommitResult.message}</div>}
+                                </div>
+                            )}
                             {importPreview && (
                                 <div>
                                     <div className="alert alert-info">
