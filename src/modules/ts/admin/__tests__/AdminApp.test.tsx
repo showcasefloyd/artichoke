@@ -57,6 +57,7 @@ describe('AdminApp', () => {
         expect(screen.getByRole('button', { name: 'Titles' })).toBeInTheDocument();
         expect(screen.getByRole('button', { name: 'Series' })).toBeInTheDocument();
         expect(screen.getByRole('button', { name: 'Issues' })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Import' })).toBeInTheDocument();
         expect(screen.getByRole('button', { name: 'Load Issue' })).toBeInTheDocument();
     });
 });

@@ -34,7 +34,7 @@ export type AdminView =
     | { mode: 'editIssue'; issueId: number }
     | { mode: 'newIssue'; seriesId: number };
 
-type AdminTab = 'publishers' | 'titles' | 'series' | 'issues';
+type AdminTab = 'publishers' | 'titles' | 'series' | 'issues' | 'import';
 
 interface SeriesItem {
     id: number;
@@ -44,6 +44,28 @@ interface SeriesItem {
     startYear?: number;
     publisher: string;
     titleName: string;
+}
+
+interface CsvImportField {
+    key: string;
+    label: string;
+    required?: boolean;
+}
+
+interface CsvImportMappingSuggestion {
+    column: string;
+    suggestedField: string | null;
+    confidence: 'exact' | 'alias' | 'none';
+}
+
+interface CsvImportPreview {
+    headers: string[];
+    rowCount: number;
+    sampleRows: Record<string, string>[];
+    mappingSuggestions: CsvImportMappingSuggestion[];
+    canonicalFields: CsvImportField[];
+    warnings: string[];
+    error?: string;
 }
 
 function formatSeriesLabel(series: SeriesItem): string {
@@ -67,6 +89,12 @@ const AdminApp: React.FC = () => {
     const [issueList, setIssueList] = useState<IssueItem[]>([]);
     const [selectedIssueId, setSelectedIssueId] = useState<number | null>(null);
     const [view, setView] = useState<AdminView>({ mode: 'idle' });
+    const [importFile, setImportFile] = useState<File | null>(null);
+    const [importDelimiter, setImportDelimiter] = useState(',');
+    const [importHasHeader, setImportHasHeader] = useState(true);
+    const [importPreview, setImportPreview] = useState<CsvImportPreview | null>(null);
+    const [importLoading, setImportLoading] = useState(false);
+    const [importError, setImportError] = useState('');
     const [error, setError] = useState<string>('');
 
     const loadTitles = () => {
@@ -178,6 +206,50 @@ const AdminApp: React.FC = () => {
         setView({ mode: 'idle' });
     };
 
+    const runImportPreview = async () => {
+        if (!importFile) {
+            setImportError('Please choose a CSV file first.');
+            return;
+        }
+        setImportLoading(true);
+        setImportError('');
+        setImportPreview(null);
+        try {
+            const csvText = await importFile.text();
+            const response = await fetch('/import/csv/preview', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    csvText,
+                    delimiter: importDelimiter,
+                    hasHeader: importHasHeader,
+                }),
+            });
+            if (!response.ok) {
+                throw new Error(`Failed to preview CSV import (${response.status})`);
+            }
+            const payload: CsvImportPreview = await response.json();
+            if (payload.error) {
+                throw new Error(payload.error);
+            }
+            setImportPreview(payload);
+        } catch (e) {
+            setImportError(String((e as Error).message ?? e));
+        } finally {
+            setImportLoading(false);
+        }
+    };
+
+    const confidenceClassName = (confidence: CsvImportMappingSuggestion['confidence']): string => {
+        if (confidence === 'exact') {
+            return 'badge text-bg-success';
+        }
+        if (confidence === 'alias') {
+            return 'badge text-bg-warning';
+        }
+        return 'badge text-bg-secondary';
+    };
+
     return (
         <div className="container-fluid">
             <div className="row">
@@ -195,6 +267,7 @@ const AdminApp: React.FC = () => {
                             <button type="button" className={`btn btn-sm ${activeTab === 'titles' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => switchTab('titles')}>Titles</button>
                             <button type="button" className={`btn btn-sm ${activeTab === 'series' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => switchTab('series')}>Series</button>
                             <button type="button" className={`btn btn-sm ${activeTab === 'issues' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => switchTab('issues')}>Issues</button>
+                            <button type="button" className={`btn btn-sm ${activeTab === 'import' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => switchTab('import')}>Import</button>
                         </div>
 
                         {activeTab === 'publishers' && (
@@ -322,12 +395,151 @@ const AdminApp: React.FC = () => {
                                 </button>
                             </div>
                         )}
+
+                        {activeTab === 'import' && (
+                            <div className="mb-3">
+                                <h6>CSV Import (Stage 1: Preview)</h6>
+                                <div className="mb-2">
+                                    <label className="form-label" htmlFor="import-file">CSV file</label>
+                                    <input
+                                        id="import-file"
+                                        type="file"
+                                        className="form-control"
+                                        accept=".csv,text/csv"
+                                        onChange={e => {
+                                            const file = e.target.files?.[0] ?? null;
+                                            setImportFile(file);
+                                            setImportPreview(null);
+                                            setImportError('');
+                                        }}
+                                    />
+                                </div>
+                                <div className="mb-2">
+                                    <label className="form-label" htmlFor="import-delimiter">Delimiter</label>
+                                    <select
+                                        id="import-delimiter"
+                                        className="form-select"
+                                        value={importDelimiter}
+                                        onChange={e => setImportDelimiter(e.target.value)}
+                                    >
+                                        <option value=",">Comma (,)</option>
+                                        <option value=";">Semicolon (;)</option>
+                                        <option value="\t">Tab (\t)</option>
+                                        <option value="|">Pipe (|)</option>
+                                    </select>
+                                </div>
+                                <div className="form-check mb-2">
+                                    <input
+                                        id="import-has-header"
+                                        className="form-check-input"
+                                        type="checkbox"
+                                        checked={importHasHeader}
+                                        onChange={e => setImportHasHeader(e.target.checked)}
+                                    />
+                                    <label className="form-check-label" htmlFor="import-has-header">
+                                        First row contains headers
+                                    </label>
+                                </div>
+                                <button className="btn btn-primary btn-sm" onClick={runImportPreview} disabled={importLoading || !importFile}>
+                                    {importLoading ? 'Previewing…' : 'Preview Mapping'}
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
 
                 <div className="col-9">
                     {error && <div className="alert alert-warning">{error}</div>}
-                    {view.mode === 'idle' && <p className="text-muted">Choose an admin tab and load an item to edit.</p>}
+                    {view.mode === 'idle' && activeTab !== 'import' && <p className="text-muted">Choose an admin tab and load an item to edit.</p>}
+                    {activeTab === 'import' && view.mode === 'idle' && (
+                        <div>
+                            <p className="text-muted mb-2">Upload a CSV to preview detected columns and suggested field mapping. No database writes happen in this step.</p>
+                            {importError && <div className="alert alert-danger">{importError}</div>}
+                            {importPreview && (
+                                <div>
+                                    <div className="alert alert-info">
+                                        Detected <strong>{importPreview.rowCount}</strong> rows and <strong>{importPreview.headers.length}</strong> columns.
+                                    </div>
+                                    {importPreview.warnings.length > 0 && (
+                                        <div className="alert alert-warning">
+                                            {importPreview.warnings.map((warning, index) => (
+                                                <div key={`${warning}-${index}`}>{warning}</div>
+                                            ))}
+                                        </div>
+                                    )}
+                                    <div className="mb-3">
+                                        <h6>Suggested Mapping</h6>
+                                        <div className="table-responsive">
+                                            <table className="table table-sm table-bordered align-middle">
+                                                <thead>
+                                                    <tr>
+                                                        <th>CSV Column</th>
+                                                        <th>Suggested Field</th>
+                                                        <th>Confidence</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {importPreview.mappingSuggestions.map((suggestion, index) => (
+                                                        <tr key={`${suggestion.column}-${index}`}>
+                                                            <td>{suggestion.column}</td>
+                                                            <td>{suggestion.suggestedField ?? <em>Unmapped</em>}</td>
+                                                            <td><span className={confidenceClassName(suggestion.confidence)}>{suggestion.confidence}</span></td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                    <div className="mb-3">
+                                        <h6>Canonical Artichoke Import Fields</h6>
+                                        <div className="table-responsive">
+                                            <table className="table table-sm table-bordered align-middle">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Field Key</th>
+                                                        <th>Label</th>
+                                                        <th>Required</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {importPreview.canonicalFields.map(field => (
+                                                        <tr key={field.key}>
+                                                            <td><code>{field.key}</code></td>
+                                                            <td>{field.label}</td>
+                                                            <td>{field.required ? 'Yes' : 'No'}</td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h6>Sample Rows (first {importPreview.sampleRows.length})</h6>
+                                        <div className="table-responsive">
+                                            <table className="table table-sm table-striped table-bordered align-middle">
+                                                <thead>
+                                                    <tr>
+                                                        {importPreview.headers.map(header => (
+                                                            <th key={header}>{header}</th>
+                                                        ))}
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {importPreview.sampleRows.map((row, rowIndex) => (
+                                                        <tr key={`sample-${rowIndex}`}>
+                                                            {importPreview.headers.map(header => (
+                                                                <td key={`${rowIndex}-${header}`}>{row[header] ?? ''}</td>
+                                                            ))}
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
                     {view.mode === 'editPublisher' && (
                         <PublisherEditor
                             publisherId={view.publisherId}

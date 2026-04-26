@@ -4,8 +4,8 @@ var express = require('express'),
    execPhp = require('exec-php');
 
 // Tell Express to use this module -- This is middleware
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
+app.use(bodyParser.json({ limit: '10mb' }));
 
 // Middleware
 app.use('/views', express.static(__dirname + "/views"));
@@ -186,6 +186,12 @@ app.put('/publisher/:id', function (req, res) {
 app.delete('/publisher/:id', function (req, res) {
    console.log('DELETE PUBLISHER', req.params.id);
    callPhp(res, 'deletepublisher', [req.params.id]);
+});
+
+// CSV Import (preview only)
+app.post('/import/csv/preview', function (req, res) {
+   console.log('CSV IMPORT PREVIEW');
+   callPhp(res, 'previewcsvimport', [JSON.stringify(req.body)]);
 });
 
 // Error-handling middleware — must have 4 params so Express treats it as error handler

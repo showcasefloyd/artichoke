@@ -8,6 +8,233 @@ include_once "ComicDB/Publisher.php";
 include_once "ComicDB/Publishers.php";
 include_once "ComicDB/SeriesTypes.php";
 
+function csvImportCanonicalFields()
+{
+    return [
+        ['key' => 'titleName', 'label' => 'Title Name', 'required' => true],
+        ['key' => 'seriesName', 'label' => 'Series Name', 'required' => true],
+        ['key' => 'issueNumber', 'label' => 'Issue Number', 'required' => true],
+        ['key' => 'publisher', 'label' => 'Publisher'],
+        ['key' => 'volume', 'label' => 'Volume'],
+        ['key' => 'startYear', 'label' => 'Start Year'],
+        ['key' => 'seriesType', 'label' => 'Series Type'],
+        ['key' => 'printRun', 'label' => 'Print Run'],
+        ['key' => 'quantity', 'label' => 'Quantity'],
+        ['key' => 'coverDate', 'label' => 'Cover Date'],
+        ['key' => 'purchaseDate', 'label' => 'Purchase Date'],
+        ['key' => 'coverPrice', 'label' => 'Cover Price'],
+        ['key' => 'purchasePrice', 'label' => 'Purchase Price'],
+        ['key' => 'status', 'label' => 'Status'],
+        ['key' => 'condition', 'label' => 'Condition'],
+        ['key' => 'location', 'label' => 'Location'],
+        ['key' => 'guide', 'label' => 'Guide'],
+        ['key' => 'guideValue', 'label' => 'Guide Value'],
+        ['key' => 'issueValue', 'label' => 'Issue Value'],
+        ['key' => 'comments', 'label' => 'Comments'],
+    ];
+}
+
+function normalizeCsvImportKey($value)
+{
+    $value = strtolower(trim((string) $value));
+    $value = preg_replace('/^\xEF\xBB\xBF/', '', $value);
+    $value = preg_replace('/[^a-z0-9]+/', '_', $value);
+    return trim($value, '_');
+}
+
+function resolveCsvImportDelimiter($delimiter)
+{
+    if (!isset($delimiter) || $delimiter === '') {
+        return ',';
+    }
+    if ($delimiter === '\\t') {
+        return "\t";
+    }
+    return substr((string) $delimiter, 0, 1);
+}
+
+function guessCsvImportField($header)
+{
+    $normalized = normalizeCsvImportKey($header);
+    $exactMap = [
+        'titlename' => 'titleName',
+        'title_name' => 'titleName',
+        'full_title' => 'titleName',
+        'seriesname' => 'seriesName',
+        'series_name' => 'seriesName',
+        'issuenumber' => 'issueNumber',
+        'issue_number' => 'issueNumber',
+        'publisher' => 'publisher',
+        'volume' => 'volume',
+        'startyear' => 'startYear',
+        'start_year' => 'startYear',
+        'seriestype' => 'seriesType',
+        'series_type' => 'seriesType',
+        'printrun' => 'printRun',
+        'print_run' => 'printRun',
+        'quantity' => 'quantity',
+        'coverdate' => 'coverDate',
+        'cover_date' => 'coverDate',
+        'purchasedate' => 'purchaseDate',
+        'purchase_date' => 'purchaseDate',
+        'coverprice' => 'coverPrice',
+        'cover_price' => 'coverPrice',
+        'purchaseprice' => 'purchasePrice',
+        'purchase_price' => 'purchasePrice',
+        'status' => 'status',
+        'condition' => 'condition',
+        'bkcondition' => 'condition',
+        'location' => 'location',
+        'guide' => 'guide',
+        'guidevalue' => 'guideValue',
+        'guide_value' => 'guideValue',
+        'issuevalue' => 'issueValue',
+        'issue_value' => 'issueValue',
+        'comments' => 'comments',
+    ];
+    if (isset($exactMap[$normalized])) {
+        return ['field' => $exactMap[$normalized], 'confidence' => 'exact'];
+    }
+
+    $aliasMap = [
+        'title' => 'titleName',
+        'comic_title' => 'titleName',
+        'series' => 'seriesName',
+        'run' => 'seriesName',
+        'issue' => 'issueNumber',
+        'number' => 'issueNumber',
+        'issue_no' => 'issueNumber',
+        'variant_description' => 'printRun',
+        'series_volume' => 'volume',
+        'year' => 'startYear',
+        'series_year' => 'startYear',
+        'type' => 'seriesType',
+        'series_kind' => 'seriesType',
+        'printing' => 'printRun',
+        'qty' => 'quantity',
+        'on_hand' => 'quantity',
+        'cover' => 'coverDate',
+        'cover_month' => 'coverDate',
+        'purchased' => 'purchaseDate',
+        'cost' => 'purchasePrice',
+        'price' => 'coverPrice',
+        'grade' => 'condition',
+        'storage_box' => 'location',
+        'notes' => 'comments',
+        'comment' => 'comments',
+    ];
+    if (isset($aliasMap[$normalized])) {
+        return ['field' => $aliasMap[$normalized], 'confidence' => 'alias'];
+    }
+
+    return ['field' => null, 'confidence' => 'none'];
+}
+
+function previewCsvImport($dataJson)
+{
+    $data = json_decode($dataJson, true);
+    if (!is_array($data)) {
+        return json_encode(['error' => 'Invalid request payload.']);
+    }
+
+    $csvText = isset($data['csvText']) ? (string) $data['csvText'] : '';
+    if (trim($csvText) === '') {
+        return json_encode(['error' => 'CSV text is required.']);
+    }
+
+    $delimiter = resolveCsvImportDelimiter($data['delimiter'] ?? ',');
+    $hasHeader = !isset($data['hasHeader']) || (bool) $data['hasHeader'];
+    $warnings = [];
+
+    $stream = fopen('php://temp', 'r+');
+    fwrite($stream, $csvText);
+    rewind($stream);
+
+    $rows = [];
+    while (($row = fgetcsv($stream, 0, $delimiter)) !== false) {
+        if ($row === null) {
+            continue;
+        }
+        if (count($row) === 1 && trim((string) $row[0]) === '') {
+            continue;
+        }
+        $rows[] = $row;
+    }
+    fclose($stream);
+
+    if (count($rows) === 0) {
+        return json_encode(['error' => 'No CSV rows detected.']);
+    }
+
+    $firstRow = $rows[0];
+    $columnCount = count($firstRow);
+    $headers = [];
+
+    if ($hasHeader) {
+        for ($i = 0; $i < $columnCount; $i++) {
+            $name = trim((string) ($firstRow[$i] ?? ''));
+            if ($i === 0) {
+                $name = preg_replace('/^\xEF\xBB\xBF/', '', $name);
+            }
+            $headers[] = $name !== '' ? $name : 'column_' . ($i + 1);
+        }
+        $dataRows = array_slice($rows, 1);
+    } else {
+        for ($i = 0; $i < $columnCount; $i++) {
+            $headers[] = 'column_' . ($i + 1);
+        }
+        $dataRows = $rows;
+        $warnings[] = 'Header row disabled. Generated placeholder column names.';
+    }
+
+    $seenHeaders = [];
+    $duplicateHeaders = [];
+    foreach ($headers as $header) {
+        $normalized = normalizeCsvImportKey($header);
+        if ($normalized === '') {
+            continue;
+        }
+        if (isset($seenHeaders[$normalized])) {
+            $duplicateHeaders[] = $header;
+            continue;
+        }
+        $seenHeaders[$normalized] = true;
+    }
+    if (count($duplicateHeaders) > 0) {
+        $warnings[] = 'Duplicate columns detected: ' . implode(', ', $duplicateHeaders);
+    }
+
+    $mappingSuggestions = [];
+    foreach ($headers as $header) {
+        $guess = guessCsvImportField($header);
+        $mappingSuggestions[] = [
+            'column' => $header,
+            'suggestedField' => $guess['field'],
+            'confidence' => $guess['confidence'],
+        ];
+    }
+
+    $sampleRows = [];
+    $maxSamples = min(5, count($dataRows));
+    for ($rowIndex = 0; $rowIndex < $maxSamples; $rowIndex++) {
+        $row = $dataRows[$rowIndex];
+        $sample = [];
+        foreach ($headers as $index => $header) {
+            $sample[$header] = trim((string) ($row[$index] ?? ''));
+        }
+        $sampleRows[] = $sample;
+    }
+
+    return json_encode([
+        'headers' => $headers,
+        'rowCount' => count($dataRows),
+        'sampleRows' => $sampleRows,
+        'mappingSuggestions' => $mappingSuggestions,
+        'canonicalFields' => csvImportCanonicalFields(),
+        'warnings' => $warnings,
+    ]);
+}
+
 // Grab all Titles (used by GET /list)
 function grabList()
 {
