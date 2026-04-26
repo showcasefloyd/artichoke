@@ -241,6 +241,32 @@ function ensureSeriesTotalSchema($db)
     $ensured = true;
 }
 
+function parseSeriesSlotFromSortValue($value)
+{
+    if (!isset($value)) {
+        return null;
+    }
+    $normalized = trim((string) $value);
+    if ($normalized === '' || !preg_match('/^-?\d+$/', $normalized)) {
+        return null;
+    }
+    $slot = (int) $normalized;
+    return $slot > 0 ? $slot : null;
+}
+
+function parseSeriesSlotFromIssueNumber($value)
+{
+    if (!isset($value)) {
+        return null;
+    }
+    $normalized = trim((string) $value);
+    if ($normalized === '' || !preg_match('/^-?\d+$/', $normalized)) {
+        return null;
+    }
+    $slot = (int) $normalized;
+    return $slot > 0 ? $slot : null;
+}
+
 function csvImportCanonicalFieldKeys()
 {
     $keys = [];
@@ -1906,6 +1932,73 @@ function buildSeriesGridPayload($id)
 function grabSeriesGrid($id)
 {
     return json_encode(buildSeriesGridPayload($id));
+}
+
+function grabSeriesMissing($id)
+{
+    $seriesId = (int) $id;
+    $db = ComicDB_DB::db();
+    ensureSeriesTotalSchema($db);
+
+    $seriesQuery = "SELECT total_issues FROM series WHERE id=$seriesId LIMIT 1";
+    $seriesResult = $db->query($seriesQuery);
+    if (! $seriesResult) {
+        die('There was an error running the query [' . $db->error . ']');
+    }
+    $seriesRow = $seriesResult->fetch_assoc();
+    if (!$seriesRow) {
+        return json_encode([
+            'seriesId' => $seriesId,
+            'totalIssues' => 0,
+            'ownedSlots' => 0,
+            'missingCount' => 0,
+            'missingSlots' => [],
+        ]);
+    }
+
+    $totalIssues = isset($seriesRow['total_issues']) ? (int) $seriesRow['total_issues'] : 0;
+    if ($totalIssues <= 0) {
+        return json_encode([
+            'seriesId' => $seriesId,
+            'totalIssues' => 0,
+            'ownedSlots' => 0,
+            'missingCount' => 0,
+            'missingSlots' => [],
+        ]);
+    }
+
+    $issuesQuery = "SELECT number, sort FROM issues WHERE series=$seriesId";
+    $issuesResult = $db->query($issuesQuery);
+    if (! $issuesResult) {
+        die('There was an error running the query [' . $db->error . ']');
+    }
+
+    $occupied = [];
+    while ($row = $issuesResult->fetch_assoc()) {
+        $slot = parseSeriesSlotFromSortValue($row['sort'] ?? null);
+        if ($slot === null) {
+            $slot = parseSeriesSlotFromIssueNumber($row['number'] ?? null);
+        }
+        if ($slot === null || $slot < 1 || $slot > $totalIssues) {
+            continue;
+        }
+        $occupied[$slot] = true;
+    }
+
+    $missingSlots = [];
+    for ($slot = 1; $slot <= $totalIssues; $slot++) {
+        if (!isset($occupied[$slot])) {
+            $missingSlots[] = ['slot' => $slot];
+        }
+    }
+
+    return json_encode([
+        'seriesId' => $seriesId,
+        'totalIssues' => $totalIssues,
+        'ownedSlots' => count($occupied),
+        'missingCount' => count($missingSlots),
+        'missingSlots' => $missingSlots,
+    ]);
 }
 
 function grabIssues($id)

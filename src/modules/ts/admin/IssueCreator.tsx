@@ -12,12 +12,14 @@ interface Props {
     seriesId: number;
     onCreated: (id: number) => void;
     onCancel: () => void;
+    initialNumber?: string;
+    initialSort?: string;
 }
 
-const IssueCreator: React.FC<Props> = ({ seriesId, onCreated, onCancel }) => {
-    const [number, setNumber] = useState('');
+const IssueCreator: React.FC<Props> = ({ seriesId, onCreated, onCancel, initialNumber = '', initialSort = '' }) => {
+    const [number, setNumber] = useState(initialNumber);
     const [storyTitle, setStoryTitle] = useState('');
-    const [sort, setSort] = useState('');
+    const [sort, setSort] = useState(initialSort);
     const [purchaseDate, setPurchaseDate] = useState(todayDateInput());
     const initialCoverMonth = currentMonthInput();
     const [coverYear, setCoverYear] = useState(initialCoverMonth.split('-')[0] ?? '');

@@ -32,7 +32,7 @@ export type AdminView =
     | { mode: 'editSeries'; seriesId: number }
     | { mode: 'newSeries'; titleId: number }
     | { mode: 'editIssue'; issueId: number }
-    | { mode: 'newIssue'; seriesId: number };
+    | { mode: 'newIssue'; seriesId: number; initialNumber?: string; initialSort?: string };
 
 type AdminTab = 'publishers' | 'titles' | 'series' | 'issues' | 'import';
 
@@ -48,6 +48,18 @@ interface SeriesItem {
     totalIssues?: number;
     missingIssues?: number;
     completionPercent?: number;
+}
+
+interface SeriesMissingSlot {
+    slot: number;
+}
+
+interface SeriesMissingResponse {
+    seriesId: number;
+    totalIssues: number;
+    ownedSlots: number;
+    missingCount: number;
+    missingSlots: SeriesMissingSlot[];
 }
 
 interface CsvImportField {
@@ -199,6 +211,8 @@ const AdminApp: React.FC = () => {
     const [issuesFilterTitleId, setIssuesFilterTitleId] = useState<number | null>(null);
     const [issuesFilterSeriesId, setIssuesFilterSeriesId] = useState<number | null>(null);
     const [issueList, setIssueList] = useState<IssueItem[]>([]);
+    const [seriesMissing, setSeriesMissing] = useState<SeriesMissingResponse | null>(null);
+    const [seriesMissingLoading, setSeriesMissingLoading] = useState(false);
     const [selectedIssueId, setSelectedIssueId] = useState<number | null>(null);
     const [view, setView] = useState<AdminView>({ mode: 'idle' });
     const [importFile, setImportFile] = useState<File | null>(null);
@@ -284,6 +298,7 @@ const AdminApp: React.FC = () => {
         setIssuesFilterTitleId(titleId);
         setIssuesFilterSeriesId(null);
         setSelectedIssueId(null);
+        setSeriesMissing(null);
         loadSeries(titleId, setIssueSeriesList);
         loadIssues(titleId, null);
     };
@@ -291,7 +306,27 @@ const AdminApp: React.FC = () => {
     const handleIssuesFilterSeriesChange = (seriesId: number | null) => {
         setIssuesFilterSeriesId(seriesId);
         setSelectedIssueId(null);
+        setSeriesMissing(null);
         loadIssues(issuesFilterTitleId, seriesId);
+    };
+
+    const loadSeriesMissing = () => {
+        if (!issuesFilterSeriesId) {
+            setError('Select a series filter before loading missing slots.');
+            return;
+        }
+        setSeriesMissingLoading(true);
+        setError('');
+        fetch(`/series/${issuesFilterSeriesId}/missing`)
+            .then(res => { if (!res.ok) throw new Error(`Failed to load missing issues (${res.status})`); return res.json(); })
+            .then(data => {
+                setSeriesMissing(data);
+                setSeriesMissingLoading(false);
+            })
+            .catch(e => {
+                setError(String(e.message ?? e));
+                setSeriesMissingLoading(false);
+            });
     };
 
     const handleLoadTitle = () => {
@@ -611,6 +646,44 @@ const AdminApp: React.FC = () => {
                                 >
                                     New Issue
                                 </button>
+                                <button
+                                    className="btn btn-outline-secondary btn-sm ms-1"
+                                    onClick={loadSeriesMissing}
+                                    disabled={seriesMissingLoading || !issuesFilterSeriesId}
+                                >
+                                    {seriesMissingLoading ? 'Loading Missing…' : 'Load Missing Slots'}
+                                </button>
+                                {seriesMissing && issuesFilterSeriesId && (
+                                    <div className="mt-3 border rounded p-2 bg-light">
+                                        <div className="small mb-2">
+                                            <strong>Missing Slots:</strong> {seriesMissing.missingCount} of {seriesMissing.totalIssues}
+                                            {' '}(<strong>Owned:</strong> {seriesMissing.ownedSlots})
+                                        </div>
+                                        {seriesMissing.missingSlots.length === 0 ? (
+                                            <div className="small text-muted">No missing slots found.</div>
+                                        ) : (
+                                            <div className="d-flex flex-wrap gap-1">
+                                                {seriesMissing.missingSlots.slice(0, 100).map(item => (
+                                                    <button
+                                                        key={`missing-slot-${item.slot}`}
+                                                        className="btn btn-outline-primary btn-sm"
+                                                        onClick={() => {
+                                                            setError('');
+                                                            setView({
+                                                                mode: 'newIssue',
+                                                                seriesId: issuesFilterSeriesId,
+                                                                initialSort: String(item.slot),
+                                                                initialNumber: String(item.slot),
+                                                            });
+                                                        }}
+                                                    >
+                                                        Add #{item.slot}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         )}
 
@@ -1083,6 +1156,8 @@ const AdminApp: React.FC = () => {
                     {view.mode === 'newIssue' && (
                         <IssueCreator
                             seriesId={view.seriesId}
+                            initialNumber={view.initialNumber}
+                            initialSort={view.initialSort}
                             onCreated={(id) => {
                                 refreshAllEntityLists();
                                 setSelectedIssueId(id);

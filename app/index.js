@@ -110,6 +110,11 @@ app.get('/series/:id/grid', function (req, res) {
    callPhp(res, 'grabseriesgrid', [req.params.id]);
 });
 
+app.get('/series/:id/missing', function (req, res) {
+   console.log('GET SERIES MISSING SLOTS', req.params.id);
+   callPhp(res, 'grabseriesmissing', [req.params.id]);
+});
+
 app.post('/series', function (req, res) {
    console.log('CREATE SERIES', req.body);
    callPhp(res, 'createseries', [JSON.stringify(req.body)]);

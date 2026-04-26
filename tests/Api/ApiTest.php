@@ -374,6 +374,40 @@ class ApiTest extends ComicDBTestCase
         $this->assertSame('N', $result['issues'][2]['own']);
     }
 
+    public function testGrabSeriesMissingReturnsUnownedSlots(): void
+    {
+        $title  = json_decode(createTitle('Missing Slots Title'), true);
+        $series = json_decode(createSeries(json_encode([
+            'titleId' => $title['id'],
+            'name' => 'Missing Slots Series',
+            'publisher' => 'Grid Pub',
+            'totalIssues' => 6,
+        ])), true);
+
+        createIssue(json_encode([
+            'seriesId' => $series['id'],
+            'number' => '1A',
+            'sort' => 1,
+        ]));
+        createIssue(json_encode([
+            'seriesId' => $series['id'],
+            'number' => '3',
+        ]));
+        createIssue(json_encode([
+            'seriesId' => $series['id'],
+            'number' => '5',
+        ]));
+
+        $json = grabSeriesMissing($series['id']);
+        $result = json_decode($json, true);
+
+        $this->assertSame(6, $result['totalIssues']);
+        $this->assertSame(3, $result['ownedSlots']);
+        $this->assertSame(3, $result['missingCount']);
+        $slots = array_map(fn($row) => (int) $row['slot'], $result['missingSlots']);
+        $this->assertSame([2, 4, 6], $slots);
+    }
+
     public function testGrabIssuesListOrdersBySortThenFallbackNumber(): void
     {
         $title  = json_decode(createTitle('Issues Sort Parent'), true);
