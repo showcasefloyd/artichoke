@@ -725,6 +725,161 @@ function csvImportSqlValue($db, $field, $value)
     return "'$escaped'";
 }
 
+function csvImportEnsureLogTables($db)
+{
+    $runTableQuery = <<<EOT
+      CREATE TABLE IF NOT EXISTS import_runs (
+          run_id VARCHAR(64) NOT NULL,
+          mode VARCHAR(20) NOT NULL,
+          total_rows INT NOT NULL,
+          valid_rows INT NOT NULL,
+          error_rows INT NOT NULL,
+          warning_rows INT NOT NULL,
+          skipped_invalid_rows INT NOT NULL,
+          inserted_titles INT NOT NULL,
+          inserted_series INT NOT NULL,
+          updated_series INT NOT NULL,
+          inserted_issues INT NOT NULL,
+          updated_issues INT NOT NULL,
+          skipped_existing_issues INT NOT NULL,
+          created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          PRIMARY KEY (run_id),
+          KEY idx_import_runs_created_at (created_at)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+EOT;
+    if (! $db->query($runTableQuery)) {
+        die('There was an error running the query [' . $db->error . ']');
+    }
+
+    $skippedRowsTableQuery = <<<EOT
+      CREATE TABLE IF NOT EXISTS import_skipped_rows (
+          id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+          run_id VARCHAR(64) NOT NULL,
+          source_row_number INT NOT NULL,
+          error_text TEXT NOT NULL,
+          warning_text TEXT NULL,
+          raw_row LONGTEXT NULL,
+          normalized_row LONGTEXT NULL,
+          created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          PRIMARY KEY (id),
+          KEY idx_import_skipped_rows_run_id (run_id),
+          CONSTRAINT fk_import_skipped_rows_run_id FOREIGN KEY (run_id) REFERENCES import_runs(run_id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+EOT;
+    if (! $db->query($skippedRowsTableQuery)) {
+        if ((int) $db->errno !== 1826) {
+            die('There was an error running the query [' . $db->error . ']');
+        }
+        // Duplicate FK name from legacy DB state; retry without constraint to stay operational.
+        $fallbackQuery = <<<EOT
+          CREATE TABLE IF NOT EXISTS import_skipped_rows (
+              id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+              run_id VARCHAR(64) NOT NULL,
+              source_row_number INT NOT NULL,
+              error_text TEXT NOT NULL,
+              warning_text TEXT NULL,
+              raw_row LONGTEXT NULL,
+              normalized_row LONGTEXT NULL,
+              created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              PRIMARY KEY (id),
+              KEY idx_import_skipped_rows_run_id (run_id)
+          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+EOT;
+        if (! $db->query($fallbackQuery)) {
+            die('There was an error running the query [' . $db->error . ']');
+        }
+    }
+}
+
+function csvImportGenerateRunId()
+{
+    $random = bin2hex(random_bytes(6));
+    return 'import_' . date('Ymd_His') . '_' . $random;
+}
+
+function csvImportLogRunSummary($db, $runId, $summary)
+{
+    $mode = $db->real_escape_string($summary['mode']);
+    $query = <<<EOT
+      INSERT INTO import_runs (
+          run_id, mode, total_rows, valid_rows, error_rows, warning_rows, skipped_invalid_rows,
+          inserted_titles, inserted_series, updated_series, inserted_issues, updated_issues, skipped_existing_issues
+      ) VALUES (
+          '{$db->real_escape_string($runId)}',
+          '$mode',
+          {$summary['rowCount']},
+          {$summary['validRows']},
+          {$summary['errorRows']},
+          {$summary['warningRows']},
+          {$summary['skippedInvalidRows']},
+          {$summary['insertedTitles']},
+          {$summary['insertedSeries']},
+          {$summary['updatedSeries']},
+          {$summary['insertedIssues']},
+          {$summary['updatedIssues']},
+          {$summary['skippedExistingIssues']}
+      )
+EOT;
+    if (! $db->query($query)) {
+        die('There was an error running the query [' . $db->error . ']');
+    }
+}
+
+function csvImportLogSkippedRows($db, $runId, $rows)
+{
+    $logged = 0;
+    foreach ($rows as $rowState) {
+        if (!isset($rowState['errors']) || count($rowState['errors']) === 0) {
+            continue;
+        }
+        $errors = $db->real_escape_string(implode(' | ', $rowState['errors']));
+        $warnings = isset($rowState['warnings']) && count($rowState['warnings']) > 0 ? "'" . $db->real_escape_string(implode(' | ', $rowState['warnings'])) . "'" : "NULL";
+        $rawJson = isset($rowState['raw']) ? "'" . $db->real_escape_string(json_encode($rowState['raw'])) . "'" : "NULL";
+        $normalizedJson = isset($rowState['normalized']) ? "'" . $db->real_escape_string(json_encode($rowState['normalized'])) . "'" : "NULL";
+        $rowNumber = isset($rowState['rowNumber']) ? (int) $rowState['rowNumber'] : 0;
+        $query = <<<EOT
+          INSERT INTO import_skipped_rows (run_id, source_row_number, error_text, warning_text, raw_row, normalized_row)
+          VALUES ('{$db->real_escape_string($runId)}', $rowNumber, '$errors', $warnings, $rawJson, $normalizedJson)
+EOT;
+        if (! $db->query($query)) {
+            die('There was an error running the query [' . $db->error . ']');
+        }
+        $logged++;
+    }
+    return $logged;
+}
+
+function csvImportFetchSkippedRows($db, $runId, $limit)
+{
+    $runIdEscaped = $db->real_escape_string($runId);
+    $limit = max(1, min(2000, (int) $limit));
+    $query = <<<EOT
+      SELECT id, run_id, source_row_number, error_text, warning_text, raw_row, normalized_row, created_at
+        FROM import_skipped_rows
+       WHERE run_id = '$runIdEscaped'
+    ORDER BY source_row_number ASC, id ASC
+       LIMIT $limit
+EOT;
+    $result = $db->query($query);
+    if (! $result) {
+        die('There was an error running the query [' . $db->error . ']');
+    }
+    $rows = [];
+    while ($row = $result->fetch_assoc()) {
+        $rows[] = [
+            'id' => (int) $row['id'],
+            'runId' => $row['run_id'],
+            'rowNumber' => (int) $row['source_row_number'],
+            'errors' => $row['error_text'],
+            'warnings' => $row['warning_text'],
+            'raw' => $row['raw_row'] ? json_decode($row['raw_row'], true) : null,
+            'normalized' => $row['normalized_row'] ? json_decode($row['normalized_row'], true) : null,
+            'createdAt' => $row['created_at'],
+        ];
+    }
+    return $rows;
+}
+
 function csvImportCommit($dataJson)
 {
     $data = json_decode($dataJson, true);
@@ -753,16 +908,24 @@ function csvImportCommit($dataJson)
         'skippedInvalidRows' => 0,
     ];
 
+    $db = ComicDB_DB::db();
+    csvImportEnsureLogTables($db);
+    $runId = csvImportGenerateRunId();
+
     if ($mode === 'dry-run') {
+        $summary['skippedInvalidRows'] = $summary['errorRows'];
+        csvImportLogRunSummary($db, $runId, $summary);
+        $loggedSkippedRows = csvImportLogSkippedRows($db, $runId, $analysis['allRows']);
         return json_encode([
+            'runId' => $runId,
             'summary' => $summary,
             'warnings' => $analysis['warnings'],
             'rowFindings' => $analysis['rowFindings'],
+            'loggedSkippedRows' => $loggedSkippedRows,
             'message' => 'Dry run only: no database writes performed.',
         ]);
     }
 
-    $db = ComicDB_DB::db();
     $storyTitleSupported = csvImportIssueStoryTitleColumnExists($db);
     $mappedFieldSet = [];
     foreach ($analysis['resolvedMapping'] as $mapping) {
@@ -884,16 +1047,33 @@ function csvImportCommit($dataJson)
         $summary['updatedIssues']++;
     }
 
+    csvImportLogRunSummary($db, $runId, $summary);
+    $loggedSkippedRows = csvImportLogSkippedRows($db, $runId, $analysis['allRows']);
+
     return json_encode([
+        'runId' => $runId,
         'summary' => $summary,
         'warnings' => $analysis['warnings'],
         'rowFindings' => $analysis['rowFindings'],
+        'loggedSkippedRows' => $loggedSkippedRows,
     ]);
 }
 
 function commitCsvImport($dataJson)
 {
     return csvImportCommit($dataJson);
+}
+
+function grabCsvImportSkippedRows($runId, $limit = '500')
+{
+    $db = ComicDB_DB::db();
+    csvImportEnsureLogTables($db);
+    $rows = csvImportFetchSkippedRows($db, $runId, $limit);
+    return json_encode([
+        'runId' => $runId,
+        'rows' => $rows,
+        'count' => count($rows),
+    ]);
 }
 
 // Grab all Titles (used by GET /list)

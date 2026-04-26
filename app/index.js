@@ -199,6 +199,11 @@ app.post('/import/csv/commit', function (req, res) {
    callPhp(res, 'commitcsvimport', [JSON.stringify(req.body)]);
 });
 
+app.get('/import/csv/skipped/:runId', function (req, res) {
+   console.log('CSV IMPORT SKIPPED ROWS', req.params.runId, req.query);
+   callPhp(res, 'grabcsvimportskippedrows', [req.params.runId, String(req.query.limit || '500')]);
+});
+
 // Error-handling middleware — must have 4 params so Express treats it as error handler
 app.use(function (err, req, res, next) { // eslint-disable-line no-unused-vars
    console.error('Unhandled error:', err);

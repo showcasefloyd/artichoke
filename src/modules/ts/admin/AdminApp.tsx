@@ -108,6 +108,7 @@ type CsvImportColumnMapping = Record<string, string>;
 type CsvImportMode = 'upsert' | 'create-only' | 'dry-run';
 
 interface CsvImportCommitResult {
+    runId: string;
     summary: {
         mode: CsvImportMode;
         rowCount: number;
@@ -124,8 +125,24 @@ interface CsvImportCommitResult {
     };
     warnings: string[];
     rowFindings: CsvImportPreview['rowFindings'];
+    loggedSkippedRows: number;
     message?: string;
     error?: string;
+}
+
+interface CsvImportSkippedRowsResponse {
+    runId: string;
+    count: number;
+    rows: Array<{
+        id: number;
+        runId: string;
+        rowNumber: number;
+        errors: string;
+        warnings: string | null;
+        raw: Record<string, string> | null;
+        normalized: Record<string, string | number | null> | null;
+        createdAt: string;
+    }>;
 }
 
 function formatSeriesLabel(series: SeriesItem): string {
@@ -158,6 +175,8 @@ const AdminApp: React.FC = () => {
     const [importLoading, setImportLoading] = useState(false);
     const [importCommitLoading, setImportCommitLoading] = useState(false);
     const [importCommitResult, setImportCommitResult] = useState<CsvImportCommitResult | null>(null);
+    const [importLoggedSkippedRows, setImportLoggedSkippedRows] = useState<CsvImportSkippedRowsResponse | null>(null);
+    const [importSkippedRowsLoading, setImportSkippedRowsLoading] = useState(false);
     const [importError, setImportError] = useState('');
     const [error, setError] = useState<string>('');
 
@@ -279,6 +298,7 @@ const AdminApp: React.FC = () => {
         setImportError('');
         setImportPreview(null);
         setImportCommitResult(null);
+        setImportLoggedSkippedRows(null);
         try {
             const csvText = await importFile.text();
             const response = await fetch('/import/csv/preview', {
@@ -335,6 +355,7 @@ const AdminApp: React.FC = () => {
         setImportCommitLoading(true);
         setImportError('');
         setImportCommitResult(null);
+        setImportLoggedSkippedRows(null);
         try {
             const csvText = await importFile.text();
             const response = await fetch('/import/csv/commit', {
@@ -356,6 +377,7 @@ const AdminApp: React.FC = () => {
                 throw new Error(payload.error);
             }
             setImportCommitResult(payload);
+            await loadSkippedRowsFromLog(payload.runId);
             loadTitles();
             loadSeries(seriesFilterTitleId, setSeriesList);
             loadIssues(issuesFilterTitleId, issuesFilterSeriesId);
@@ -363,6 +385,22 @@ const AdminApp: React.FC = () => {
             setImportError(String((e as Error).message ?? e));
         } finally {
             setImportCommitLoading(false);
+        }
+    };
+
+    const loadSkippedRowsFromLog = async (runId: string) => {
+        setImportSkippedRowsLoading(true);
+        try {
+            const response = await fetch(`/import/csv/skipped/${encodeURIComponent(runId)}?limit=500`);
+            if (!response.ok) {
+                throw new Error(`Failed to load skipped rows (${response.status})`);
+            }
+            const payload: CsvImportSkippedRowsResponse = await response.json();
+            setImportLoggedSkippedRows(payload);
+        } catch (e) {
+            setImportError(String((e as Error).message ?? e));
+        } finally {
+            setImportSkippedRowsLoading(false);
         }
     };
 
@@ -608,10 +646,46 @@ const AdminApp: React.FC = () => {
                             {importError && <div className="alert alert-danger">{importError}</div>}
                             {importCommitResult && (
                                 <div className="alert alert-success">
+                                    <div><strong>Run ID:</strong> <code>{importCommitResult.runId}</code></div>
                                     <div><strong>Import mode:</strong> {importCommitResult.summary.mode}</div>
                                     <div><strong>Rows:</strong> {importCommitResult.summary.rowCount} total, {importCommitResult.summary.validRows} valid, {importCommitResult.summary.errorRows} errors, {importCommitResult.summary.warningRows} warnings</div>
                                     <div><strong>Changes:</strong> {importCommitResult.summary.insertedTitles} titles inserted, {importCommitResult.summary.insertedSeries} series inserted, {importCommitResult.summary.updatedSeries} series updated, {importCommitResult.summary.insertedIssues} issues inserted, {importCommitResult.summary.updatedIssues} issues updated, {importCommitResult.summary.skippedExistingIssues} existing issues skipped, {importCommitResult.summary.skippedInvalidRows} invalid rows skipped</div>
+                                    <div><strong>Logged skipped rows:</strong> {importCommitResult.loggedSkippedRows}</div>
+                                    <button
+                                        className="btn btn-outline-success btn-sm mt-2"
+                                        onClick={() => loadSkippedRowsFromLog(importCommitResult.runId)}
+                                        disabled={importSkippedRowsLoading}
+                                    >
+                                        {importSkippedRowsLoading ? 'Loading skipped rows…' : 'Reload skipped rows from log'}
+                                    </button>
                                     {importCommitResult.message && <div><strong>Note:</strong> {importCommitResult.message}</div>}
+                                </div>
+                            )}
+                            {importLoggedSkippedRows && importLoggedSkippedRows.rows.length > 0 && (
+                                <div className="mt-3">
+                                    <h6>Skipped Rows Log ({importLoggedSkippedRows.count} rows)</h6>
+                                    <div className="table-responsive">
+                                        <table className="table table-sm table-bordered align-middle">
+                                            <thead>
+                                                <tr>
+                                                    <th>Row</th>
+                                                    <th>Errors</th>
+                                                    <th>Warnings</th>
+                                                    <th>Normalized Snapshot</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {importLoggedSkippedRows.rows.map(row => (
+                                                    <tr key={`logged-skip-${row.id}`}>
+                                                        <td>{row.rowNumber}</td>
+                                                        <td>{row.errors}</td>
+                                                        <td>{row.warnings ?? <span className="text-muted">None</span>}</td>
+                                                        <td><code>{JSON.stringify(row.normalized ?? {})}</code></td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             )}
                             {importPreview && (

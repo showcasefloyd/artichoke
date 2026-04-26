@@ -96,6 +96,39 @@ CREATE TABLE IF NOT EXISTS series_type (
   UNIQUE KEY uq_series_type_name (name)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE IF NOT EXISTS import_runs (
+  run_id VARCHAR(64) NOT NULL,
+  mode VARCHAR(20) NOT NULL,
+  total_rows INT NOT NULL,
+  valid_rows INT NOT NULL,
+  error_rows INT NOT NULL,
+  warning_rows INT NOT NULL,
+  skipped_invalid_rows INT NOT NULL,
+  inserted_titles INT NOT NULL,
+  inserted_series INT NOT NULL,
+  updated_series INT NOT NULL,
+  inserted_issues INT NOT NULL,
+  updated_issues INT NOT NULL,
+  skipped_existing_issues INT NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (run_id),
+  KEY idx_import_runs_created_at (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS import_skipped_rows (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  run_id VARCHAR(64) NOT NULL,
+  source_row_number INT NOT NULL,
+  error_text TEXT NOT NULL,
+  warning_text TEXT NULL,
+  raw_row LONGTEXT NULL,
+  normalized_row LONGTEXT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_import_skipped_rows_run_id (run_id),
+  CONSTRAINT fk_import_skipped_rows_run_id FOREIGN KEY (run_id) REFERENCES import_runs(run_id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 INSERT IGNORE INTO publisher (name) VALUES
   ('Marvel'),
   ('DC'),
