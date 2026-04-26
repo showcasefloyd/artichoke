@@ -61,13 +61,14 @@ describe('IssueEditor', () => {
         const onSaved = jest.fn();
         render(<IssueEditor issueId={5} onSaved={onSaved} onDeleted={jest.fn()} />);
 
-        const coverDateInput = await screen.findByLabelText('Cover Date (Month / Year)') as HTMLInputElement;
+        const coverMonthSelect = await screen.findByLabelText('Cover Date (Month / Year)') as HTMLSelectElement;
+        const coverYearSelect = screen.getByLabelText('Cover Year') as HTMLSelectElement;
         const purchaseDateInput = screen.getByLabelText('Purchase Date (Day / Month / Year)') as HTMLInputElement;
-        expect(coverDateInput.value).toBe('2026-04');
+        expect(coverMonthSelect.value).toBe('04');
+        expect(coverYearSelect.value).toBe('2026');
         expect(purchaseDateInput.value).toBe('2026-04-25');
 
-        await userEvent.clear(coverDateInput);
-        await userEvent.type(coverDateInput, '2026-05');
+        await userEvent.selectOptions(coverMonthSelect, '05');
         await userEvent.clear(purchaseDateInput);
         await userEvent.type(purchaseDateInput, '2026-05-13');
         await userEvent.click(screen.getByRole('button', { name: /save/i }));

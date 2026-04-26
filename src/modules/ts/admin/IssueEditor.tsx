@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
+    currentMonthInput,
     dateInputToTimestamp,
     monthInputToTimestamp,
     timestampToDateInput,
@@ -57,9 +58,28 @@ const IssueEditor: React.FC<Props> = ({ issueId, onSaved, onDeleted }) => {
         setData(prev => prev ? { ...prev, purchaseDate: timestamp ? String(timestamp) : '' } : prev);
     };
 
-    const setCoverDate = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const timestamp = monthInputToTimestamp(e.target.value);
-        setData(prev => prev ? { ...prev, coverDate: timestamp ? String(timestamp) : '' } : prev);
+    const setCoverMonth = (month: string) => {
+        setData(prev => {
+            if (!prev) {
+                return prev;
+            }
+            const current = timestampToMonthInput(prev.coverDate) || currentMonthInput();
+            const year = current.split('-')[0] ?? '';
+            const timestamp = monthInputToTimestamp(`${year}-${month}`);
+            return { ...prev, coverDate: timestamp ? String(timestamp) : '' };
+        });
+    };
+
+    const setCoverYear = (year: string) => {
+        setData(prev => {
+            if (!prev) {
+                return prev;
+            }
+            const current = timestampToMonthInput(prev.coverDate) || currentMonthInput();
+            const month = current.split('-')[1] ?? '';
+            const timestamp = monthInputToTimestamp(`${year}-${month}`);
+            return { ...prev, coverDate: timestamp ? String(timestamp) : '' };
+        });
     };
 
     const handleSave = (e: React.FormEvent) => {
@@ -84,6 +104,29 @@ const IssueEditor: React.FC<Props> = ({ issueId, onSaved, onDeleted }) => {
     };
 
     if (loading || !data) return <p>Loading&hellip;</p>;
+
+    const currentYear = new Date().getUTCFullYear();
+    const yearOptions: string[] = [];
+    for (let year = currentYear + 1; year >= 1900; year--) {
+        yearOptions.push(String(year));
+    }
+    const monthOptions = [
+        { value: '01', label: 'January' },
+        { value: '02', label: 'February' },
+        { value: '03', label: 'March' },
+        { value: '04', label: 'April' },
+        { value: '05', label: 'May' },
+        { value: '06', label: 'June' },
+        { value: '07', label: 'July' },
+        { value: '08', label: 'August' },
+        { value: '09', label: 'September' },
+        { value: '10', label: 'October' },
+        { value: '11', label: 'November' },
+        { value: '12', label: 'December' },
+    ];
+    const currentCoverMonth = timestampToMonthInput(data.coverDate) || currentMonthInput();
+    const currentCoverYear = currentCoverMonth.split('-')[0] ?? '';
+    const currentCoverMonthNumber = currentCoverMonth.split('-')[1] ?? '';
 
     const field = (label: string, key: keyof IssueData) => (
         <div className="mb-3" key={key}>
@@ -110,14 +153,33 @@ const IssueEditor: React.FC<Props> = ({ issueId, onSaved, onDeleted }) => {
                 {field('Print Run', 'printRun')}
                 {field('Quantity', 'quantity')}
                 <div className="mb-3">
-                    <label className="form-label" htmlFor="input-cover-date">Cover Date (Month / Year)</label>
-                    <input
-                        type="month"
-                        className="form-control"
-                        id="input-cover-date"
-                        value={timestampToMonthInput(data.coverDate)}
-                        onChange={setCoverDate}
-                    />
+                    <label className="form-label" htmlFor="input-cover-month-select">Cover Date (Month / Year)</label>
+                    <div className="row g-2">
+                        <div className="col-7">
+                            <select
+                                className="form-select"
+                                id="input-cover-month-select"
+                                value={currentCoverMonthNumber}
+                                onChange={e => setCoverMonth(e.target.value)}
+                            >
+                                {monthOptions.map(option => (
+                                    <option key={option.value} value={option.value}>{option.label}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="col-5">
+                            <select
+                                className="form-select"
+                                aria-label="Cover Year"
+                                value={currentCoverYear}
+                                onChange={e => setCoverYear(e.target.value)}
+                            >
+                                {yearOptions.map(year => (
+                                    <option key={year} value={year}>{year}</option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
                     <small className="text-muted">Display format: {toMonthYearLabel(data.coverDate)}</small>
                 </div>
                 {field('Location', 'location')}
