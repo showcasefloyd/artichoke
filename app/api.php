@@ -11,9 +11,10 @@ include_once "ComicDB/SeriesTypes.php";
 function csvImportCanonicalFields()
 {
     return [
-        ['key' => 'titleName', 'label' => 'Title Name', 'required' => true],
+        ['key' => 'titleName', 'label' => 'Title Name (Franchise)'],
         ['key' => 'seriesName', 'label' => 'Series Name', 'required' => true],
         ['key' => 'issueNumber', 'label' => 'Issue Number', 'required' => true],
+        ['key' => 'storyTitle', 'label' => 'Story Title'],
         ['key' => 'publisher', 'label' => 'Publisher'],
         ['key' => 'volume', 'label' => 'Volume'],
         ['key' => 'startYear', 'label' => 'Start Year'],
@@ -59,7 +60,8 @@ function guessCsvImportField($header)
     $exactMap = [
         'titlename' => 'titleName',
         'title_name' => 'titleName',
-        'full_title' => 'titleName',
+        'full_title' => 'storyTitle',
+        'story_title' => 'storyTitle',
         'seriesname' => 'seriesName',
         'series_name' => 'seriesName',
         'issuenumber' => 'issueNumber',
@@ -99,6 +101,7 @@ function guessCsvImportField($header)
     $aliasMap = [
         'title' => 'titleName',
         'comic_title' => 'titleName',
+        'story' => 'storyTitle',
         'series' => 'seriesName',
         'run' => 'seriesName',
         'issue' => 'issueNumber',
@@ -129,6 +132,21 @@ function guessCsvImportField($header)
     }
 
     return ['field' => null, 'confidence' => 'none'];
+}
+
+function csvImportDeriveTitleNameFromSeriesName($seriesName)
+{
+    $seriesName = trim((string) $seriesName);
+    if ($seriesName === '') {
+        return null;
+    }
+
+    $derived = preg_replace('/\s*[,(\-]?\s*vol(?:ume)?\.?\s*\d+[a-z]?\s*\)?\s*$/i', '', $seriesName);
+    $derived = trim((string) $derived);
+    if ($derived === '') {
+        return $seriesName;
+    }
+    return $derived;
 }
 
 function csvImportParseInteger($value)
@@ -397,6 +415,18 @@ function previewCsvImport($dataJson)
             }
         }
 
+        if (isset($fieldToColumnIndex['titleName'])) {
+            $normalized['titleName'] = trim((string) ($row[$fieldToColumnIndex['titleName']] ?? ''));
+        }
+
+        if (isset($fieldToColumnIndex['seriesName']) && (!isset($normalized['titleName']) || $normalized['titleName'] === '')) {
+            $derivedTitleName = csvImportDeriveTitleNameFromSeriesName($row[$fieldToColumnIndex['seriesName']] ?? '');
+            if ($derivedTitleName !== null && $derivedTitleName !== '') {
+                $normalized['titleName'] = $derivedTitleName;
+                $rowWarnings[] = "titleName derived from seriesName ('$derivedTitleName').";
+            }
+        }
+
         foreach (['volume', 'startYear', 'quantity'] as $integerField) {
             if (!isset($fieldToColumnIndex[$integerField])) {
                 continue;
@@ -438,7 +468,7 @@ function previewCsvImport($dataJson)
             }
         }
 
-        foreach (['publisher', 'seriesType', 'printRun', 'condition', 'location', 'guide', 'comments'] as $stringField) {
+        foreach (['storyTitle', 'publisher', 'seriesType', 'printRun', 'condition', 'location', 'guide', 'comments'] as $stringField) {
             if (!isset($fieldToColumnIndex[$stringField])) {
                 continue;
             }
