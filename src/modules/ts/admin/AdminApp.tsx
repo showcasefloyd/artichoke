@@ -75,8 +75,26 @@ interface CsvImportPreview {
         warningRows: number;
         sampledFindingLimit: number;
         sampledFindings: number;
+        sampledErrorFindings: number;
+        sampledWarningFindings: number;
+        sampledErrorFindingLimit: number;
+        sampledWarningFindingLimit: number;
     };
     rowFindings: Array<{
+        rowNumber: number;
+        errors: string[];
+        warnings: string[];
+        normalized: Record<string, string | number | null>;
+        raw: Record<string, string>;
+    }>;
+    errorFindings: Array<{
+        rowNumber: number;
+        errors: string[];
+        warnings: string[];
+        normalized: Record<string, string | number | null>;
+        raw: Record<string, string>;
+    }>;
+    warningFindings: Array<{
         rowNumber: number;
         errors: string[];
         warnings: string[];
@@ -725,26 +743,51 @@ const AdminApp: React.FC = () => {
                                             </table>
                                         </div>
                                     </div>
-                                    {importPreview.rowFindings.length > 0 && (
+                                    {importPreview.errorFindings.length > 0 && (
                                         <div className="mt-3">
-                                            <h6>Validation Findings (showing {importPreview.validation.sampledFindings} of max {importPreview.validation.sampledFindingLimit})</h6>
+                                            <h6>Error Findings (showing {importPreview.validation.sampledErrorFindings} of max {importPreview.validation.sampledErrorFindingLimit})</h6>
                                             <div className="table-responsive">
                                                 <table className="table table-sm table-bordered align-middle">
                                                     <thead>
                                                         <tr>
                                                             <th>Row</th>
                                                             <th>Errors</th>
-                                                            <th>Warnings</th>
                                                             <th>Normalized Snapshot</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
-                                                        {importPreview.rowFindings.map(finding => (
+                                                        {importPreview.errorFindings.map(finding => (
                                                             <tr key={`finding-${finding.rowNumber}`}>
                                                                 <td>{finding.rowNumber}</td>
                                                                 <td>
                                                                     {finding.errors.length === 0 ? <span className="text-muted">None</span> : finding.errors.join(' | ')}
                                                                 </td>
+                                                                <td>
+                                                                    <code>{JSON.stringify(finding.normalized)}</code>
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    )}
+                                    {importPreview.warningFindings.length > 0 && (
+                                        <div className="mt-3">
+                                            <h6>Warning Findings (showing {importPreview.validation.sampledWarningFindings} of max {importPreview.validation.sampledWarningFindingLimit})</h6>
+                                            <div className="table-responsive">
+                                                <table className="table table-sm table-bordered align-middle">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Row</th>
+                                                            <th>Warnings</th>
+                                                            <th>Normalized Snapshot</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {importPreview.warningFindings.map(finding => (
+                                                            <tr key={`warning-${finding.rowNumber}`}>
+                                                                <td>{finding.rowNumber}</td>
                                                                 <td>
                                                                     {finding.warnings.length === 0 ? <span className="text-muted">None</span> : finding.warnings.join(' | ')}
                                                                 </td>

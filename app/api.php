@@ -391,8 +391,12 @@ function csvImportBuildPreviewPayload($data, $includeRows = false)
     $errorRows = 0;
     $warningRows = 0;
     $rowFindings = [];
+    $errorFindings = [];
+    $warningFindings = [];
     $allRows = [];
     $maxFindings = 100;
+    $maxErrorFindings = 1000;
+    $maxWarningFindings = 100;
 
     foreach ($dataRows as $rowIndex => $row) {
         $rowErrors = [];
@@ -492,11 +496,27 @@ function csvImportBuildPreviewPayload($data, $includeRows = false)
             $validRows++;
         }
 
+        if (count($rowErrors) > 0 && count($errorFindings) < $maxErrorFindings) {
+            $errorFindings[] = $rowState;
+        } elseif (count($rowWarnings) > 0 && count($warningFindings) < $maxWarningFindings) {
+            $warningFindings[] = $rowState;
+        }
         if ((count($rowErrors) > 0 || count($rowWarnings) > 0) && count($rowFindings) < $maxFindings) {
-            $rowFindings[] = $rowState;
+            if (count($rowErrors) > 0) {
+                $rowFindings[] = $rowState;
+            }
         }
         if ($includeRows) {
             $allRows[] = $rowState;
+        }
+    }
+
+    if (count($rowFindings) < $maxFindings) {
+        foreach ($warningFindings as $warningRowState) {
+            if (count($rowFindings) >= $maxFindings) {
+                break;
+            }
+            $rowFindings[] = $warningRowState;
         }
     }
 
@@ -514,8 +534,14 @@ function csvImportBuildPreviewPayload($data, $includeRows = false)
             'warningRows' => $warningRows,
             'sampledFindingLimit' => $maxFindings,
             'sampledFindings' => count($rowFindings),
+            'sampledErrorFindings' => count($errorFindings),
+            'sampledWarningFindings' => count($warningFindings),
+            'sampledErrorFindingLimit' => $maxErrorFindings,
+            'sampledWarningFindingLimit' => $maxWarningFindings,
         ],
         'rowFindings' => $rowFindings,
+        'errorFindings' => $errorFindings,
+        'warningFindings' => $warningFindings,
     ];
     if ($includeRows) {
         $payload['allRows'] = $allRows;
