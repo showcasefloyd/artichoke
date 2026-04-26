@@ -104,7 +104,8 @@ function guessCsvImportField($header)
         'issue' => 'issueNumber',
         'number' => 'issueNumber',
         'issue_no' => 'issueNumber',
-        'variant_description' => 'printRun',
+        'variant_description' => 'comments',
+        'varient_description' => 'comments',
         'series_volume' => 'volume',
         'year' => 'startYear',
         'series_year' => 'startYear',
@@ -189,6 +190,64 @@ function csvImportParseStatus($value)
         return ['value' => null, 'error' => "Unknown status '$raw'"];
     }
     return ['value' => $map[$normalized], 'error' => null];
+}
+
+function csvImportCanonicalFieldKeys()
+{
+    $keys = [];
+    foreach (csvImportCanonicalFields() as $field) {
+        $keys[$field['key']] = true;
+    }
+    return $keys;
+}
+
+function csvImportResolveMapping($headers, $mappingSuggestions, $mappingInput, &$warnings)
+{
+    $resolvedMapping = [];
+    $mappedFieldKeys = [];
+    $fieldKeys = csvImportCanonicalFieldKeys();
+
+    if (is_array($mappingInput)) {
+        foreach ($headers as $header) {
+            if (!array_key_exists($header, $mappingInput)) {
+                continue;
+            }
+            $field = trim((string) $mappingInput[$header]);
+            if ($field === '') {
+                continue;
+            }
+            if (!isset($fieldKeys[$field])) {
+                $warnings[] = "Unknown mapped field '$field' for column '$header'.";
+                continue;
+            }
+            if (isset($mappedFieldKeys[$field])) {
+                $warnings[] = "Field '$field' was mapped more than once. Keeping first mapped column.";
+                continue;
+            }
+            $mappedFieldKeys[$field] = true;
+            $resolvedMapping[] = [
+                'field' => $field,
+                'column' => $header,
+            ];
+        }
+    }
+
+    foreach ($mappingSuggestions as $suggestion) {
+        if (!isset($suggestion['suggestedField']) || $suggestion['suggestedField'] === null) {
+            continue;
+        }
+        $field = $suggestion['suggestedField'];
+        if (isset($mappedFieldKeys[$field])) {
+            continue;
+        }
+        $mappedFieldKeys[$field] = true;
+        $resolvedMapping[] = [
+            'field' => $field,
+            'column' => $suggestion['column'],
+        ];
+    }
+
+    return $resolvedMapping;
 }
 
 function previewCsvImport($dataJson)
@@ -286,22 +345,12 @@ function previewCsvImport($dataJson)
         $sampleRows[] = $sample;
     }
 
-    $resolvedMapping = [];
-    $mappedFieldKeys = [];
-    foreach ($mappingSuggestions as $suggestion) {
-        if (!isset($suggestion['suggestedField']) || $suggestion['suggestedField'] === null) {
-            continue;
-        }
-        $field = $suggestion['suggestedField'];
-        if (isset($mappedFieldKeys[$field])) {
-            continue;
-        }
-        $mappedFieldKeys[$field] = true;
-        $resolvedMapping[] = [
-            'field' => $field,
-            'column' => $suggestion['column'],
-        ];
-    }
+    $resolvedMapping = csvImportResolveMapping(
+        $headers,
+        $mappingSuggestions,
+        $data['mapping'] ?? null,
+        $warnings
+    );
 
     $fieldToColumnIndex = [];
     foreach ($resolvedMapping as $mapping) {

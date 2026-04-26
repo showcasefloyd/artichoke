@@ -86,6 +86,8 @@ interface CsvImportPreview {
     error?: string;
 }
 
+type CsvImportColumnMapping = Record<string, string>;
+
 function formatSeriesLabel(series: SeriesItem): string {
     const volumePart = series.volume ? ` (Vol ${series.volume})` : '';
     const yearPart = series.startYear ? ` ${series.startYear}` : '';
@@ -111,6 +113,7 @@ const AdminApp: React.FC = () => {
     const [importDelimiter, setImportDelimiter] = useState(',');
     const [importHasHeader, setImportHasHeader] = useState(true);
     const [importPreview, setImportPreview] = useState<CsvImportPreview | null>(null);
+    const [importColumnMapping, setImportColumnMapping] = useState<CsvImportColumnMapping>({});
     const [importLoading, setImportLoading] = useState(false);
     const [importError, setImportError] = useState('');
     const [error, setError] = useState<string>('');
@@ -241,6 +244,7 @@ const AdminApp: React.FC = () => {
                     csvText,
                     delimiter: importDelimiter,
                     hasHeader: importHasHeader,
+                    mapping: importColumnMapping,
                 }),
             });
             if (!response.ok) {
@@ -251,6 +255,23 @@ const AdminApp: React.FC = () => {
                 throw new Error(payload.error);
             }
             setImportPreview(payload);
+            let hasExistingMappings = false;
+            for (const columnName in importColumnMapping) {
+                if (Object.prototype.hasOwnProperty.call(importColumnMapping, columnName) && importColumnMapping[columnName] !== '') {
+                    hasExistingMappings = true;
+                    break;
+                }
+            }
+            if (!hasExistingMappings) {
+                const initialMapping: CsvImportColumnMapping = {};
+                payload.headers.forEach(header => {
+                    initialMapping[header] = '';
+                });
+                payload.resolvedMapping.forEach(mapping => {
+                    initialMapping[mapping.column] = mapping.field;
+                });
+                setImportColumnMapping(initialMapping);
+            }
         } catch (e) {
             setImportError(String((e as Error).message ?? e));
         } finally {
@@ -428,6 +449,7 @@ const AdminApp: React.FC = () => {
                                             const file = e.target.files?.[0] ?? null;
                                             setImportFile(file);
                                             setImportPreview(null);
+                                            setImportColumnMapping({});
                                             setImportError('');
                                         }}
                                     />
@@ -452,7 +474,11 @@ const AdminApp: React.FC = () => {
                                         className="form-check-input"
                                         type="checkbox"
                                         checked={importHasHeader}
-                                        onChange={e => setImportHasHeader(e.target.checked)}
+                                        onChange={e => {
+                                            setImportHasHeader(e.target.checked);
+                                            setImportPreview(null);
+                                            setImportColumnMapping({});
+                                        }}
                                     />
                                     <label className="form-check-label" htmlFor="import-has-header">
                                         First row contains headers
@@ -495,7 +521,7 @@ const AdminApp: React.FC = () => {
                                                 <thead>
                                                     <tr>
                                                         <th>CSV Column</th>
-                                                        <th>Suggested Field</th>
+                                                        <th>Mapped Field</th>
                                                         <th>Confidence</th>
                                                     </tr>
                                                 </thead>
@@ -503,13 +529,35 @@ const AdminApp: React.FC = () => {
                                                     {importPreview.mappingSuggestions.map((suggestion, index) => (
                                                         <tr key={`${suggestion.column}-${index}`}>
                                                             <td>{suggestion.column}</td>
-                                                            <td>{suggestion.suggestedField ?? <em>Unmapped</em>}</td>
+                                                            <td>
+                                                                <select
+                                                                    className="form-select form-select-sm"
+                                                                    value={importColumnMapping[suggestion.column] ?? ''}
+                                                                    onChange={e => {
+                                                                        const nextValue = e.target.value;
+                                                                        setImportColumnMapping(prev => ({
+                                                                            ...prev,
+                                                                            [suggestion.column]: nextValue,
+                                                                        }));
+                                                                    }}
+                                                                >
+                                                                    <option value="">-- unmapped --</option>
+                                                                    {importPreview.canonicalFields.map(field => (
+                                                                        <option key={field.key} value={field.key}>
+                                                                            {field.label} ({field.key})
+                                                                        </option>
+                                                                    ))}
+                                                                </select>
+                                                            </td>
                                                             <td><span className={confidenceClassName(suggestion.confidence)}>{suggestion.confidence}</span></td>
                                                         </tr>
                                                     ))}
                                                 </tbody>
                                             </table>
                                         </div>
+                                        <button className="btn btn-outline-primary btn-sm mt-2" onClick={runImportPreview} disabled={importLoading || !importFile}>
+                                            Re-run Validation with Mapping
+                                        </button>
                                     </div>
                                     {importPreview.resolvedMapping.length > 0 && (
                                         <div className="mb-3">
