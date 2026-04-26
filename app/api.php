@@ -880,6 +880,43 @@ EOT;
     return $rows;
 }
 
+function csvImportFetchRuns($db, $limit)
+{
+    $limit = max(1, min(500, (int) $limit));
+    $query = <<<EOT
+      SELECT run_id, mode, total_rows, valid_rows, error_rows, warning_rows, skipped_invalid_rows,
+             inserted_titles, inserted_series, updated_series, inserted_issues, updated_issues, skipped_existing_issues,
+             created_at
+        FROM import_runs
+    ORDER BY created_at DESC
+       LIMIT $limit
+EOT;
+    $result = $db->query($query);
+    if (! $result) {
+        die('There was an error running the query [' . $db->error . ']');
+    }
+    $runs = [];
+    while ($row = $result->fetch_assoc()) {
+        $runs[] = [
+            'runId' => $row['run_id'],
+            'mode' => $row['mode'],
+            'totalRows' => (int) $row['total_rows'],
+            'validRows' => (int) $row['valid_rows'],
+            'errorRows' => (int) $row['error_rows'],
+            'warningRows' => (int) $row['warning_rows'],
+            'skippedInvalidRows' => (int) $row['skipped_invalid_rows'],
+            'insertedTitles' => (int) $row['inserted_titles'],
+            'insertedSeries' => (int) $row['inserted_series'],
+            'updatedSeries' => (int) $row['updated_series'],
+            'insertedIssues' => (int) $row['inserted_issues'],
+            'updatedIssues' => (int) $row['updated_issues'],
+            'skippedExistingIssues' => (int) $row['skipped_existing_issues'],
+            'createdAt' => $row['created_at'],
+        ];
+    }
+    return $runs;
+}
+
 function csvImportCommit($dataJson)
 {
     $data = json_decode($dataJson, true);
@@ -1064,6 +1101,17 @@ function commitCsvImport($dataJson)
     return csvImportCommit($dataJson);
 }
 
+function grabCsvImportRuns($limit = '50')
+{
+    $db = ComicDB_DB::db();
+    csvImportEnsureLogTables($db);
+    $runs = csvImportFetchRuns($db, $limit);
+    return json_encode([
+        'runs' => $runs,
+        'count' => count($runs),
+    ]);
+}
+
 function grabCsvImportSkippedRows($runId, $limit = '500')
 {
     $db = ComicDB_DB::db();
@@ -1074,6 +1122,30 @@ function grabCsvImportSkippedRows($runId, $limit = '500')
         'rows' => $rows,
         'count' => count($rows),
     ]);
+}
+
+function grabCsvImportSkippedRowsCsv($runId, $limit = '2000')
+{
+    $db = ComicDB_DB::db();
+    csvImportEnsureLogTables($db);
+    $rows = csvImportFetchSkippedRows($db, $runId, $limit);
+    $stream = fopen('php://temp', 'r+');
+    fputcsv($stream, ['run_id', 'row_number', 'errors', 'warnings', 'raw_json', 'normalized_json', 'created_at']);
+    foreach ($rows as $row) {
+        fputcsv($stream, [
+            $row['runId'],
+            $row['rowNumber'],
+            $row['errors'],
+            $row['warnings'] ?? '',
+            json_encode($row['raw']),
+            json_encode($row['normalized']),
+            $row['createdAt'],
+        ]);
+    }
+    rewind($stream);
+    $csv = stream_get_contents($stream);
+    fclose($stream);
+    return $csv;
 }
 
 // Grab all Titles (used by GET /list)
@@ -1340,6 +1412,7 @@ function applyIssueData(ComicDB_Issue $issue, array $data)
     $fieldMap = [
         'seriesId' => 'seriesId',
         'number' => 'number',
+        'storyTitle' => 'storyTitle',
         'sort' => 'sort',
         'printRun' => 'printRun',
         'quantity' => 'quantity',
@@ -1472,6 +1545,7 @@ function grabIssueRaw($id)
         'guide'         => $issue->guide(),
         'issueValue'    => $issue->issueValue(),
         'comments'      => $issue->comments(),
+        'storyTitle'    => $issue->storyTitle(),
     ]);
 }
 
@@ -1787,6 +1861,7 @@ function grabIssue($id)
     $issueArray['issuevalue']      = $issue->issueValue();
     $issueArray['priceguide']      = htmlspecialchars($issue->guide() ?? '');
     $issueArray['comments']        = htmlspecialchars($issue->comments() ?? '');
+    $issueArray['storytitle']      = htmlspecialchars($issue->storyTitle() ?? '');
     //$issueArray['image'] = "";
 
     $status = $issue->status();

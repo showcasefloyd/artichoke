@@ -48,6 +48,7 @@ CREATE TABLE IF NOT EXISTS issues (
   guide VARCHAR(255) NULL,
   issue_value DECIMAL(10,2) NULL,
   comments TEXT NULL,
+  story_title VARCHAR(255) NULL,
   PRIMARY KEY (id),
   KEY idx_issues_series (series),
   KEY idx_issues_number (number),
@@ -162,7 +163,7 @@ INSERT IGNORE INTO series (id, title, name, volume, start_year, publisher, type,
 
 INSERT IGNORE INTO issues (
   id, series, number, sort, printrun, quantity, cover_date, location, type, status,
-  bkcondition, cover_price, purchase_price, purchase_date, guide_value, guide, issue_value, comments
+  bkcondition, cover_price, purchase_price, purchase_date, guide_value, guide, issue_value, comments, story_title
 ) VALUES
   (1, 1, '1', 1, 'First Printing', 1, '2024-01-01', 'Box 1', 'Regular', 0,
-   'Near Mint (NM)', 3.99, 3.99, '2024-01-15', 5.00, 'Overstreet', 5.00, 'Bootstrap sample issue');
+   'Near Mint (NM)', 3.99, 3.99, '2024-01-15', 5.00, 'Overstreet', 5.00, 'Bootstrap sample issue', 'Sample story');

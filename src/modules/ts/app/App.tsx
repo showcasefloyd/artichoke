@@ -66,6 +66,7 @@ export interface IssueListItem {
 
 export interface IssueDetail {
     number: string;
+    storytitle: string;
     printrun: string;
     coverdate: string;
     type: string;

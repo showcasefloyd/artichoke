@@ -118,6 +118,27 @@ class IssueTest extends ComicDBTestCase
         $this->assertSame('NM', $loaded->condition(), 'Condition should survive an update+restore cycle');
     }
 
+    public function testStoryTitlePersistsThroughInsertAndUpdate(): void
+    {
+        $issue = new \ComicDB_Issue();
+        $issue->seriesId($this->seriesId);
+        $issue->number('77');
+        $issue->storyTitle('Origin Story');
+        $issue->save();
+        $id = $issue->id();
+
+        $loaded = new \ComicDB_Issue($id);
+        $loaded->restore();
+        $this->assertSame('Origin Story', $loaded->storyTitle());
+
+        $loaded->storyTitle('Retconned Story');
+        $loaded->save();
+
+        $reloaded = new \ComicDB_Issue($id);
+        $reloaded->restore();
+        $this->assertSame('Retconned Story', $reloaded->storyTitle());
+    }
+
     // ------------------------------------------------------------------ delete
 
     public function testDeleteRemovesIssue(): void

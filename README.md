@@ -114,6 +114,20 @@ The stack uses **webpack 5** with a React + TypeScript frontend. Source files li
 
 `nodemon` watches `app/index.js` and restarts the Express server on changes automatically.
 
+## CSV Import Workflow (Admin)
+
+Use `/admin` -> **Import** to load CSV data into Artichoke.
+
+1. Upload a CSV file and run **Preview Mapping**
+2. Adjust column mappings if needed and re-run validation
+3. Choose an import mode:
+   - `dry-run`: validate and log skipped rows only
+   - `create-only`: insert only missing records, skip existing issues
+   - `upsert`: insert missing records and update matched issues
+4. Click **Commit Import**
+
+Each run is persisted with a `runId` in `import_runs`. Invalid rows are stored in `import_skipped_rows` and can be reloaded/exported from the Import panel for cleanup.
+
 ## Requirements
 1. A user can browse all titles, series and issues in a collection
 2. A user can see meta data about the any issue

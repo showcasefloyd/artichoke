@@ -16,6 +16,7 @@ interface Props {
 
 const IssueCreator: React.FC<Props> = ({ seriesId, onCreated, onCancel }) => {
     const [number, setNumber] = useState('');
+    const [storyTitle, setStoryTitle] = useState('');
     const [purchaseDate, setPurchaseDate] = useState(todayDateInput());
     const [coverMonth, setCoverMonth] = useState(currentMonthInput());
     const [error, setError] = useState('');
@@ -31,12 +32,13 @@ const IssueCreator: React.FC<Props> = ({ seriesId, onCreated, onCancel }) => {
         fetch('/issue', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                seriesId,
-                number,
-                purchaseDate: purchaseTimestamp,
-                coverDate: coverTimestamp,
-            }),
+                body: JSON.stringify({
+                    seriesId,
+                    number,
+                    storyTitle,
+                    purchaseDate: purchaseTimestamp,
+                    coverDate: coverTimestamp,
+                }),
         })
             .then(res => res.json())
             .then(data => { setError(''); onCreated(data.id); });
@@ -59,6 +61,19 @@ const IssueCreator: React.FC<Props> = ({ seriesId, onCreated, onCancel }) => {
                         placeholder="e.g. 1"
                         onChange={e => setNumber(e.target.value)}
                         autoFocus
+                    />
+                </div>
+                <div className="mb-3">
+                    <label className="form-label" htmlFor="inputStoryTitle">
+                        Story Title
+                    </label>
+                    <input
+                        type="text"
+                        className="form-control"
+                        id="inputStoryTitle"
+                        value={storyTitle}
+                        placeholder="e.g. The Girl Who Hated Supergirl!"
+                        onChange={e => setStoryTitle(e.target.value)}
                     />
                 </div>
                 <div className="mb-3">

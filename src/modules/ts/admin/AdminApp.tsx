@@ -145,6 +145,28 @@ interface CsvImportSkippedRowsResponse {
     }>;
 }
 
+interface CsvImportRun {
+    runId: string;
+    mode: CsvImportMode;
+    totalRows: number;
+    validRows: number;
+    errorRows: number;
+    warningRows: number;
+    skippedInvalidRows: number;
+    insertedTitles: number;
+    insertedSeries: number;
+    updatedSeries: number;
+    insertedIssues: number;
+    updatedIssues: number;
+    skippedExistingIssues: number;
+    createdAt: string;
+}
+
+interface CsvImportRunsResponse {
+    count: number;
+    runs: CsvImportRun[];
+}
+
 function formatSeriesLabel(series: SeriesItem): string {
     const volumePart = series.volume ? ` (Vol ${series.volume})` : '';
     const yearPart = series.startYear ? ` ${series.startYear}` : '';
@@ -177,6 +199,8 @@ const AdminApp: React.FC = () => {
     const [importCommitResult, setImportCommitResult] = useState<CsvImportCommitResult | null>(null);
     const [importLoggedSkippedRows, setImportLoggedSkippedRows] = useState<CsvImportSkippedRowsResponse | null>(null);
     const [importSkippedRowsLoading, setImportSkippedRowsLoading] = useState(false);
+    const [importRunsLoading, setImportRunsLoading] = useState(false);
+    const [importRuns, setImportRuns] = useState<CsvImportRun[]>([]);
     const [importError, setImportError] = useState('');
     const [error, setError] = useState<string>('');
 
@@ -378,6 +402,7 @@ const AdminApp: React.FC = () => {
             }
             setImportCommitResult(payload);
             await loadSkippedRowsFromLog(payload.runId);
+            await loadImportRuns();
             loadTitles();
             loadSeries(seriesFilterTitleId, setSeriesList);
             loadIssues(issuesFilterTitleId, issuesFilterSeriesId);
@@ -401,6 +426,22 @@ const AdminApp: React.FC = () => {
             setImportError(String((e as Error).message ?? e));
         } finally {
             setImportSkippedRowsLoading(false);
+        }
+    };
+
+    const loadImportRuns = async () => {
+        setImportRunsLoading(true);
+        try {
+            const response = await fetch('/import/csv/runs?limit=50');
+            if (!response.ok) {
+                throw new Error(`Failed to load import history (${response.status})`);
+            }
+            const payload: CsvImportRunsResponse = await response.json();
+            setImportRuns(payload.runs ?? []);
+        } catch (e) {
+            setImportError(String((e as Error).message ?? e));
+        } finally {
+            setImportRunsLoading(false);
         }
     };
 
@@ -632,6 +673,13 @@ const AdminApp: React.FC = () => {
                                 >
                                     {importCommitLoading ? 'Committing…' : 'Commit Import'}
                                 </button>
+                                <button
+                                    className="btn btn-outline-secondary btn-sm mt-2 ms-2"
+                                    onClick={loadImportRuns}
+                                    disabled={importRunsLoading}
+                                >
+                                    {importRunsLoading ? 'Loading history…' : 'Load Import History'}
+                                </button>
                             </div>
                         )}
                     </div>
@@ -658,6 +706,12 @@ const AdminApp: React.FC = () => {
                                     >
                                         {importSkippedRowsLoading ? 'Loading skipped rows…' : 'Reload skipped rows from log'}
                                     </button>
+                                    <a
+                                        className="btn btn-outline-success btn-sm mt-2 ms-2"
+                                        href={`/import/csv/skipped/${encodeURIComponent(importCommitResult.runId)}/export?limit=2000`}
+                                    >
+                                        Export skipped rows CSV
+                                    </a>
                                     {importCommitResult.message && <div><strong>Note:</strong> {importCommitResult.message}</div>}
                                 </div>
                             )}
@@ -681,6 +735,53 @@ const AdminApp: React.FC = () => {
                                                         <td>{row.errors}</td>
                                                         <td>{row.warnings ?? <span className="text-muted">None</span>}</td>
                                                         <td><code>{JSON.stringify(row.normalized ?? {})}</code></td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            )}
+                            {importRuns.length > 0 && (
+                                <div className="mt-3">
+                                    <h6>Import History</h6>
+                                    <div className="table-responsive">
+                                        <table className="table table-sm table-bordered align-middle">
+                                            <thead>
+                                                <tr>
+                                                    <th>Run ID</th>
+                                                    <th>Created</th>
+                                                    <th>Mode</th>
+                                                    <th>Rows</th>
+                                                    <th>Issues</th>
+                                                    <th>Skipped Invalid</th>
+                                                    <th>Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {importRuns.map(run => (
+                                                    <tr key={run.runId}>
+                                                        <td><code>{run.runId}</code></td>
+                                                        <td>{run.createdAt}</td>
+                                                        <td>{run.mode}</td>
+                                                        <td>{run.totalRows} total / {run.errorRows} errors</td>
+                                                        <td>{run.insertedIssues} inserted / {run.updatedIssues} updated / {run.skippedExistingIssues} existing</td>
+                                                        <td>{run.skippedInvalidRows}</td>
+                                                        <td>
+                                                            <button
+                                                                className="btn btn-outline-primary btn-sm me-2"
+                                                                onClick={() => loadSkippedRowsFromLog(run.runId)}
+                                                                disabled={importSkippedRowsLoading}
+                                                            >
+                                                                Load Skipped
+                                                            </button>
+                                                            <a
+                                                                className="btn btn-outline-primary btn-sm"
+                                                                href={`/import/csv/skipped/${encodeURIComponent(run.runId)}/export?limit=2000`}
+                                                            >
+                                                                Export CSV
+                                                            </a>
+                                                        </td>
                                                     </tr>
                                                 ))}
                                             </tbody>

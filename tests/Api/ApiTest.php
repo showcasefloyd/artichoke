@@ -177,6 +177,61 @@ class ApiTest extends ComicDBTestCase
         $this->assertEquals($created['id'], $result['id']);
     }
 
+    public function testIssueRawIncludesStoryTitle(): void
+    {
+        $title  = json_decode(createTitle('Issue Story Title Parent'), true);
+        $series = json_decode(createSeries(json_encode([
+            'titleId'   => $title['id'],
+            'name'      => 'Issue Story Title Series',
+            'publisher' => 'Story Pub',
+        ])), true);
+
+        $created = json_decode(createIssue(json_encode([
+            'seriesId' => $series['id'],
+            'number' => '12',
+            'storyTitle' => 'The Last Story',
+        ])), true);
+
+        $raw = json_decode(grabIssueRaw($created['id']), true);
+        $this->assertSame('The Last Story', $raw['storyTitle']);
+    }
+
+    public function testCommitCsvImportDryRunLogsSkippedRows(): void
+    {
+        $csv = "Series,Issue,Full Title,Publisher\nAction Comics,,A Story,DC\nAction Comics,1,Another Story,DC\n";
+        $result = json_decode(commitCsvImport(json_encode([
+            'csvText' => $csv,
+            'delimiter' => ',',
+            'hasHeader' => true,
+            'mode' => 'dry-run',
+        ])), true);
+
+        $this->assertArrayHasKey('runId', $result);
+        $this->assertSame(2, $result['summary']['rowCount']);
+        $this->assertSame(1, $result['summary']['errorRows']);
+        $this->assertSame(1, $result['loggedSkippedRows']);
+
+        $skipped = json_decode(grabCsvImportSkippedRows($result['runId'], '10'), true);
+        $this->assertSame(1, $skipped['count']);
+        $this->assertStringContainsString('issueNumber', $skipped['rows'][0]['errors']);
+    }
+
+    public function testGrabCsvImportRunsReturnsRunHistory(): void
+    {
+        $csv = "Series,Issue,Full Title,Publisher\nAction Comics,,A Story,DC\n";
+        $result = json_decode(commitCsvImport(json_encode([
+            'csvText' => $csv,
+            'delimiter' => ',',
+            'hasHeader' => true,
+            'mode' => 'dry-run',
+        ])), true);
+
+        $history = json_decode(grabCsvImportRuns('5'), true);
+        $this->assertGreaterThan(0, $history['count']);
+        $runIds = array_map(fn($run) => $run['runId'], $history['runs']);
+        $this->assertContains($result['runId'], $runIds);
+    }
+
     public function testGrabSeriesGridReturnsOwnedAndMissingSlots(): void
     {
         $title  = json_decode(createTitle('Grid Parent Title'), true);

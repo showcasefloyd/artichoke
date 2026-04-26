@@ -204,6 +204,19 @@ app.get('/import/csv/skipped/:runId', function (req, res) {
    callPhp(res, 'grabcsvimportskippedrows', [req.params.runId, String(req.query.limit || '500')]);
 });
 
+app.get('/import/csv/runs', function (req, res) {
+   console.log('CSV IMPORT RUNS', req.query);
+   callPhp(res, 'grabcsvimportruns', [String(req.query.limit || '50')]);
+});
+
+app.get('/import/csv/skipped/:runId/export', function (req, res) {
+   console.log('CSV IMPORT SKIPPED ROWS EXPORT', req.params.runId, req.query);
+   const safeRunId = String(req.params.runId || 'import-run').replace(/[^a-zA-Z0-9_-]/g, '_');
+   res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+   res.setHeader('Content-Disposition', `attachment; filename="${safeRunId}-skipped-rows.csv"`);
+   callPhp(res, 'grabcsvimportskippedrowscsv', [req.params.runId, String(req.query.limit || '2000')]);
+});
+
 // Error-handling middleware — must have 4 params so Express treats it as error handler
 app.use(function (err, req, res, next) { // eslint-disable-line no-unused-vars
    console.error('Unhandled error:', err);

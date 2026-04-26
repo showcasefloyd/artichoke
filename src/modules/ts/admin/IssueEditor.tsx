@@ -12,6 +12,7 @@ interface IssueData {
     id: number;
     seriesId: number;
     number: string;
+    storyTitle: string;
     sort: string;
     printRun: string;
     quantity: string;
@@ -104,6 +105,7 @@ const IssueEditor: React.FC<Props> = ({ issueId, onSaved, onDeleted }) => {
             {success && <div className="alert alert-success">{success}</div>}
             <form onSubmit={handleSave}>
                 {field('Issue Number *', 'number')}
+                {field('Story Title', 'storyTitle')}
                 {field('Sort Order', 'sort')}
                 {field('Print Run', 'printRun')}
                 {field('Quantity', 'quantity')}

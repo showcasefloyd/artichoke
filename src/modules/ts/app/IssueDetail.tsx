@@ -7,6 +7,7 @@ interface Props {
 
 const rows: { label: string; key: keyof IssueDetailType }[] = [
     { label: 'Issue Number',     key: 'number' },
+    { label: 'Story Title',      key: 'storytitle' },
     { label: 'Print Run',        key: 'printrun' },
     { label: 'Cover Date',       key: 'coverdate' },
     { label: 'Issue Type',       key: 'type' },

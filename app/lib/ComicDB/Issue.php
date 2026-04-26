@@ -22,6 +22,7 @@ class ComicDB_Issue extends ComicDB_Object {
 	var $guide;
 	var $issueValue;
 	var $comments;
+	var $storyTitle;
 	var $series;
 	var $id;
 
@@ -176,7 +177,31 @@ class ComicDB_Issue extends ComicDB_Object {
 		return $this->comments;
 	}
 
+	function storyTitle($storyTitle=null) {
+		if (isset($storyTitle)) {
+			$this->storyTitle = $storyTitle;
+			$this->isDirty = 1;
+		}
+		return $this->storyTitle;
+	}
+
 	// public methods
+
+	function hasStoryTitleColumn() {
+		static $checked = false;
+		static $hasColumn = false;
+		if ($checked) {
+			return $hasColumn;
+		}
+		$db = ComicDB_DB::db();
+		$query = "SHOW COLUMNS FROM issues LIKE 'story_title'";
+		if(!$result = $db->query($query)){
+			die('There was an error running the query [' . $db->error . ']');
+		}
+		$hasColumn = $result->num_rows > 0;
+		$checked = true;
+		return $hasColumn;
+	}
 
 	function series() {
 		if ($this->series) {
@@ -196,10 +221,16 @@ class ComicDB_Issue extends ComicDB_Object {
 	function select() {
 		$id = $this->id();
 
+		$includeStoryTitle = $this->hasStoryTitleColumn();
 		$query = "SELECT id, series, number, sort, printrun, quantity,\n"
 			. "       UNIX_TIMESTAMP(cover_date), location, type, status, bkcondition,\n"
-			. "       cover_price, purchase_price, UNIX_TIMESTAMP(purchase_date),\n"
-			. "       guide_value, guide, issue_value, comments\n"
+			. "       cover_price, purchase_price, UNIX_TIMESTAMP(purchase_date),\n";
+		if ($includeStoryTitle) {
+			$query .= "       guide_value, guide, issue_value, comments, story_title\n";
+		} else {
+			$query .= "       guide_value, guide, issue_value, comments\n";
+		}
+		$query .= ""
 			. "  FROM issues\n"
 			. " WHERE id=$id";
 
@@ -229,6 +260,11 @@ class ComicDB_Issue extends ComicDB_Object {
 		$this->guide($row[15]);
 		$this->issueValue($row[16]);
 		$this->comments($row[17]);
+		if ($includeStoryTitle) {
+			$this->storyTitle($row[18]);
+		} else {
+			$this->storyTitle(null);
+		}
 
 		return;
 	}
@@ -316,6 +352,11 @@ class ComicDB_Issue extends ComicDB_Object {
 		$comments = $this->comments();
 		if ($comments) {
 			$data['comments'] = "'$comments'";
+		}
+
+		$storyTitle = $this->storyTitle();
+		if ($storyTitle && $this->hasStoryTitleColumn()) {
+			$data['story_title'] = "'$storyTitle'";
 		}
 
 		// build query
@@ -473,6 +514,15 @@ class ComicDB_Issue extends ComicDB_Object {
 			$data['comments'] = "'$comments'";
 		} else {
 			$data['comments'] = "NULL";
+		}
+
+		$storyTitle = $this->storyTitle();
+		if ($this->hasStoryTitleColumn()) {
+			if ($storyTitle) {
+				$data['story_title'] = "'$storyTitle'";
+			} else {
+				$data['story_title'] = "NULL";
+			}
 		}
 
 		// build query
