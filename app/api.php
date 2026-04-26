@@ -130,6 +130,67 @@ function guessCsvImportField($header)
     return ['field' => null, 'confidence' => 'none'];
 }
 
+function csvImportParseInteger($value)
+{
+    $raw = trim((string) $value);
+    if ($raw === '') {
+        return ['value' => null, 'error' => null];
+    }
+    if (!preg_match('/^-?\d+$/', $raw)) {
+        return ['value' => null, 'error' => 'Expected integer'];
+    }
+    return ['value' => (int) $raw, 'error' => null];
+}
+
+function csvImportParseDecimal($value)
+{
+    $raw = trim((string) $value);
+    if ($raw === '') {
+        return ['value' => null, 'error' => null];
+    }
+    $normalized = str_replace([',', '$'], ['.', ''], $raw);
+    if (!is_numeric($normalized)) {
+        return ['value' => null, 'error' => 'Expected decimal number'];
+    }
+    return ['value' => number_format((float) $normalized, 2, '.', ''), 'error' => null];
+}
+
+function csvImportParseDate($value)
+{
+    $raw = trim((string) $value);
+    if ($raw === '') {
+        return ['value' => null, 'error' => null];
+    }
+    $timestamp = strtotime($raw);
+    if ($timestamp === false) {
+        return ['value' => null, 'error' => 'Expected recognizable date'];
+    }
+    return ['value' => date('Y-m-d', $timestamp), 'error' => null];
+}
+
+function csvImportParseStatus($value)
+{
+    $raw = trim((string) $value);
+    if ($raw === '') {
+        return ['value' => null, 'error' => null];
+    }
+    $normalized = normalizeCsvImportKey($raw);
+    $map = [
+        '0' => 0,
+        '1' => 1,
+        '2' => 2,
+        'collected' => 0,
+        'for_sale' => 1,
+        'forsale' => 1,
+        'wish_list' => 2,
+        'wishlist' => 2,
+    ];
+    if (!isset($map[$normalized])) {
+        return ['value' => null, 'error' => "Unknown status '$raw'"];
+    }
+    return ['value' => $map[$normalized], 'error' => null];
+}
+
 function previewCsvImport($dataJson)
 {
     $data = json_decode($dataJson, true);
@@ -225,13 +286,152 @@ function previewCsvImport($dataJson)
         $sampleRows[] = $sample;
     }
 
+    $resolvedMapping = [];
+    $mappedFieldKeys = [];
+    foreach ($mappingSuggestions as $suggestion) {
+        if (!isset($suggestion['suggestedField']) || $suggestion['suggestedField'] === null) {
+            continue;
+        }
+        $field = $suggestion['suggestedField'];
+        if (isset($mappedFieldKeys[$field])) {
+            continue;
+        }
+        $mappedFieldKeys[$field] = true;
+        $resolvedMapping[] = [
+            'field' => $field,
+            'column' => $suggestion['column'],
+        ];
+    }
+
+    $fieldToColumnIndex = [];
+    foreach ($resolvedMapping as $mapping) {
+        $columnIndex = array_search($mapping['column'], $headers, true);
+        if ($columnIndex !== false) {
+            $fieldToColumnIndex[$mapping['field']] = $columnIndex;
+        }
+    }
+
+    $requiredFieldKeys = [];
+    foreach (csvImportCanonicalFields() as $field) {
+        if (!empty($field['required'])) {
+            $requiredFieldKeys[] = $field['key'];
+            if (!isset($fieldToColumnIndex[$field['key']])) {
+                $warnings[] = "Required field '{$field['label']}' has no mapped CSV column.";
+            }
+        }
+    }
+
+    $validRows = 0;
+    $errorRows = 0;
+    $warningRows = 0;
+    $rowFindings = [];
+    $maxFindings = 100;
+
+    foreach ($dataRows as $rowIndex => $row) {
+        $rowErrors = [];
+        $rowWarnings = [];
+        $normalized = [];
+        $rawRow = [];
+        foreach ($headers as $index => $header) {
+            $rawRow[$header] = trim((string) ($row[$index] ?? ''));
+        }
+
+        foreach ($requiredFieldKeys as $requiredKey) {
+            if (!isset($fieldToColumnIndex[$requiredKey])) {
+                continue;
+            }
+            $index = $fieldToColumnIndex[$requiredKey];
+            $raw = trim((string) ($row[$index] ?? ''));
+            $normalized[$requiredKey] = $raw;
+            if ($raw === '') {
+                $rowErrors[] = "Required field '$requiredKey' is blank.";
+            }
+        }
+
+        foreach (['volume', 'startYear', 'quantity'] as $integerField) {
+            if (!isset($fieldToColumnIndex[$integerField])) {
+                continue;
+            }
+            $result = csvImportParseInteger($row[$fieldToColumnIndex[$integerField]] ?? '');
+            $normalized[$integerField] = $result['value'];
+            if ($result['error']) {
+                $rowErrors[] = "$integerField: {$result['error']}";
+            }
+        }
+
+        foreach (['coverPrice', 'purchasePrice', 'guideValue', 'issueValue'] as $decimalField) {
+            if (!isset($fieldToColumnIndex[$decimalField])) {
+                continue;
+            }
+            $result = csvImportParseDecimal($row[$fieldToColumnIndex[$decimalField]] ?? '');
+            $normalized[$decimalField] = $result['value'];
+            if ($result['error']) {
+                $rowErrors[] = "$decimalField: {$result['error']}";
+            }
+        }
+
+        foreach (['coverDate', 'purchaseDate'] as $dateField) {
+            if (!isset($fieldToColumnIndex[$dateField])) {
+                continue;
+            }
+            $result = csvImportParseDate($row[$fieldToColumnIndex[$dateField]] ?? '');
+            $normalized[$dateField] = $result['value'];
+            if ($result['error']) {
+                $rowErrors[] = "$dateField: {$result['error']}";
+            }
+        }
+
+        if (isset($fieldToColumnIndex['status'])) {
+            $statusResult = csvImportParseStatus($row[$fieldToColumnIndex['status']] ?? '');
+            $normalized['status'] = $statusResult['value'];
+            if ($statusResult['error']) {
+                $rowErrors[] = "status: {$statusResult['error']}";
+            }
+        }
+
+        foreach (['publisher', 'seriesType', 'printRun', 'condition', 'location', 'guide', 'comments'] as $stringField) {
+            if (!isset($fieldToColumnIndex[$stringField])) {
+                continue;
+            }
+            $normalized[$stringField] = trim((string) ($row[$fieldToColumnIndex[$stringField]] ?? ''));
+        }
+
+        if (count($rowErrors) > 0) {
+            $errorRows++;
+        } elseif (count($rowWarnings) > 0) {
+            $warningRows++;
+        } else {
+            $validRows++;
+        }
+
+        if ((count($rowErrors) > 0 || count($rowWarnings) > 0) && count($rowFindings) < $maxFindings) {
+            $rowNumber = $hasHeader ? ($rowIndex + 2) : ($rowIndex + 1);
+            $rowFindings[] = [
+                'rowNumber' => $rowNumber,
+                'errors' => $rowErrors,
+                'warnings' => $rowWarnings,
+                'normalized' => $normalized,
+                'raw' => $rawRow,
+            ];
+        }
+    }
+
     return json_encode([
         'headers' => $headers,
         'rowCount' => count($dataRows),
         'sampleRows' => $sampleRows,
         'mappingSuggestions' => $mappingSuggestions,
+        'resolvedMapping' => $resolvedMapping,
         'canonicalFields' => csvImportCanonicalFields(),
         'warnings' => $warnings,
+        'validation' => [
+            'validRows' => $validRows,
+            'errorRows' => $errorRows,
+            'warningRows' => $warningRows,
+            'sampledFindingLimit' => $maxFindings,
+            'sampledFindings' => count($rowFindings),
+        ],
+        'rowFindings' => $rowFindings,
     ]);
 }
 

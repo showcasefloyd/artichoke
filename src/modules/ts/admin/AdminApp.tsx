@@ -63,8 +63,26 @@ interface CsvImportPreview {
     rowCount: number;
     sampleRows: Record<string, string>[];
     mappingSuggestions: CsvImportMappingSuggestion[];
+    resolvedMapping: Array<{
+        field: string;
+        column: string;
+    }>;
     canonicalFields: CsvImportField[];
     warnings: string[];
+    validation: {
+        validRows: number;
+        errorRows: number;
+        warningRows: number;
+        sampledFindingLimit: number;
+        sampledFindings: number;
+    };
+    rowFindings: Array<{
+        rowNumber: number;
+        errors: string[];
+        warnings: string[];
+        normalized: Record<string, string | number | null>;
+        raw: Record<string, string>;
+    }>;
     error?: string;
 }
 
@@ -398,7 +416,7 @@ const AdminApp: React.FC = () => {
 
                         {activeTab === 'import' && (
                             <div className="mb-3">
-                                <h6>CSV Import (Stage 1: Preview)</h6>
+                                <h6>CSV Import (Stage 2: Preview + Validation)</h6>
                                 <div className="mb-2">
                                     <label className="form-label" htmlFor="import-file">CSV file</label>
                                     <input
@@ -460,6 +478,9 @@ const AdminApp: React.FC = () => {
                                     <div className="alert alert-info">
                                         Detected <strong>{importPreview.rowCount}</strong> rows and <strong>{importPreview.headers.length}</strong> columns.
                                     </div>
+                                    <div className="alert alert-secondary">
+                                        Valid rows: <strong>{importPreview.validation.validRows}</strong> | Warning rows: <strong>{importPreview.validation.warningRows}</strong> | Error rows: <strong>{importPreview.validation.errorRows}</strong>
+                                    </div>
                                     {importPreview.warnings.length > 0 && (
                                         <div className="alert alert-warning">
                                             {importPreview.warnings.map((warning, index) => (
@@ -490,6 +511,29 @@ const AdminApp: React.FC = () => {
                                             </table>
                                         </div>
                                     </div>
+                                    {importPreview.resolvedMapping.length > 0 && (
+                                        <div className="mb-3">
+                                            <h6>Resolved Field Mapping</h6>
+                                            <div className="table-responsive">
+                                                <table className="table table-sm table-bordered align-middle">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Artichoke Field</th>
+                                                            <th>CSV Column</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {importPreview.resolvedMapping.map(mapping => (
+                                                            <tr key={mapping.field}>
+                                                                <td><code>{mapping.field}</code></td>
+                                                                <td>{mapping.column}</td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    )}
                                     <div className="mb-3">
                                         <h6>Canonical Artichoke Import Fields</h6>
                                         <div className="table-responsive">
@@ -536,6 +580,39 @@ const AdminApp: React.FC = () => {
                                             </table>
                                         </div>
                                     </div>
+                                    {importPreview.rowFindings.length > 0 && (
+                                        <div className="mt-3">
+                                            <h6>Validation Findings (showing {importPreview.validation.sampledFindings} of max {importPreview.validation.sampledFindingLimit})</h6>
+                                            <div className="table-responsive">
+                                                <table className="table table-sm table-bordered align-middle">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Row</th>
+                                                            <th>Errors</th>
+                                                            <th>Warnings</th>
+                                                            <th>Normalized Snapshot</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {importPreview.rowFindings.map(finding => (
+                                                            <tr key={`finding-${finding.rowNumber}`}>
+                                                                <td>{finding.rowNumber}</td>
+                                                                <td>
+                                                                    {finding.errors.length === 0 ? <span className="text-muted">None</span> : finding.errors.join(' | ')}
+                                                                </td>
+                                                                <td>
+                                                                    {finding.warnings.length === 0 ? <span className="text-muted">None</span> : finding.warnings.join(' | ')}
+                                                                </td>
+                                                                <td>
+                                                                    <code>{JSON.stringify(finding.normalized)}</code>
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>
