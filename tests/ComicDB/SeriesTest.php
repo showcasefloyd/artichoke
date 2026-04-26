@@ -87,6 +87,7 @@ class SeriesTest extends ComicDBTestCase
 
         $series->firstIssue(5);
         $series->finalIssue(50);
+        $series->totalIssues(60);
         $series->subscribed(1);
         $series->comments('Great run');
         $series->save();
@@ -95,6 +96,7 @@ class SeriesTest extends ComicDBTestCase
         $loaded->restore();
         $this->assertSame('5', (string) $loaded->firstIssue());
         $this->assertSame('50', (string) $loaded->finalIssue());
+        $this->assertSame('60', (string) $loaded->totalIssues());
         $this->assertSame('1', (string) $loaded->subscribed());
         $this->assertSame('Great run', $loaded->comments());
     }

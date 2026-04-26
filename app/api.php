@@ -210,6 +210,37 @@ function csvImportParseStatus($value)
     return ['value' => $map[$normalized], 'error' => null];
 }
 
+function ensureSeriesTotalSchema($db)
+{
+    static $ensured = false;
+    if ($ensured) {
+        return;
+    }
+
+    $seriesColumnResult = $db->query("SHOW COLUMNS FROM series LIKE 'total_issues'");
+    if (! $seriesColumnResult) {
+        die('There was an error running the query [' . $db->error . ']');
+    }
+    if ($seriesColumnResult->num_rows === 0) {
+        $alterSeriesQuery = "ALTER TABLE series ADD COLUMN total_issues INT NOT NULL DEFAULT 1 AFTER final_issue";
+        if (! $db->query($alterSeriesQuery)) {
+            die('There was an error running the query [' . $db->error . ']');
+        }
+    } else {
+        $defaultResult = $db->query("SHOW COLUMNS FROM series LIKE 'total_issues'");
+        if (! $defaultResult) {
+            die('There was an error running the query [' . $db->error . ']');
+        }
+        $defaultRow = $defaultResult->fetch_assoc();
+        if ($defaultRow && isset($defaultRow['Default']) && (string) $defaultRow['Default'] !== '1') {
+            if (! $db->query("ALTER TABLE series MODIFY COLUMN total_issues INT NOT NULL DEFAULT 1")) {
+                die('There was an error running the query [' . $db->error . ']');
+            }
+        }
+    }
+    $ensured = true;
+}
+
 function csvImportCanonicalFieldKeys()
 {
     $keys = [];
@@ -947,6 +978,7 @@ function csvImportCommit($dataJson)
 
     $db = ComicDB_DB::db();
     csvImportEnsureLogTables($db);
+    ensureSeriesTotalSchema($db);
     $runId = csvImportGenerateRunId();
 
     if ($mode === 'dry-run') {
@@ -1198,6 +1230,7 @@ function grabSeriesList($dataJson)
     $titleId = isset($filters['titleId']) ? (int) $filters['titleId'] : 0;
     $publisherId = isset($filters['publisherId']) ? (int) $filters['publisherId'] : 0;
     $db = ComicDB_DB::db();
+    ensureSeriesTotalSchema($db);
     $whereClauses = [];
     if ($titleId > 0) {
         $whereClauses[] = "s.title = $titleId";
@@ -1222,13 +1255,14 @@ function grabSeriesList($dataJson)
              s.start_year,
              s.publisher,
              t.name AS title_name,
+             COALESCE(s.total_issues, 0) AS total_issues,
              COUNT(i.id) AS issue_count
         FROM series s
    LEFT JOIN titles t ON t.id = s.title
     LEFT JOIN publisher p ON p.name = s.publisher
     LEFT JOIN issues i ON i.series = s.id
         $where
-     GROUP BY s.id, s.title, s.name, s.volume, s.start_year, s.publisher, t.name
+     GROUP BY s.id, s.title, s.name, s.volume, s.start_year, s.publisher, t.name, s.total_issues
       $having
      ORDER BY t.name ASC, s.name ASC
 EOT;
@@ -1248,6 +1282,7 @@ EOT;
             'publisher' => $row['publisher'],
             'titleName' => $row['title_name'] ?? '',
             'issueCount' => isset($row['issue_count']) ? (int) $row['issue_count'] : 0,
+            'totalIssues' => isset($row['total_issues']) ? (int) $row['total_issues'] : 0,
         ];
     }
 
@@ -1256,6 +1291,7 @@ EOT;
 
 function grabSerieById($id)
 {
+    ensureSeriesTotalSchema(ComicDB_DB::db());
     $series = new ComicDB_Series($id);
     $series->restore();
     return json_encode([
@@ -1269,6 +1305,7 @@ function grabSerieById($id)
         'defaultPrice' => $series->defaultPrice(),
         'firstIssue'   => $series->firstIssue(),
         'finalIssue'   => $series->finalIssue(),
+        'totalIssues'  => $series->totalIssues(),
         'subscribed'   => $series->subscribed(),
         'comments'     => $series->comments(),
     ]);
@@ -1306,6 +1343,7 @@ function deleteTitle($id)
 function createSeries($dataJson)
 {
     $data   = json_decode($dataJson, true);
+    ensureSeriesTotalSchema(ComicDB_DB::db());
     $series = new ComicDB_Series();
     $series->titleId($data['titleId']);
     $series->name($data['name']);
@@ -1332,6 +1370,10 @@ function createSeries($dataJson)
         $series->finalIssue($data['finalIssue']);
     }
 
+    if (isset($data['totalIssues'])) {
+        $series->totalIssues($data['totalIssues']);
+    }
+
     if (isset($data['subscribed'])) {
         $series->subscribed($data['subscribed']);
     }
@@ -1348,6 +1390,7 @@ function createSeries($dataJson)
 function updateSeries($id, $dataJson)
 {
     $data   = json_decode($dataJson, true);
+    ensureSeriesTotalSchema(ComicDB_DB::db());
     $series = new ComicDB_Series($id);
     $series->restore();
     if (isset($data['titleId'])) {
@@ -1384,6 +1427,10 @@ function updateSeries($id, $dataJson)
 
     if (isset($data['finalIssue'])) {
         $series->finalIssue($data['finalIssue']);
+    }
+
+    if (isset($data['totalIssues'])) {
+        $series->totalIssues($data['totalIssues']);
     }
 
     if (isset($data['subscribed'])) {
@@ -1441,6 +1488,7 @@ function applyIssueData(ComicDB_Issue $issue, array $data)
 function createIssue($dataJson)
 {
     $data  = json_decode($dataJson, true);
+    ensureSeriesTotalSchema(ComicDB_DB::db());
     $issue = new ComicDB_Issue();
     applyIssueData($issue, $data);
 
@@ -1452,6 +1500,7 @@ function createIssue($dataJson)
 function updateIssue($id, $dataJson)
 {
     $data  = json_decode($dataJson, true);
+    ensureSeriesTotalSchema(ComicDB_DB::db());
     $issue = new ComicDB_Issue($id);
     $issue->restore();
     applyIssueData($issue, $data);
@@ -1463,6 +1512,7 @@ function updateIssue($id, $dataJson)
 // Delete an Issue
 function deleteIssue($id)
 {
+    ensureSeriesTotalSchema(ComicDB_DB::db());
     $issue = new ComicDB_Issue($id);
     $issue->restore();
     $issue->remove();
@@ -1492,6 +1542,7 @@ function grabIssuesList($dataJson)
     $query = <<<EOT
       SELECT i.id,
              i.number,
+             i.sort,
              i.series AS series_id,
              s.name AS series_name,
              s.title AS title_id,
@@ -1499,8 +1550,14 @@ function grabIssuesList($dataJson)
         FROM issues i
    LEFT JOIN series s ON s.id = i.series
    LEFT JOIN titles t ON t.id = s.title
-      $where
-    ORDER BY t.name ASC, s.name ASC, i.number ASC
+       $where
+    ORDER BY t.name ASC,
+             s.name ASC,
+             CASE WHEN i.sort IS NOT NULL AND i.sort > 0 THEN 0 ELSE 1 END ASC,
+             CASE WHEN i.sort IS NOT NULL AND i.sort > 0 THEN i.sort ELSE 2147483647 END ASC,
+             CASE WHEN i.number REGEXP '^-?[0-9]+$' THEN 0 ELSE 1 END ASC,
+             CASE WHEN i.number REGEXP '^-?[0-9]+$' THEN CAST(i.number AS SIGNED) ELSE 0 END ASC,
+             i.number ASC
 EOT;
     $result = $db->query($query);
     if (! $result) {
@@ -1587,6 +1644,7 @@ EOT;
 function grabDashboard()
 {
     $db = ComicDB_DB::db();
+    ensureSeriesTotalSchema($db);
 
     $totalsQuery = <<<EOT
       SELECT (SELECT COUNT(*) FROM publisher) AS publishers,
@@ -1681,17 +1739,20 @@ EOT;
         FROM (
               SELECT s.id,
                      CASE
+                         WHEN s.total_issues IS NOT NULL
+                          AND s.total_issues > 0
+                         THEN s.total_issues
                          WHEN s.first_issue IS NOT NULL
                           AND s.final_issue IS NOT NULL
                           AND s.final_issue >= s.first_issue
                          THEN (s.final_issue - s.first_issue + 1)
                          ELSE 0
                      END AS expected_total,
-                     COUNT(i.id) AS issue_count
+                     COUNT(DISTINCT CASE WHEN i.sort IS NOT NULL AND i.sort > 0 THEN CONCAT('S', i.sort) ELSE CONCAT('I', i.id) END) AS issue_count
                 FROM series s
            LEFT JOIN issues i ON i.series = s.id
-            GROUP BY s.id, s.first_issue, s.final_issue
-             ) expected
+            GROUP BY s.id, s.total_issues, s.first_issue, s.final_issue
+              ) expected
 EOT;
     $missingResult = $db->query($missingQuery);
     if (! $missingResult) {
@@ -1815,6 +1876,7 @@ EOT;
 
 function buildSeriesGridPayload($id)
 {
+    ensureSeriesTotalSchema(ComicDB_DB::db());
     $series = new ComicDB_Series($id);
     $series->restore();
 
@@ -1827,6 +1889,7 @@ function buildSeriesGridPayload($id)
         'seriesId' => (int) $id,
         'firstIssue' => is_numeric($firstIssue) ? (int) $firstIssue : null,
         'finalIssue' => is_numeric($finalIssue) ? (int) $finalIssue : null,
+        'totalIssues' => is_numeric($series->totalIssues()) ? (int) $series->totalIssues() : 0,
         'gridable' => count($gridData) > 0,
         'issues' => $gridData,
     ];

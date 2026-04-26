@@ -149,7 +149,8 @@ const IssueEditor: React.FC<Props> = ({ issueId, onSaved, onDeleted }) => {
             <form onSubmit={handleSave}>
                 {field('Issue Number *', 'number')}
                 {field('Story Title', 'storyTitle')}
-                {field('Sort Order', 'sort')}
+                {field('Sort Order (Grid Position)', 'sort')}
+                <div className="form-text mb-3">Use sort order to control this issue&rsquo;s slot in the series grid.</div>
                 {field('Print Run', 'printRun')}
                 {field('Quantity', 'quantity')}
                 <div className="mb-3">

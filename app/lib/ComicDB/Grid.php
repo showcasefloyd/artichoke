@@ -11,6 +11,7 @@ class Grid {
 	private $issuesinSeries = array();
 	private $firstIssue;
 	private $lastIssue;
+	private $totalIssues;
 
 	function __construct($series = null){
 		//$this->seriesId = $seriesId;
@@ -19,6 +20,7 @@ class Grid {
 		$this->series = $series;
 		$this->firstIssue = $this->series->firstIssue();
 		$this->lastIssue = $this->series->finalIssue();
+		$this->totalIssues = $this->series->totalIssues();
 	}
 
 	// Public Methods
@@ -68,21 +70,52 @@ class Grid {
 	   the issues matching any I have */
 	private function calculateSeriesRun($issues)
 	{
+		$totalIssues = $this->parseTotalIssues($this->totalIssues);
+		if ($totalIssues !== null && $totalIssues > 1) {
+			$collection = array();
+			for($i = 1; $i <= $totalIssues; $i++){
+				$book = array();
+				$book['issue'] = $i;
+				$book['own'] = "N";
+				$book['issue_id'] = 0;
+				$collection[] = $book;
+			}
+
+			// each book we have
+			foreach($issues as $k => $v){
+				$slot = $this->parseIssueSort($v->sort);
+				if ($slot === null) {
+					$slot = $this->parseIssueNumber($v->number);
+				}
+				if ($slot === null || $slot < 1 || $slot > $totalIssues) {
+					continue;
+				}
+				$key = $slot - 1;
+				if ($collection[$key]['own'] === "N") {
+					$collection[$key]['own'] = "Y";
+					$collection[$key]['issue_id'] =  (int) $v->id;
+				}
+			}
+
+			return $collection;
+		}
+
 		$firstIssue = $this->parseIssueNumber($this->firstIssue);
 		$lastIssue = $this->parseIssueNumber($this->lastIssue);
 		if ($firstIssue === null || $lastIssue === null || $lastIssue <= $firstIssue) {
 			return array();
 		}
+		$totalIssues = $lastIssue - $firstIssue + 1;
 
 		$collection = array();
 		$issueIndex = array();
-		for($i = $firstIssue; $i <= $lastIssue; $i++){
+		for($i = 1; $i <= $totalIssues; $i++){
 			$book = array();
-			$book['issue'] = $i;
+			$book['issue'] = $firstIssue + $i - 1;
 			$book['own'] = "N";
 			$book['issue_id'] = 0;
 			$collection[] = $book;
-			$issueIndex[$i] = count($collection) - 1;
+			$issueIndex[$firstIssue + $i - 1] = count($collection) - 1;
 		}
 
 		// each book we have
@@ -92,11 +125,29 @@ class Grid {
 				continue;
 			}
 			$key = $issueIndex[$issueNumber];
-			$collection[$key]['own'] = "Y";
-			$collection[$key]['issue_id'] =  (int) $v->id;
+			if ($collection[$key]['own'] === "N") {
+				$collection[$key]['own'] = "Y";
+				$collection[$key]['issue_id'] =  (int) $v->id;
+			}
 		}
 
 		return $collection;
+	}
+
+	private function parseIssueSort($value)
+	{
+		if (!isset($value)) {
+			return null;
+		}
+		$normalized = trim((string) $value);
+		if ($normalized === '' || !preg_match('/^-?\d+$/', $normalized)) {
+			return null;
+		}
+		$position = (int) $normalized;
+		if ($position < 1) {
+			return null;
+		}
+		return $position;
 	}
 
 	private function parseIssueNumber($value)
@@ -113,6 +164,18 @@ class Grid {
 			return null;
 		}
 		return $issueNumber;
+	}
+
+	private function parseTotalIssues($value)
+	{
+		if (!isset($value)) {
+			return null;
+		}
+		$normalized = trim((string) $value);
+		if ($normalized === '' || !preg_match('/^\d+$/', $normalized)) {
+			return null;
+		}
+		return (int) $normalized;
 	}
 
 	//	private function displayGridHeader()

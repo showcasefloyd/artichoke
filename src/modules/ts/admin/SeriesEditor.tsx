@@ -12,6 +12,7 @@ interface SeriesData {
     defaultPrice: string;
     firstIssue: string;
     finalIssue: string;
+    totalIssues: string;
     subscribed: string;
     comments: string;
 }
@@ -149,6 +150,7 @@ const SeriesEditor: React.FC<Props> = ({ seriesId, onSaved, onDeleted }) => {
                 {field('Default Price', 'defaultPrice')}
                 {field('First Issue', 'firstIssue')}
                 {field('Final Issue', 'finalIssue')}
+                {field('Total Issues', 'totalIssues')}
                 {field('Subscribed', 'subscribed')}
                 {field('Comments', 'comments')}
                 <div className="mb-3">

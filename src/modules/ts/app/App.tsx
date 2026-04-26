@@ -29,6 +29,7 @@ export interface SeriesGridResponse {
     seriesId: number;
     firstIssue: number | null;
     finalIssue: number | null;
+    totalIssues: number;
     gridable: boolean;
     issues: IssueGridItem[];
 }
@@ -53,6 +54,7 @@ export interface SeriesListItem {
     publisher: string;
     titleName: string;
     issueCount?: number;
+    totalIssues?: number;
 }
 
 export interface IssueListItem {

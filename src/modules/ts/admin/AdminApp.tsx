@@ -44,6 +44,7 @@ interface SeriesItem {
     startYear?: number;
     publisher: string;
     titleName: string;
+    totalIssues?: number;
 }
 
 interface CsvImportField {
@@ -170,7 +171,8 @@ interface CsvImportRunsResponse {
 function formatSeriesLabel(series: SeriesItem): string {
     const volumePart = series.volume ? ` (Vol ${series.volume})` : '';
     const yearPart = series.startYear ? ` ${series.startYear}` : '';
-    return `${series.titleName}: ${series.name}${volumePart}${yearPart}`;
+    const totalPart = series.totalIssues && series.totalIssues > 0 ? ` [Total: ${series.totalIssues}]` : '';
+    return `${series.titleName}: ${series.name}${volumePart}${yearPart}${totalPart}`;
 }
 
 const AdminApp: React.FC = () => {

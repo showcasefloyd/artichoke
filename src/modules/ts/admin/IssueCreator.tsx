@@ -17,6 +17,7 @@ interface Props {
 const IssueCreator: React.FC<Props> = ({ seriesId, onCreated, onCancel }) => {
     const [number, setNumber] = useState('');
     const [storyTitle, setStoryTitle] = useState('');
+    const [sort, setSort] = useState('');
     const [purchaseDate, setPurchaseDate] = useState(todayDateInput());
     const initialCoverMonth = currentMonthInput();
     const [coverYear, setCoverYear] = useState(initialCoverMonth.split('-')[0] ?? '');
@@ -58,6 +59,7 @@ const IssueCreator: React.FC<Props> = ({ seriesId, onCreated, onCancel }) => {
                     seriesId,
                     number,
                     storyTitle,
+                    sort,
                     purchaseDate: purchaseTimestamp,
                     coverDate: coverTimestamp,
                 }),
@@ -84,6 +86,21 @@ const IssueCreator: React.FC<Props> = ({ seriesId, onCreated, onCancel }) => {
                         onChange={e => setNumber(e.target.value)}
                         autoFocus
                     />
+                </div>
+                <div className="mb-3">
+                    <label className="form-label" htmlFor="inputIssueSort">
+                        Sort Order (Grid Position)
+                    </label>
+                    <input
+                        type="number"
+                        className="form-control"
+                        id="inputIssueSort"
+                        value={sort}
+                        min={1}
+                        placeholder="e.g. 27"
+                        onChange={e => setSort(e.target.value)}
+                    />
+                    <small className="text-muted">Use this to place non-standard issue numbers in the correct grid slot.</small>
                 </div>
                 <div className="mb-3">
                     <label className="form-label" htmlFor="inputStoryTitle">

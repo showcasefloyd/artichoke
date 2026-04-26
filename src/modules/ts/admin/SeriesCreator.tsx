@@ -11,6 +11,7 @@ const SeriesCreator: React.FC<Props> = ({ titleId, onCreated, onCancel }) => {
     const [name, setName] = useState('');
     const [volume, setVolume] = useState('');
     const [startYear, setStartYear] = useState('');
+    const [totalIssues, setTotalIssues] = useState('1');
     const [publisher, setPublisher] = useState('');
     const [seriesType, setSeriesType] = useState('');
     const [publishers, setPublishers] = useState<Publisher[]>([]);
@@ -62,7 +63,7 @@ const SeriesCreator: React.FC<Props> = ({ titleId, onCreated, onCancel }) => {
         fetch('/series', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ titleId, name, volume, startYear, publisher, type: seriesType }),
+            body: JSON.stringify({ titleId, name, volume, startYear, totalIssues, publisher, type: seriesType }),
         })
             .then(res => res.json())
             .then(data => { setError(''); onCreated(data.id, data.name); });
@@ -129,6 +130,18 @@ const SeriesCreator: React.FC<Props> = ({ titleId, onCreated, onCancel }) => {
                         max={2999}
                         placeholder="1986"
                         onChange={e => setStartYear(e.target.value)}
+                    />
+                </div>
+                <div className="mb-3">
+                    <label className="form-label" htmlFor="inputSeriesTotalIssues">Total Issues</label>
+                    <input
+                        type="number"
+                        className="form-control"
+                        id="inputSeriesTotalIssues"
+                        value={totalIssues}
+                        min={1}
+                        placeholder="e.g. 87"
+                        onChange={e => setTotalIssues(e.target.value)}
                     />
                 </div>
                 <div className="mb-3">

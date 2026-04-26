@@ -25,13 +25,19 @@ class ComicDB_Serieses {
 			return $series;
 		}
 
-		$query = "SELECT id, title, name, volume, start_year, publisher, type,\n"
-			. "       default_price, first_issue, final_issue, subscribed, comments\n"
+		$db = ComicDB_DB::db();
+		$seriesModel = new ComicDB_Series();
+		$includeTotalIssues = $seriesModel->hasTotalIssuesColumn();
+		$query = "SELECT id, title, name, volume, start_year, publisher, type,\n";
+		if ($includeTotalIssues) {
+			$query .= "       default_price, first_issue, final_issue, total_issues, subscribed, comments\n";
+		} else {
+			$query .= "       default_price, first_issue, final_issue, subscribed, comments\n";
+		}
+		$query .= ""
 			. "  FROM series\n"
 			. " WHERE title=$this->titleId\n"
 			. " ORDER BY name ASC";
-
-		$db = ComicDB_DB::db();
 
 		$db->query($query);
 		if(!$result = $db->query($query)){
@@ -56,6 +62,9 @@ class ComicDB_Serieses {
 			$s->defaultPrice($row['default_price']);
 			$s->firstIssue($row['first_issue']);
 			$s->finalIssue($row['final_issue']);
+			if ($includeTotalIssues) {
+				$s->totalIssues($row['total_issues']);
+			}
 			$s->subscribed($row['subscribed']);
 			$s->comments($row['comments']);
 

@@ -16,6 +16,7 @@ class ComicDB_Series extends ComicDB_Object {
 	public $defaultPrice;
 	public $firstIssue;
 	public $finalIssue;
+	public $totalIssues;
 	public $subscribed;
 	public $comments;
 	public $title;
@@ -114,6 +115,14 @@ class ComicDB_Series extends ComicDB_Object {
 		return $this->subscribed;
 	}
 
+	public function totalIssues($totalIssues=null) {
+		if (isset($totalIssues)) {
+			$this->totalIssues = $totalIssues;
+			$this->isDirty = 1;
+		}
+		return $this->totalIssues;
+	}
+
 	public function comments($comments=null) {
 		if (isset($comments)) {
 			$this->comments = $comments;
@@ -163,6 +172,22 @@ class ComicDB_Series extends ComicDB_Object {
 
 	// public methods
 
+	public function hasTotalIssuesColumn() {
+		static $checked = false;
+		static $hasColumn = false;
+		if ($checked) {
+			return $hasColumn;
+		}
+		$db = ComicDB_DB::db();
+		$query = "SHOW COLUMNS FROM series LIKE 'total_issues'";
+		if(!$result = $db->query($query)){
+			die('There was an error running the query [' . $db->error . ']');
+		}
+		$hasColumn = $result->num_rows > 0;
+		$checked = true;
+		return $hasColumn;
+	}
+
 	public function issues() {
 		if (! $this->issues) {
 			$this->issues = new ComicDB_Issues($this->id());
@@ -187,11 +212,17 @@ class ComicDB_Series extends ComicDB_Object {
 	// interface methods
 
 	protected function select() {
-		$query = "SELECT id, title, name, volume, start_year, publisher, type,\n"
-			. "       default_price, first_issue, final_issue, subscribed, comments\n"
+		$db = ComicDB_DB::db();
+		$includeTotalIssues = $this->hasTotalIssuesColumn();
+		$query = "SELECT id, title, name, volume, start_year, publisher, type,\n";
+		if ($includeTotalIssues) {
+			$query .= "       default_price, first_issue, final_issue, total_issues, subscribed, comments\n";
+		} else {
+			$query .= "       default_price, first_issue, final_issue, subscribed, comments\n";
+		}
+		$query .= ""
 			. "  FROM series\n"
 			. " WHERE id=$this->id";
-		$db = ComicDB_DB::db();
 		if(!$result = $db->query($query)){
 		    die('There was an error running the query [' . $db->error . ']');
 		}
@@ -207,6 +238,11 @@ class ComicDB_Series extends ComicDB_Object {
 		$this->defaultPrice($row['default_price']);
 		$this->firstIssue($row['first_issue']);
 		$this->finalIssue($row['final_issue']);
+		if ($includeTotalIssues) {
+			$this->totalIssues($row['total_issues']);
+		} else {
+			$this->totalIssues(0);
+		}
 		$this->subscribed($row['subscribed']);
 		$this->comments($row['comments']);
 
@@ -252,6 +288,14 @@ class ComicDB_Series extends ComicDB_Object {
 		$finalIssue = $this->finalIssue();
 		if ($finalIssue != "" && $finalIssue >= 0) {
 			$data['final_issue'] = $finalIssue;
+		}
+		if ($this->hasTotalIssuesColumn()) {
+			$totalIssues = $this->totalIssues();
+			if ($totalIssues != "" && $totalIssues >= 0) {
+				$data['total_issues'] = (int) $totalIssues;
+			} else {
+				$data['total_issues'] = 1;
+			}
 		}
 
 		if ($this->subscribed()) {
@@ -356,6 +400,15 @@ class ComicDB_Series extends ComicDB_Object {
 			$data['final_issue'] = $finalIssue;
 		} else {
 			$data['final_issue'] = "NULL";
+		}
+
+		if ($this->hasTotalIssuesColumn()) {
+			$totalIssues = $this->totalIssues();
+			if ($totalIssues != "" && $totalIssues >= 0) {
+				$data['total_issues'] = (int) $totalIssues;
+			} else {
+				$data['total_issues'] = 1;
+			}
 		}
 
 		if ($this->subscribed()) {

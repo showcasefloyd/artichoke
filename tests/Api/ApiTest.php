@@ -100,6 +100,24 @@ class ApiTest extends ComicDBTestCase
         $this->assertSame('After Series Update', $result['name']);
     }
 
+    public function testSeriesTotalIssuesPersistsInApiPayloads(): void
+    {
+        $title = json_decode(createTitle('Series Total Parent Title'), true);
+        $created = json_decode(createSeries(json_encode([
+            'titleId' => $title['id'],
+            'name' => 'Series Total API',
+            'publisher' => 'Total Pub',
+            'totalIssues' => 48,
+        ])), true);
+
+        $series = json_decode(grabSerieById($created['id']), true);
+        $this->assertSame('48', (string) $series['totalIssues']);
+
+        updateSeries($created['id'], json_encode(['totalIssues' => 52]));
+        $updated = json_decode(grabSerieById($created['id']), true);
+        $this->assertSame('52', (string) $updated['totalIssues']);
+    }
+
     public function testDeleteSeriesReturnsDeletedTrue(): void
     {
         $title   = json_decode(createTitle('Series Delete Title'), true);
@@ -314,5 +332,92 @@ class ApiTest extends ComicDBTestCase
         $this->assertSame(0, $result['issues'][0]['issue']);
         $this->assertSame('Y', $result['issues'][0]['own']);
         $this->assertEquals($ownedZero['id'], $result['issues'][0]['issue_id']);
+    }
+
+    public function testGrabSeriesGridUsesSortOrderWhenTotalIssuesIsSet(): void
+    {
+        $title  = json_decode(createTitle('Sort Grid Title'), true);
+        $series = json_decode(createSeries(json_encode([
+            'titleId' => $title['id'],
+            'name' => 'Sort Grid Series',
+            'publisher' => 'Grid Pub',
+            'totalIssues' => 4,
+        ])), true);
+
+        $firstVariant = json_decode(createIssue(json_encode([
+            'seriesId' => $series['id'],
+            'number' => '5A',
+            'sort' => 1,
+        ])), true);
+
+        createIssue(json_encode([
+            'seriesId' => $series['id'],
+            'number' => '5B',
+            'sort' => 1,
+        ]));
+
+        createIssue(json_encode([
+            'seriesId' => $series['id'],
+            'number' => '-1',
+            'sort' => 2,
+        ]));
+
+        $json = grabSeriesGrid($series['id']);
+        $result = json_decode($json, true);
+
+        $this->assertTrue($result['gridable']);
+        $this->assertSame(4, $result['totalIssues']);
+        $this->assertCount(4, $result['issues']);
+        $this->assertSame('Y', $result['issues'][0]['own']);
+        $this->assertEquals($firstVariant['id'], $result['issues'][0]['issue_id']);
+        $this->assertSame('Y', $result['issues'][1]['own']);
+        $this->assertSame('N', $result['issues'][2]['own']);
+    }
+
+    public function testGrabIssuesListOrdersBySortThenFallbackNumber(): void
+    {
+        $title  = json_decode(createTitle('Issues Sort Parent'), true);
+        $series = json_decode(createSeries(json_encode([
+            'titleId' => $title['id'],
+            'name' => 'Issues Sort Series',
+            'publisher' => 'Sort Pub',
+        ])), true);
+
+        createIssue(json_encode([
+            'seriesId' => $series['id'],
+            'number' => '14',
+        ]));
+        createIssue(json_encode([
+            'seriesId' => $series['id'],
+            'number' => '18',
+        ]));
+        createIssue(json_encode([
+            'seriesId' => $series['id'],
+            'number' => '1A',
+            'sort' => 1,
+        ]));
+        createIssue(json_encode([
+            'seriesId' => $series['id'],
+            'number' => '2A',
+            'sort' => 2,
+        ]));
+        createIssue(json_encode([
+            'seriesId' => $series['id'],
+            'number' => '3',
+        ]));
+        createIssue(json_encode([
+            'seriesId' => $series['id'],
+            'number' => '4',
+        ]));
+        createIssue(json_encode([
+            'seriesId' => $series['id'],
+            'number' => '5',
+        ]));
+
+        $json = grabIssuesList(json_encode(['seriesId' => $series['id']]));
+        $result = json_decode($json, true);
+        $numbers = array_map(fn($row) => $row['number'], $result['issues']);
+
+        $this->assertSame(['1A', '2A', '3', '4', '5', '14', '18'], $numbers);
     }
 }
