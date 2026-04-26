@@ -1256,7 +1256,13 @@ function grabSeriesList($dataJson)
              s.publisher,
              t.name AS title_name,
              COALESCE(s.total_issues, 0) AS total_issues,
-             COUNT(i.id) AS issue_count
+             COUNT(i.id) AS issue_count,
+             GREATEST(COALESCE(s.total_issues, 0) - COUNT(i.id), 0) AS missing_issues,
+             CASE
+                 WHEN COALESCE(s.total_issues, 0) > 0
+                 THEN LEAST(ROUND((COUNT(i.id) / COALESCE(s.total_issues, 0)) * 100), 100)
+                 ELSE 0
+             END AS completion_percent
         FROM series s
    LEFT JOIN titles t ON t.id = s.title
     LEFT JOIN publisher p ON p.name = s.publisher
@@ -1283,6 +1289,8 @@ EOT;
             'titleName' => $row['title_name'] ?? '',
             'issueCount' => isset($row['issue_count']) ? (int) $row['issue_count'] : 0,
             'totalIssues' => isset($row['total_issues']) ? (int) $row['total_issues'] : 0,
+            'missingIssues' => isset($row['missing_issues']) ? (int) $row['missing_issues'] : 0,
+            'completionPercent' => isset($row['completion_percent']) ? (int) $row['completion_percent'] : 0,
         ];
     }
 

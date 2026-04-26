@@ -44,7 +44,10 @@ interface SeriesItem {
     startYear?: number;
     publisher: string;
     titleName: string;
+    issueCount?: number;
     totalIssues?: number;
+    missingIssues?: number;
+    completionPercent?: number;
 }
 
 interface CsvImportField {
@@ -171,8 +174,16 @@ interface CsvImportRunsResponse {
 function formatSeriesLabel(series: SeriesItem): string {
     const volumePart = series.volume ? ` (Vol ${series.volume})` : '';
     const yearPart = series.startYear ? ` ${series.startYear}` : '';
-    const totalPart = series.totalIssues && series.totalIssues > 0 ? ` [Total: ${series.totalIssues}]` : '';
-    return `${series.titleName}: ${series.name}${volumePart}${yearPart}${totalPart}`;
+    const owned = typeof series.issueCount === 'number' ? series.issueCount : 0;
+    const total = typeof series.totalIssues === 'number' ? series.totalIssues : 0;
+    if (total > 0) {
+        const missing = typeof series.missingIssues === 'number' ? series.missingIssues : Math.max(total - owned, 0);
+        const completion = typeof series.completionPercent === 'number'
+            ? series.completionPercent
+            : Math.min(Math.round((owned / total) * 100), 100);
+        return `${series.titleName}: ${series.name}${volumePart}${yearPart} [${owned}/${total}, ${completion}% complete, ${missing} missing]`;
+    }
+    return `${series.titleName}: ${series.name}${volumePart}${yearPart}`;
 }
 
 const AdminApp: React.FC = () => {

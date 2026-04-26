@@ -55,6 +55,8 @@ export interface SeriesListItem {
     titleName: string;
     issueCount?: number;
     totalIssues?: number;
+    missingIssues?: number;
+    completionPercent?: number;
 }
 
 export interface IssueListItem {

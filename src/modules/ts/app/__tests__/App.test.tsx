@@ -43,8 +43,8 @@ beforeEach(() => {
                 ok: true,
                 json: () => Promise.resolve({
                     series: [
-                        { id: 10, titleId: 100, name: 'Batman', volume: 0, startYear: 0, publisher: 'DC', titleName: 'Batman', issueCount: 2 },
-                        { id: 11, titleId: 101, name: 'No Issues Series', volume: 0, startYear: 0, publisher: 'DC', titleName: 'No Issues', issueCount: 0 },
+                        { id: 10, titleId: 100, name: 'Batman', volume: 0, startYear: 0, publisher: 'DC', titleName: 'Batman', issueCount: 2, totalIssues: 5, missingIssues: 3, completionPercent: 40 },
+                        { id: 11, titleId: 101, name: 'No Issues Series', volume: 0, startYear: 0, publisher: 'DC', titleName: 'No Issues', issueCount: 0, totalIssues: 8, missingIssues: 8, completionPercent: 0 },
                     ],
                 }),
             } as Response);
@@ -107,10 +107,10 @@ describe('App', () => {
         await userEvent.click(screen.getByRole('button', { name: 'DC (2)' }));
 
         await waitFor(() => expect(fetch).toHaveBeenCalledWith('/series?publisherId=1&minimumIssueCount=1'));
-        expect(await screen.findByRole('button', { name: 'Batman' })).toBeInTheDocument();
+        expect(await screen.findByRole('button', { name: /Batman.*2\/5.*40% complete.*3 missing/i })).toBeInTheDocument();
         expect(screen.queryByRole('button', { name: 'No Issues Series' })).not.toBeInTheDocument();
 
-        await userEvent.click(screen.getByRole('button', { name: 'Batman' }));
+        await userEvent.click(screen.getByRole('button', { name: /Batman/i }));
 
         await waitFor(() => expect(fetch).toHaveBeenCalledWith('/series/10/grid'));
         expect(await screen.findByRole('button', { name: 'See Grid' })).toBeInTheDocument();

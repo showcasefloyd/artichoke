@@ -18,6 +18,19 @@ interface InventoryNavigationProps {
     onIssueClick: (id: number) => void;
 }
 
+function formatSeriesProgress(book: SeriesListItem): string {
+    const owned = typeof book.issueCount === 'number' ? book.issueCount : 0;
+    const total = typeof book.totalIssues === 'number' ? book.totalIssues : 0;
+    if (total <= 0) {
+        return '';
+    }
+    const missing = typeof book.missingIssues === 'number' ? book.missingIssues : Math.max(total - owned, 0);
+    const completion = typeof book.completionPercent === 'number'
+        ? book.completionPercent
+        : Math.min(Math.round((owned / total) * 100), 100);
+    return ` — ${owned}/${total} (${completion}% complete, ${missing} missing)`;
+}
+
 const InventoryNavigation: React.FC<InventoryNavigationProps> = ({
     publishers,
     series,
@@ -71,6 +84,7 @@ const InventoryNavigation: React.FC<InventoryNavigationProps> = ({
                                 {book.name}
                                 {book.volume > 0 ? ` Vol. ${book.volume}` : ''}
                                 {book.startYear > 0 ? ` (${book.startYear})` : ''}
+                                {formatSeriesProgress(book)}
                             </button>
                         </li>
                     ))}
