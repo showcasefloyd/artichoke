@@ -26,6 +26,8 @@ services:
       dockerfile: docker/app/Dockerfile
     working_dir: /workspace
     command: npm run dev-server
+    env_file:
+      - .env
     environment:
       ARTICHOKE_DB_HOST: db
       ARTICHOKE_DB_USER: comicdb

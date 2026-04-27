@@ -8,3 +8,4 @@ app/js
 app/build
 .vscode/
 .phpunit.result.cache
+.env

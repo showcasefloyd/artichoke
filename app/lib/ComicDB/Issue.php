@@ -23,6 +23,7 @@ class ComicDB_Issue extends ComicDB_Object {
 	var $issueValue;
 	var $comments;
 	var $storyTitle;
+	var $cvIssueId;
 	var $series;
 	var $id;
 
@@ -185,6 +186,14 @@ class ComicDB_Issue extends ComicDB_Object {
 		return $this->storyTitle;
 	}
 
+	function cvIssueId($cvIssueId=null) {
+		if (isset($cvIssueId)) {
+			$this->cvIssueId = $cvIssueId;
+			$this->isDirty = 1;
+		}
+		return $this->cvIssueId;
+	}
+
 	// public methods
 
 	function hasStoryTitleColumn() {
@@ -195,6 +204,22 @@ class ComicDB_Issue extends ComicDB_Object {
 		}
 		$db = ComicDB_DB::db();
 		$query = "SHOW COLUMNS FROM issues LIKE 'story_title'";
+		if(!$result = $db->query($query)){
+			die('There was an error running the query [' . $db->error . ']');
+		}
+		$hasColumn = $result->num_rows > 0;
+		$checked = true;
+		return $hasColumn;
+	}
+
+	function hasCvIssueIdColumn() {
+		static $checked = false;
+		static $hasColumn = false;
+		if ($checked) {
+			return $hasColumn;
+		}
+		$db = ComicDB_DB::db();
+		$query = "SHOW COLUMNS FROM issues LIKE 'cv_issue_id'";
 		if(!$result = $db->query($query)){
 			die('There was an error running the query [' . $db->error . ']');
 		}
@@ -222,11 +247,16 @@ class ComicDB_Issue extends ComicDB_Object {
 		$id = $this->id();
 
 		$includeStoryTitle = $this->hasStoryTitleColumn();
+		$includeCvIssueId = $this->hasCvIssueIdColumn();
 		$query = "SELECT id, series, number, sort, printrun, quantity,\n"
 			. "       UNIX_TIMESTAMP(cover_date), location, type, status, bkcondition,\n"
 			. "       cover_price, purchase_price, UNIX_TIMESTAMP(purchase_date),\n";
-		if ($includeStoryTitle) {
+		if ($includeStoryTitle && $includeCvIssueId) {
+			$query .= "       guide_value, guide, issue_value, comments, story_title, cv_issue_id\n";
+		} else if ($includeStoryTitle) {
 			$query .= "       guide_value, guide, issue_value, comments, story_title\n";
+		} else if ($includeCvIssueId) {
+			$query .= "       guide_value, guide, issue_value, comments, cv_issue_id\n";
 		} else {
 			$query .= "       guide_value, guide, issue_value, comments\n";
 		}
@@ -262,8 +292,14 @@ class ComicDB_Issue extends ComicDB_Object {
 		$this->comments($row[17]);
 		if ($includeStoryTitle) {
 			$this->storyTitle($row[18]);
+			if ($includeCvIssueId) {
+				$this->cvIssueId($row[19]);
+			}
 		} else {
 			$this->storyTitle(null);
+			if ($includeCvIssueId) {
+				$this->cvIssueId($row[18]);
+			}
 		}
 
 		return;
@@ -357,6 +393,13 @@ class ComicDB_Issue extends ComicDB_Object {
 		$storyTitle = $this->storyTitle();
 		if ($storyTitle && $this->hasStoryTitleColumn()) {
 			$data['story_title'] = "'$storyTitle'";
+		}
+
+		if ($this->hasCvIssueIdColumn()) {
+			$cvIssueId = $this->cvIssueId();
+			if ($cvIssueId != "" && $cvIssueId > 0) {
+				$data['cv_issue_id'] = (int) $cvIssueId;
+			}
 		}
 
 		// build query
@@ -522,6 +565,15 @@ class ComicDB_Issue extends ComicDB_Object {
 				$data['story_title'] = "'$storyTitle'";
 			} else {
 				$data['story_title'] = "NULL";
+			}
+		}
+
+		if ($this->hasCvIssueIdColumn()) {
+			$cvIssueId = $this->cvIssueId();
+			if ($cvIssueId != "" && $cvIssueId > 0) {
+				$data['cv_issue_id'] = (int) $cvIssueId;
+			} else {
+				$data['cv_issue_id'] = "NULL";
 			}
 		}
 

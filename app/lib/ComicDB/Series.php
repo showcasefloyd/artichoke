@@ -19,6 +19,7 @@ class ComicDB_Series extends ComicDB_Object {
 	public $totalIssues;
 	public $subscribed;
 	public $comments;
+	public $cvVolumeId;
 	public $title;
 	public $issues;
 
@@ -131,6 +132,14 @@ class ComicDB_Series extends ComicDB_Object {
 		return $this->comments;
 	}
 
+	public function cvVolumeId($cvVolumeId=null) {
+		if (isset($cvVolumeId)) {
+			$this->cvVolumeId = $cvVolumeId;
+			$this->isDirty = 1;
+		}
+		return $this->cvVolumeId;
+	}
+
 	protected function normalizeDecimal($value) {
 		if (! isset($value) || $value === '') {
 			return null;
@@ -188,6 +197,22 @@ class ComicDB_Series extends ComicDB_Object {
 		return $hasColumn;
 	}
 
+	public function hasCvVolumeIdColumn() {
+		static $checked = false;
+		static $hasColumn = false;
+		if ($checked) {
+			return $hasColumn;
+		}
+		$db = ComicDB_DB::db();
+		$query = "SHOW COLUMNS FROM series LIKE 'cv_volume_id'";
+		if(!$result = $db->query($query)){
+			die('There was an error running the query [' . $db->error . ']');
+		}
+		$hasColumn = $result->num_rows > 0;
+		$checked = true;
+		return $hasColumn;
+	}
+
 	public function issues() {
 		if (! $this->issues) {
 			$this->issues = new ComicDB_Issues($this->id());
@@ -214,9 +239,14 @@ class ComicDB_Series extends ComicDB_Object {
 	protected function select() {
 		$db = ComicDB_DB::db();
 		$includeTotalIssues = $this->hasTotalIssuesColumn();
+		$includeCvVolumeId = $this->hasCvVolumeIdColumn();
 		$query = "SELECT id, title, name, volume, start_year, publisher, type,\n";
-		if ($includeTotalIssues) {
+		if ($includeTotalIssues && $includeCvVolumeId) {
+			$query .= "       default_price, first_issue, final_issue, total_issues, subscribed, comments, cv_volume_id\n";
+		} else if ($includeTotalIssues) {
 			$query .= "       default_price, first_issue, final_issue, total_issues, subscribed, comments\n";
+		} else if ($includeCvVolumeId) {
+			$query .= "       default_price, first_issue, final_issue, subscribed, comments, cv_volume_id\n";
 		} else {
 			$query .= "       default_price, first_issue, final_issue, subscribed, comments\n";
 		}
@@ -245,6 +275,9 @@ class ComicDB_Series extends ComicDB_Object {
 		}
 		$this->subscribed($row['subscribed']);
 		$this->comments($row['comments']);
+		if ($includeCvVolumeId) {
+			$this->cvVolumeId($row['cv_volume_id']);
+		}
 
 		return;
 	}
@@ -305,6 +338,13 @@ class ComicDB_Series extends ComicDB_Object {
 		$comments = $this->comments();
 		if ($comments) {
 			$data['comments'] = "'$comments'";
+		}
+
+		if ($this->hasCvVolumeIdColumn()) {
+			$cvVolumeId = $this->cvVolumeId();
+			if ($cvVolumeId != "" && $cvVolumeId > 0) {
+				$data['cv_volume_id'] = (int) $cvVolumeId;
+			}
 		}
 
 		// build query
@@ -422,6 +462,15 @@ class ComicDB_Series extends ComicDB_Object {
 			$data['comments'] = "'$comments'";
 		} else {
 			$data['comments'] = "NULL";
+		}
+
+		if ($this->hasCvVolumeIdColumn()) {
+			$cvVolumeId = $this->cvVolumeId();
+			if ($cvVolumeId != "" && $cvVolumeId > 0) {
+				$data['cv_volume_id'] = (int) $cvVolumeId;
+			} else {
+				$data['cv_volume_id'] = "NULL";
+			}
 		}
 
 		// build query
