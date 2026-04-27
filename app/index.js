@@ -238,6 +238,11 @@ app.get('/api/comicvine/volume/:cvVolumeId/issues', function (req, res) {
    callPhp(res, 'grabcomicvinevolumeissues', [req.params.cvVolumeId]);
 });
 
+app.post('/api/comicvine/quick-add', function (req, res) {
+   console.log('COMICVINE QUICK ADD', req.body);
+   callPhp(res, 'addissuefromcomicvine', [JSON.stringify(req.body)]);
+});
+
 // Error-handling middleware — must have 4 params so Express treats it as error handler
 app.use(function (err, req, res, next) { // eslint-disable-line no-unused-vars
    console.error('Unhandled error:', err);

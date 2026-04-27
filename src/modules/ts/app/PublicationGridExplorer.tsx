@@ -90,15 +90,20 @@ const VOLUME_COLORS = [
 ];
 
 interface Props {
-    /** User's owned issue IDs from local collection (cv_issue_id values) */
-    ownedIssueIds?: Set<number>;
-    /** Callback when an issue is clicked */
-    onIssueClick?: (cvIssueId: number, volumeId: number, issueNumber: string) => void;
+    /** Initial owned issue IDs from local collection (cv_issue_id values) */
+    initialOwnedIssueIds?: Set<number>;
+}
+
+interface QuickAddResponse {
+    success?: boolean;
+    alreadyOwned?: boolean;
+    issueId?: number;
+    message?: string;
+    error?: string;
 }
 
 const PublicationGridExplorer: React.FC<Props> = ({ 
-    ownedIssueIds = new Set(), 
-    onIssueClick 
+    initialOwnedIssueIds = new Set()
 }) => {
     const [searchTitle, setSearchTitle] = useState('');
     const [loading, setLoading] = useState(false);
@@ -109,6 +114,11 @@ const PublicationGridExplorer: React.FC<Props> = ({
     const [expandedVolumes, setExpandedVolumes] = useState<Set<number>>(new Set());
     const [highlightedIssue, setHighlightedIssue] = useState<number | null>(null);
     const [publisherFilter, setPublisherFilter] = useState<PublisherFilter>('us');
+    
+    // Track owned issues locally (merged with props)
+    const [ownedIssueIds, setOwnedIssueIds] = useState<Set<number>>(initialOwnedIssueIds);
+    const [addingIssue, setAddingIssue] = useState<number | null>(null);
+    const [lastAddedMessage, setLastAddedMessage] = useState<string | null>(null);
 
     // Get unique publishers from results for the filter dropdown
     const availablePublishers = useMemo(() => {
@@ -226,6 +236,58 @@ const PublicationGridExplorer: React.FC<Props> = ({
         }
     };
 
+    const quickAddIssue = useCallback(async (
+        cvIssueId: number,
+        volume: ComicVineVolume,
+        issue: ComicVineIssue
+    ) => {
+        if (addingIssue || ownedIssueIds.has(cvIssueId)) return;
+        
+        setAddingIssue(cvIssueId);
+        setLastAddedMessage(null);
+        
+        try {
+            const response = await fetch('/api/comicvine/quick-add', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    cvVolumeId: volume.cv_id,
+                    cvIssueId: issue.cv_id,
+                    titleName: titleHistory?.titleName || volume.name,
+                    volumeName: volume.name,
+                    publisher: volume.publisher,
+                    startYear: volume.start_year ? parseInt(volume.start_year, 10) : null,
+                    issueNumber: issue.issue_number,
+                    coverDate: issue.cover_date,
+                    issueName: issue.name
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error(`Failed to add issue (${response.status})`);
+            }
+            
+            const data: QuickAddResponse = await response.json();
+            
+            if (data.error) {
+                throw new Error(data.error);
+            }
+            
+            if (data.success) {
+                // Add to local owned set
+                setOwnedIssueIds(prev => new Set(prev).add(cvIssueId));
+                setLastAddedMessage(data.message || `Added #${issue.issue_number}`);
+                
+                // Clear message after 3 seconds
+                setTimeout(() => setLastAddedMessage(null), 3000);
+            }
+        } catch (e) {
+            setError(String(e instanceof Error ? e.message : e));
+        } finally {
+            setAddingIssue(null);
+        }
+    }, [addingIssue, ownedIssueIds, titleHistory]);
+
     const getVolumeColor = (index: number): string => {
         return VOLUME_COLORS[index % VOLUME_COLORS.length];
     };
@@ -270,6 +332,12 @@ const PublicationGridExplorer: React.FC<Props> = ({
             {error && (
                 <div className="alert alert-warning mt-3" role="alert">
                     {error}
+                </div>
+            )}
+
+            {lastAddedMessage && (
+                <div className="alert alert-success mt-3 added-toast" role="alert">
+                    {lastAddedMessage}
                 </div>
             )}
 
@@ -374,21 +442,24 @@ const PublicationGridExplorer: React.FC<Props> = ({
                                                         const legacyNumber = volume.legacy_start + issueIndex;
                                                         const isOwned = ownedIssueIds.has(issue.cv_id);
                                                         const isHighlighted = highlightedIssue === issue.cv_id;
+                                                        const isAdding = addingIssue === issue.cv_id;
 
                                                         return (
                                                             <div
                                                                 key={issue.cv_id}
-                                                                className={`issue-square ${isOwned ? 'owned' : ''} ${isHighlighted ? 'highlighted' : ''}`}
+                                                                className={`issue-square ${isOwned ? 'owned' : ''} ${isHighlighted ? 'highlighted' : ''} ${isAdding ? 'adding' : ''}`}
                                                                 style={{ backgroundColor: color }}
-                                                                title={`#${issue.issue_number || '?'} - ${issue.name || 'Untitled'}\nLegacy #${legacyNumber}\n${issue.cover_date || 'Unknown date'}`}
+                                                                title={`#${issue.issue_number || '?'} - ${issue.name || 'Untitled'}\nLegacy #${legacyNumber}\n${issue.cover_date || 'Unknown date'}${isOwned ? '\n✓ In Collection' : '\nClick to add to collection'}`}
                                                                 onClick={() => {
-                                                                    setHighlightedIssue(issue.cv_id);
-                                                                    onIssueClick?.(issue.cv_id, volume.cv_id, issue.issue_number || '');
+                                                                    if (!isOwned && !isAdding) {
+                                                                        quickAddIssue(issue.cv_id, volume, issue);
+                                                                    }
                                                                 }}
                                                                 onMouseEnter={() => setHighlightedIssue(issue.cv_id)}
                                                                 onMouseLeave={() => setHighlightedIssue(null)}
                                                             >
                                                                 {isOwned && <span className="owned-mark">✓</span>}
+                                                                {isAdding && <span className="adding-mark">+</span>}
                                                             </div>
                                                         );
                                                     })}

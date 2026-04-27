@@ -2161,3 +2161,128 @@ function grabComicVineVolumeIssues($cvVolumeId)
         'attribution' => ComicDB_ComicVine::getAttribution()
     ]);
 }
+
+/**
+ * Quick-add an issue from ComicVine to the collection
+ * POST /api/comicvine/quick-add
+ * Input: { cvVolumeId, cvIssueId, titleName, volumeName, publisher, startYear, issueNumber, coverDate }
+ */
+function addIssueFromComicVine($dataJson)
+{
+    $data = json_decode($dataJson, true);
+    $db = ComicDB_DB::db();
+    
+    // Required fields
+    $cvVolumeId = isset($data['cvVolumeId']) ? (int) $data['cvVolumeId'] : 0;
+    $cvIssueId = isset($data['cvIssueId']) ? (int) $data['cvIssueId'] : 0;
+    $titleName = isset($data['titleName']) ? trim($data['titleName']) : '';
+    $issueNumber = isset($data['issueNumber']) ? trim($data['issueNumber']) : '';
+    
+    if ($cvVolumeId <= 0 || $cvIssueId <= 0 || empty($titleName) || $issueNumber === '') {
+        return json_encode(['error' => 'cvVolumeId, cvIssueId, titleName, and issueNumber are required']);
+    }
+    
+    // Optional fields
+    $volumeName = isset($data['volumeName']) ? trim($data['volumeName']) : $titleName;
+    $publisherName = isset($data['publisher']) ? trim($data['publisher']) : '';
+    $startYear = isset($data['startYear']) ? (int) $data['startYear'] : null;
+    $coverDate = isset($data['coverDate']) ? trim($data['coverDate']) : null;
+    $issueName = isset($data['issueName']) ? trim($data['issueName']) : '';
+    
+    // Check if this issue is already owned (by cv_issue_id)
+    $existingQuery = "SELECT id FROM issues WHERE cv_issue_id = " . (int) $cvIssueId . " LIMIT 1";
+    $existingResult = $db->query($existingQuery);
+    if ($existingResult && $existingResult->num_rows > 0) {
+        $row = $existingResult->fetch_assoc();
+        return json_encode([
+            'success' => true,
+            'alreadyOwned' => true,
+            'issueId' => (int) $row['id'],
+            'message' => 'Issue already in collection'
+        ]);
+    }
+    
+    // 1. Find or create Publisher
+    $publisherId = null;
+    if (!empty($publisherName)) {
+        $escapedPub = $db->real_escape_string($publisherName);
+        $pubQuery = "SELECT id FROM publisher WHERE name = '$escapedPub' LIMIT 1";
+        $pubResult = $db->query($pubQuery);
+        if ($pubResult && $pubResult->num_rows > 0) {
+            $publisherId = (int) $pubResult->fetch_assoc()['id'];
+        } else {
+            // Create publisher
+            $publisher = new ComicDB_Publisher();
+            $publisher->name($publisherName);
+            $publisher->save();
+            $publisherId = $publisher->id();
+        }
+    }
+    
+    // 2. Find or create Title
+    $escapedTitle = $db->real_escape_string($titleName);
+    $titleQuery = "SELECT id FROM titles WHERE name = '$escapedTitle' LIMIT 1";
+    $titleResult = $db->query($titleQuery);
+    $titleId = null;
+    if ($titleResult && $titleResult->num_rows > 0) {
+        $titleId = (int) $titleResult->fetch_assoc()['id'];
+    } else {
+        // Create title
+        $title = new ComicDB_Title();
+        $title->name($titleName);
+        $title->save();
+        $titleId = $title->id();
+    }
+    
+    // 3. Find or create Series (by cv_volume_id)
+    $seriesQuery = "SELECT id FROM series WHERE cv_volume_id = $cvVolumeId LIMIT 1";
+    $seriesResult = $db->query($seriesQuery);
+    $seriesId = null;
+    if ($seriesResult && $seriesResult->num_rows > 0) {
+        $seriesId = (int) $seriesResult->fetch_assoc()['id'];
+    } else {
+        // Create series
+        ensureSeriesTotalSchema($db);
+        $series = new ComicDB_Series();
+        $series->titleId($titleId);
+        $series->name($volumeName);
+        $series->cvVolumeId($cvVolumeId);
+        if ($publisherId) {
+            $series->publisher($publisherId);
+        }
+        if ($startYear) {
+            $series->startYear($startYear);
+        }
+        $series->save();
+        $seriesId = $series->id();
+    }
+    
+    // 4. Create the Issue
+    ensureSeriesTotalSchema($db);
+    $issue = new ComicDB_Issue();
+    $issue->seriesId($seriesId);
+    $issue->number($issueNumber);
+    $issue->cvIssueId($cvIssueId);
+    if (!empty($issueName)) {
+        $issue->storyTitle($issueName);
+    }
+    if ($coverDate) {
+        // Convert YYYY-MM-DD to timestamp
+        $timestamp = strtotime($coverDate);
+        if ($timestamp !== false) {
+            $issue->coverDate($timestamp);
+        }
+    }
+    $issue->status(0); // Collected
+    $issue->quantity(1);
+    $issue->save();
+    
+    return json_encode([
+        'success' => true,
+        'alreadyOwned' => false,
+        'issueId' => $issue->id(),
+        'seriesId' => $seriesId,
+        'titleId' => $titleId,
+        'message' => "Added $titleName #$issueNumber to collection"
+    ]);
+}
