@@ -1,5 +1,28 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import './PublicationGridExplorer.scss';
+
+// Major US comic publishers
+const US_PUBLISHERS = new Set([
+    'DC Comics',
+    'Marvel',
+    'Image',
+    'Dark Horse Comics',
+    'IDW Publishing',
+    'Valiant',
+    'Boom! Studios',
+    'Dynamite Entertainment',
+    'Archie Comics',
+    'Oni Press',
+    'Top Cow',
+    'Vertigo',
+    'WildStorm',
+    'America\'s Best Comics',
+    'Icon Comics',
+    'MAX',
+    'DC Black Label',
+]);
+
+type PublisherFilter = 'us' | 'all' | string;
 
 // Types for ComicVine API responses
 interface ComicVineVolume {
@@ -85,6 +108,47 @@ const PublicationGridExplorer: React.FC<Props> = ({
     const [loadingVolumes, setLoadingVolumes] = useState<Set<number>>(new Set());
     const [expandedVolumes, setExpandedVolumes] = useState<Set<number>>(new Set());
     const [highlightedIssue, setHighlightedIssue] = useState<number | null>(null);
+    const [publisherFilter, setPublisherFilter] = useState<PublisherFilter>('us');
+
+    // Get unique publishers from results for the filter dropdown
+    const availablePublishers = useMemo(() => {
+        if (!titleHistory) return [];
+        const publishers = new Set<string>();
+        titleHistory.volumes.forEach(v => {
+            if (v.publisher) publishers.add(v.publisher);
+        });
+        return Array.from(publishers).sort();
+    }, [titleHistory]);
+
+    // Filter volumes based on publisher selection and recalculate legacy numbers
+    const filteredVolumes = useMemo(() => {
+        if (!titleHistory) return [];
+        
+        let volumes = titleHistory.volumes;
+        
+        // Apply publisher filter
+        if (publisherFilter === 'us') {
+            volumes = volumes.filter(v => v.publisher && US_PUBLISHERS.has(v.publisher));
+        } else if (publisherFilter !== 'all') {
+            // Filter to specific publisher
+            volumes = volumes.filter(v => v.publisher === publisherFilter);
+        }
+        
+        // Recalculate legacy numbers for filtered set
+        let runningTotal = 0;
+        return volumes.map(vol => {
+            const legacy_start = runningTotal + 1;
+            const legacy_end = runningTotal + vol.issue_count;
+            runningTotal += vol.issue_count;
+            return { ...vol, legacy_start, legacy_end };
+        });
+    }, [titleHistory, publisherFilter]);
+
+    // Calculate totals for filtered results
+    const filteredTotals = useMemo(() => {
+        const totalIssues = filteredVolumes.reduce((sum, v) => sum + v.issue_count, 0);
+        return { totalIssues, volumeCount: filteredVolumes.length };
+    }, [filteredVolumes]);
 
     const searchTitleHistory = useCallback(async () => {
         if (!searchTitle.trim()) return;
@@ -213,15 +277,46 @@ const PublicationGridExplorer: React.FC<Props> = ({
                 <div className="title-history mt-4">
                     <div className="history-summary">
                         <h5>{titleHistory.titleName}</h5>
-                        <p>
-                            <strong>{titleHistory.totalIssues.toLocaleString()}</strong> issues across{' '}
-                            <strong>{titleHistory.volumeCount}</strong> volumes
-                        </p>
+                        <div className="summary-row">
+                            <p>
+                                <strong>{filteredTotals.totalIssues.toLocaleString()}</strong> issues across{' '}
+                                <strong>{filteredTotals.volumeCount}</strong> volumes
+                                {publisherFilter !== 'all' && titleHistory.volumeCount !== filteredTotals.volumeCount && (
+                                    <span className="text-muted ms-2">
+                                        (filtered from {titleHistory.volumeCount} total)
+                                    </span>
+                                )}
+                            </p>
+                            <div className="publisher-filter">
+                                <label htmlFor="publisher-filter" className="form-label me-2">Publisher:</label>
+                                <select
+                                    id="publisher-filter"
+                                    className="form-select form-select-sm"
+                                    value={publisherFilter}
+                                    onChange={e => setPublisherFilter(e.target.value as PublisherFilter)}
+                                >
+                                    <option value="us">US Publishers Only</option>
+                                    <option value="all">All Publishers ({titleHistory.volumeCount})</option>
+                                    <optgroup label="Specific Publisher">
+                                        {availablePublishers.map(pub => (
+                                            <option key={pub} value={pub}>{pub}</option>
+                                        ))}
+                                    </optgroup>
+                                </select>
+                            </div>
+                        </div>
                     </div>
 
+                    {filteredVolumes.length === 0 && (
+                        <div className="alert alert-info">
+                            No volumes found for selected publisher filter. Try selecting "All Publishers".
+                        </div>
+                    )}
+
                     {/* Volume Legend */}
+                    {filteredVolumes.length > 0 && (
                     <div className="volume-legend">
-                        {titleHistory.volumes.map((volume, index) => (
+                        {filteredVolumes.map((volume, index) => (
                             <div 
                                 key={volume.cv_id} 
                                 className="legend-item"
@@ -238,10 +333,11 @@ const PublicationGridExplorer: React.FC<Props> = ({
                             </div>
                         ))}
                     </div>
+                    )}
 
                     {/* Publication Grid */}
                     <div className="publication-grid">
-                        {titleHistory.volumes.map((volume, volumeIndex) => {
+                        {filteredVolumes.map((volume, volumeIndex) => {
                             const color = getVolumeColor(volumeIndex);
                             const issues = volumeIssues.get(volume.cv_id);
                             const isExpanded = expandedVolumes.has(volume.cv_id);
