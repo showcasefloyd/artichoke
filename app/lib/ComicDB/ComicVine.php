@@ -1,21 +1,39 @@
 <?php
 /**
  * ComicVine API Client
- * 
+ *
  * Provides methods to search and retrieve comic data from the ComicVine API.
  * API documentation: https://comicvine.gamespot.com/api/documentation
+ *
+ * IMPORTANT: ComicVine Terms of Use compliance:
+ * - Non-commercial use only
+ * - Rate limited to 200 requests/hour (we use 1s delay + caching)
+ * - Must attribute: "Data provided by Comic Vine" with link
+ * - Do not redistribute data
  */
+
+include_once(__DIR__ . '/DB.php');
 
 class ComicDB_ComicVine {
 
 	const API_BASE = 'https://comicvine.gamespot.com/api';
 	const RATE_LIMIT_DELAY = 1; // seconds between requests
 
+	// Cache TTL values (in seconds)
+	const CACHE_TTL_SEARCH = 3600;      // 1 hour for search results
+	const CACHE_TTL_VOLUME = 86400;     // 24 hours for volume details
+	const CACHE_TTL_ISSUE = 86400;      // 24 hours for issue details
+	const CACHE_TTL_VOLUME_ISSUES = 86400; // 24 hours for volume issue lists
+
+	// Attribution text (required by ToS)
+	const ATTRIBUTION_TEXT = 'Data provided by Comic Vine';
+	const ATTRIBUTION_URL = 'https://comicvine.gamespot.com';
+
 	private static $lastRequestTime = 0;
 
 	/**
 	 * Search for volumes (series) by name
-	 * 
+	 *
 	 * @param string $titleName The title to search for (e.g., "Batman", "Amazing Spider-Man")
 	 * @return array Array of matching volumes with basic info
 	 */
@@ -51,7 +69,7 @@ class ComicDB_ComicVine {
 
 	/**
 	 * Get a specific volume with its full issue list
-	 * 
+	 *
 	 * @param int $cvVolumeId The ComicVine volume ID
 	 * @return array|null Volume data with issues array, or null if not found
 	 */
@@ -93,7 +111,7 @@ class ComicDB_ComicVine {
 
 	/**
 	 * Get detailed information about a specific issue
-	 * 
+	 *
 	 * @param int $cvIssueId The ComicVine issue ID
 	 * @return array|null Issue data or null if not found
 	 */
@@ -125,7 +143,7 @@ class ComicDB_ComicVine {
 
 	/**
 	 * Search for issues within a volume by issue number
-	 * 
+	 *
 	 * @param int $cvVolumeId The ComicVine volume ID
 	 * @param string $issueNumber The issue number to find
 	 * @return array Array of matching issues
@@ -161,7 +179,7 @@ class ComicDB_ComicVine {
 
 	/**
 	 * Get all issues for a volume with cover dates (for timeline/grid display)
-	 * 
+	 *
 	 * @param int $cvVolumeId The ComicVine volume ID
 	 * @param int $offset Pagination offset
 	 * @param int $limit Results per page (max 100)
@@ -201,7 +219,7 @@ class ComicDB_ComicVine {
 
 	/**
 	 * Resolve an issue by title name, issue number, and cover date
-	 * 
+	 *
 	 * @param string $titleName The title/volume name
 	 * @param string $issueNumber The issue number
 	 * @param string $coverDate Cover date in YYYY-MM format
@@ -261,13 +279,36 @@ class ComicDB_ComicVine {
 	}
 
 	/**
-	 * Make a request to the ComicVine API
-	 * 
+	 * Make a request to the ComicVine API (with caching)
+	 *
 	 * @param string $endpoint The API endpoint (e.g., '/search', '/volume/4050-123')
 	 * @param array $params Query parameters
+	 * @param int $cacheTtl Cache TTL in seconds (0 to disable)
 	 * @return array|null Decoded JSON response or null on error
 	 */
-	private static function request($endpoint, $params = array()) {
+	private static function request($endpoint, $params = array(), $cacheTtl = null) {
+		// Determine cache TTL based on endpoint if not specified
+		if ($cacheTtl === null) {
+			if (strpos($endpoint, '/search') === 0) {
+				$cacheTtl = self::CACHE_TTL_SEARCH;
+			} elseif (strpos($endpoint, '/volume/') === 0) {
+				$cacheTtl = self::CACHE_TTL_VOLUME;
+			} elseif (strpos($endpoint, '/issue/') === 0) {
+				$cacheTtl = self::CACHE_TTL_ISSUE;
+			} elseif (strpos($endpoint, '/issues') === 0) {
+				$cacheTtl = self::CACHE_TTL_VOLUME_ISSUES;
+			} else {
+				$cacheTtl = self::CACHE_TTL_SEARCH;
+			}
+		}
+
+		// Check cache first
+		$cacheKey = self::generateCacheKey($endpoint, $params);
+		$cachedData = self::getCache($cacheKey);
+		if ($cachedData !== null) {
+			return $cachedData;
+		}
+
 		$apiKey = defined('COMICVINE_API_KEY') ? COMICVINE_API_KEY : '';
 
 		if (empty($apiKey)) {
@@ -318,7 +359,87 @@ class ComicDB_ComicVine {
 			return null;
 		}
 
+		// Store in cache for future requests
+		if ($cacheTtl > 0) {
+			self::setCache($cacheKey, $data, $cacheTtl);
+		}
+
 		return $data;
+	}
+
+	/**
+	 * Generate a cache key for an API request
+	 */
+	private static function generateCacheKey($endpoint, $params) {
+		// Remove api_key from cache key (it's not relevant for caching)
+		unset($params['api_key']);
+		unset($params['format']);
+		ksort($params);
+		return md5($endpoint . '|' . json_encode($params));
+	}
+
+	/**
+	 * Get cached response if available and not expired
+	 */
+	private static function getCache($cacheKey) {
+		$db = ComicDB_DB::db();
+		if (!$db) return null;
+
+		$cacheKey = $db->real_escape_string($cacheKey);
+		$query = "SELECT response_data FROM cv_cache
+				  WHERE cache_key = '{$cacheKey}'
+				  AND expires_at > NOW()
+				  LIMIT 1";
+
+		$result = @$db->query($query);
+		if (!$result || $result->num_rows === 0) {
+			return null;
+		}
+
+		$row = $result->fetch_assoc();
+		return json_decode($row['response_data'], true);
+	}
+
+	/**
+	 * Store response in cache
+	 */
+	private static function setCache($cacheKey, $data, $ttl) {
+		$db = ComicDB_DB::db();
+		if (!$db) return;
+
+		$cacheKey = $db->real_escape_string($cacheKey);
+		$responseData = $db->real_escape_string(json_encode($data));
+
+		// Use INSERT ... ON DUPLICATE KEY UPDATE for upsert
+		$query = "INSERT INTO cv_cache (cache_key, response_data, expires_at)
+				  VALUES ('{$cacheKey}', '{$responseData}', DATE_ADD(NOW(), INTERVAL {$ttl} SECOND))
+				  ON DUPLICATE KEY UPDATE
+				  response_data = '{$responseData}',
+				  expires_at = DATE_ADD(NOW(), INTERVAL {$ttl} SECOND)";
+
+		@$db->query($query);
+	}
+
+	/**
+	 * Clear expired cache entries (housekeeping)
+	 */
+	public static function clearExpiredCache() {
+		$db = ComicDB_DB::db();
+		if (!$db) return;
+
+		$query = "DELETE FROM cv_cache WHERE expires_at < NOW()";
+		@$db->query($query);
+	}
+
+	/**
+	 * Get attribution info for display in UI
+	 * @return array Attribution text and URL
+	 */
+	public static function getAttribution() {
+		return array(
+			'text' => self::ATTRIBUTION_TEXT,
+			'url' => self::ATTRIBUTION_URL
+		);
 	}
 }
 
