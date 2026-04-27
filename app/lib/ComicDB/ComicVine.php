@@ -218,6 +218,41 @@ class ComicDB_ComicVine {
 	}
 
 	/**
+	 * Get ALL issues for a volume (auto-paginate through results)
+	 * 
+	 * @param int $cvVolumeId ComicVine volume ID
+	 * @return array Array with 'issues' (all of them) and 'total' count
+	 */
+	public static function getAllVolumeIssues($cvVolumeId) {
+		$allIssues = array();
+		$offset = 0;
+		$limit = 100;
+		$total = null;
+
+		do {
+			$result = self::getVolumeIssues($cvVolumeId, $offset, $limit);
+			
+			if (empty($result['issues'])) {
+				break;
+			}
+
+			$allIssues = array_merge($allIssues, $result['issues']);
+			$total = $result['total'];
+			$offset += $limit;
+
+			// Safety limit: don't fetch more than 2000 issues
+			if ($offset >= 2000) {
+				break;
+			}
+		} while (count($allIssues) < $total);
+
+		return array(
+			'issues' => $allIssues,
+			'total' => $total !== null ? $total : count($allIssues)
+		);
+	}
+
+	/**
 	 * Resolve an issue by title name, issue number, and cover date
 	 *
 	 * @param string $titleName The title/volume name

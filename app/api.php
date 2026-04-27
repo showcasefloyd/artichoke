@@ -2141,7 +2141,7 @@ function grabComicVineTitleHistory($titleName)
 /**
  * Get all issues for a specific ComicVine volume
  * GET /api/comicvine/volume/:cvVolumeId/issues
- * Returns: all issues in the volume, ordered by issue number
+ * Returns: all issues in the volume, ordered by cover date
  */
 function grabComicVineVolumeIssues($cvVolumeId)
 {
@@ -2151,12 +2151,13 @@ function grabComicVineVolumeIssues($cvVolumeId)
         return json_encode(['error' => 'valid cvVolumeId is required']);
     }
     
-    $issues = ComicDB_ComicVine::getVolumeIssues($cvVolumeId);
+    // Use getAllVolumeIssues to auto-paginate through all results
+    $result = ComicDB_ComicVine::getAllVolumeIssues($cvVolumeId);
     
     return json_encode([
         'cvVolumeId' => $cvVolumeId,
-        'issueCount' => count($issues),
-        'issues' => $issues,
+        'issueCount' => $result['total'],
+        'issues' => $result,
         'attribution' => ComicDB_ComicVine::getAttribution()
     ]);
 }
