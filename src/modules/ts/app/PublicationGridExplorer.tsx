@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import './PublicationGridExplorer.scss';
 
 // Major US comic publishers
@@ -120,6 +120,13 @@ const PublicationGridExplorer: React.FC<Props> = ({
     const [addingIssue, setAddingIssue] = useState<number | null>(null);
     const [lastAddedMessage, setLastAddedMessage] = useState<string | null>(null);
 
+    // Typeahead suggestions state
+    const [suggestions, setSuggestions] = useState<string[]>([]);
+    const [showSuggestions, setShowSuggestions] = useState(false);
+    const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+    const debounceRef = useRef<number | null>(null);
+    const inputRef = useRef<HTMLInputElement>(null);
+
     // Load owned issues on mount
     useEffect(() => {
         async function loadOwnedIssues() {
@@ -182,8 +189,9 @@ const PublicationGridExplorer: React.FC<Props> = ({
         return { totalIssues, volumeCount: filteredVolumes.length };
     }, [filteredVolumes]);
 
-    const searchTitleHistory = useCallback(async () => {
-        if (!searchTitle.trim()) return;
+    const searchTitleHistory = useCallback(async (titleOverride?: string) => {
+        const titleToSearch = titleOverride ?? searchTitle;
+        if (!titleToSearch.trim()) return;
 
         setLoading(true);
         setError(null);
@@ -192,14 +200,14 @@ const PublicationGridExplorer: React.FC<Props> = ({
         setExpandedVolumes(new Set());
 
         try {
-            const response = await fetch(`/api/comicvine/title-history/${encodeURIComponent(searchTitle.trim())}`);
+            const response = await fetch(`/api/comicvine/title-history/${encodeURIComponent(titleToSearch.trim())}`);
             if (!response.ok) {
                 throw new Error(`Failed to search (${response.status})`);
             }
             const data: TitleHistoryResponse = await response.json();
 
             if (!data.found) {
-                setError(`No volumes found for "${searchTitle}"`);
+                setError(`No volumes found for "${titleToSearch}"`);
             } else {
                 setTitleHistory(data);
             }
@@ -254,9 +262,76 @@ const PublicationGridExplorer: React.FC<Props> = ({
 
     const handleKeyPress = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter') {
+            setShowSuggestions(false);
             searchTitleHistory();
+        } else if (e.key === 'Escape') {
+            setShowSuggestions(false);
         }
     };
+
+    // Debounced typeahead search
+    useEffect(() => {
+        // Clear previous timeout
+        if (debounceRef.current) {
+            window.clearTimeout(debounceRef.current);
+        }
+
+        const query = searchTitle.trim();
+
+        // Need at least 3 characters to search
+        if (query.length < 3) {
+            setSuggestions([]);
+            setShowSuggestions(false);
+            return;
+        }
+
+        setLoadingSuggestions(true);
+
+        debounceRef.current = window.setTimeout(async () => {
+            try {
+                const response = await fetch(`/api/comicvine/title-history/${encodeURIComponent(query)}`);
+                if (!response.ok) {
+                    setSuggestions([]);
+                    return;
+                }
+                const data: TitleHistoryResponse = await response.json();
+
+                if (data.found && data.volumes.length > 0) {
+                    // Get unique title names from volumes, prioritizing US publishers
+                    const titleSet = new Set<string>();
+                    data.volumes.forEach(v => {
+                        if (v.name) titleSet.add(v.name);
+                    });
+                    // Sort and limit to 10
+                    const uniqueTitles = Array.from(titleSet).slice(0, 10);
+                    setSuggestions(uniqueTitles);
+                    setShowSuggestions(uniqueTitles.length > 0);
+                } else {
+                    setSuggestions([]);
+                    setShowSuggestions(false);
+                }
+            } catch (e) {
+                console.error('Typeahead error:', e);
+                setSuggestions([]);
+            } finally {
+                setLoadingSuggestions(false);
+            }
+        }, 300);
+
+        return () => {
+            if (debounceRef.current) {
+                window.clearTimeout(debounceRef.current);
+            }
+        };
+    }, [searchTitle]);
+
+    const selectSuggestion = useCallback((suggestion: string) => {
+        setSearchTitle(suggestion);
+        setShowSuggestions(false);
+        setSuggestions([]);
+        // Search directly with the selected suggestion
+        searchTitleHistory(suggestion);
+    }, [searchTitleHistory]);
 
     const quickAddIssue = useCallback(async (
         cvIssueId: number,
@@ -331,19 +406,40 @@ const PublicationGridExplorer: React.FC<Props> = ({
             </div>
 
             <div className="search-form">
-                <div className="input-group">
+                <div className="input-group search-input-wrapper">
                     <input
+                        ref={inputRef}
                         type="text"
                         className="form-control"
                         placeholder="Enter title name (e.g., Batman, Spider-Man)"
                         value={searchTitle}
                         onChange={e => setSearchTitle(e.target.value)}
-                        onKeyPress={handleKeyPress}
+                        onKeyDown={handleKeyPress}
+                        onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                        onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
                         disabled={loading}
                     />
+                    {showSuggestions && suggestions.length > 0 && (
+                        <div className="suggestions-dropdown">
+                            {suggestions.map((suggestion, idx) => (
+                                <div
+                                    key={idx}
+                                    className="suggestion-item"
+                                    onMouseDown={() => selectSuggestion(suggestion)}
+                                >
+                                    {suggestion}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                    {loadingSuggestions && (
+                        <div className="suggestions-loading">
+                            <span className="spinner-border spinner-border-sm" />
+                        </div>
+                    )}
                     <button
                         className="btn btn-primary"
-                        onClick={searchTitleHistory}
+                        onClick={() => { setShowSuggestions(false); searchTitleHistory(); }}
                         disabled={loading || !searchTitle.trim()}
                     >
                         {loading ? 'Searching...' : 'Search'}
