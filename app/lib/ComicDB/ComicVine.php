@@ -219,7 +219,7 @@ class ComicDB_ComicVine {
 
 	/**
 	 * Get ALL issues for a volume (auto-paginate through results)
-	 * 
+	 *
 	 * @param int $cvVolumeId ComicVine volume ID
 	 * @return array Array with 'issues' (all of them) and 'total' count
 	 */
@@ -231,7 +231,7 @@ class ComicDB_ComicVine {
 
 		do {
 			$result = self::getVolumeIssues($cvVolumeId, $offset, $limit);
-			
+
 			if (empty($result['issues'])) {
 				break;
 			}

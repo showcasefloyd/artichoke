@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import './PublicationGridExplorer.scss';
 
 // Major US comic publishers
@@ -102,7 +102,7 @@ interface QuickAddResponse {
     error?: string;
 }
 
-const PublicationGridExplorer: React.FC<Props> = ({ 
+const PublicationGridExplorer: React.FC<Props> = ({
     initialOwnedIssueIds = new Set()
 }) => {
     const [searchTitle, setSearchTitle] = useState('');
@@ -114,11 +114,33 @@ const PublicationGridExplorer: React.FC<Props> = ({
     const [expandedVolumes, setExpandedVolumes] = useState<Set<number>>(new Set());
     const [highlightedIssue, setHighlightedIssue] = useState<number | null>(null);
     const [publisherFilter, setPublisherFilter] = useState<PublisherFilter>('us');
-    
+
     // Track owned issues locally (merged with props)
     const [ownedIssueIds, setOwnedIssueIds] = useState<Set<number>>(initialOwnedIssueIds);
     const [addingIssue, setAddingIssue] = useState<number | null>(null);
     const [lastAddedMessage, setLastAddedMessage] = useState<string | null>(null);
+
+    // Load owned issues on mount
+    useEffect(() => {
+        async function loadOwnedIssues() {
+            try {
+                const response = await fetch('/api/comicvine/owned-issues');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.cvIssueIds && data.cvIssueIds.length > 0) {
+                        setOwnedIssueIds(prev => {
+                            const merged = new Set(prev);
+                            data.cvIssueIds.forEach((id: number) => merged.add(id));
+                            return merged;
+                        });
+                    }
+                }
+            } catch (e) {
+                console.error('Failed to load owned issues:', e);
+            }
+        }
+        loadOwnedIssues();
+    }, []);
 
     // Get unique publishers from results for the filter dropdown
     const availablePublishers = useMemo(() => {
@@ -133,9 +155,9 @@ const PublicationGridExplorer: React.FC<Props> = ({
     // Filter volumes based on publisher selection and recalculate legacy numbers
     const filteredVolumes = useMemo(() => {
         if (!titleHistory) return [];
-        
+
         let volumes = titleHistory.volumes;
-        
+
         // Apply publisher filter
         if (publisherFilter === 'us') {
             volumes = volumes.filter(v => v.publisher && US_PUBLISHERS.has(v.publisher));
@@ -143,7 +165,7 @@ const PublicationGridExplorer: React.FC<Props> = ({
             // Filter to specific publisher
             volumes = volumes.filter(v => v.publisher === publisherFilter);
         }
-        
+
         // Recalculate legacy numbers for filtered set
         let runningTotal = 0;
         return volumes.map(vol => {
@@ -175,7 +197,7 @@ const PublicationGridExplorer: React.FC<Props> = ({
                 throw new Error(`Failed to search (${response.status})`);
             }
             const data: TitleHistoryResponse = await response.json();
-            
+
             if (!data.found) {
                 setError(`No volumes found for "${searchTitle}"`);
             } else {
@@ -199,7 +221,7 @@ const PublicationGridExplorer: React.FC<Props> = ({
                 throw new Error(`Failed to load issues (${response.status})`);
             }
             const data: VolumeIssuesResponse = await response.json();
-            
+
             setVolumeIssues(prev => {
                 const next = new Map(prev);
                 next.set(volumeId, data.issues.issues);
@@ -242,10 +264,10 @@ const PublicationGridExplorer: React.FC<Props> = ({
         issue: ComicVineIssue
     ) => {
         if (addingIssue || ownedIssueIds.has(cvIssueId)) return;
-        
+
         setAddingIssue(cvIssueId);
         setLastAddedMessage(null);
-        
+
         try {
             const response = await fetch('/api/comicvine/quick-add', {
                 method: 'POST',
@@ -262,22 +284,22 @@ const PublicationGridExplorer: React.FC<Props> = ({
                     issueName: issue.name
                 })
             });
-            
+
             if (!response.ok) {
                 throw new Error(`Failed to add issue (${response.status})`);
             }
-            
+
             const data: QuickAddResponse = await response.json();
-            
+
             if (data.error) {
                 throw new Error(data.error);
             }
-            
+
             if (data.success) {
                 // Add to local owned set
                 setOwnedIssueIds(prev => new Set(prev).add(cvIssueId));
                 setLastAddedMessage(data.message || `Added #${issue.issue_number}`);
-                
+
                 // Clear message after 3 seconds
                 setTimeout(() => setLastAddedMessage(null), 3000);
             }
@@ -385,13 +407,13 @@ const PublicationGridExplorer: React.FC<Props> = ({
                     {filteredVolumes.length > 0 && (
                     <div className="volume-legend">
                         {filteredVolumes.map((volume, index) => (
-                            <div 
-                                key={volume.cv_id} 
+                            <div
+                                key={volume.cv_id}
                                 className="legend-item"
                                 onClick={() => toggleVolumeExpand(volume.cv_id)}
                             >
-                                <span 
-                                    className="legend-color" 
+                                <span
+                                    className="legend-color"
                                     style={{ backgroundColor: getVolumeColor(index) }}
                                 />
                                 <span className="legend-label">
@@ -413,13 +435,13 @@ const PublicationGridExplorer: React.FC<Props> = ({
 
                             return (
                                 <div key={volume.cv_id} className="volume-section">
-                                    <div 
+                                    <div
                                         className="volume-header"
                                         onClick={() => toggleVolumeExpand(volume.cv_id)}
                                         style={{ borderLeftColor: color }}
                                     >
                                         <span className="volume-name">
-                                            Vol {volumeIndex + 1}: {volume.name} 
+                                            Vol {volumeIndex + 1}: {volume.name}
                                             {volume.start_year && ` (${volume.start_year})`}
                                         </span>
                                         <span className="volume-info">

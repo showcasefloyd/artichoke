@@ -2061,21 +2061,21 @@ function grabIssue($id)
 function resolveComicVineIssue($dataJson)
 {
     $data = json_decode($dataJson, true);
-    
+
     $titleName = isset($data['titleName']) ? trim($data['titleName']) : '';
     $issueNumber = isset($data['issueNumber']) ? trim($data['issueNumber']) : '';
     $coverDate = isset($data['coverDate']) ? trim($data['coverDate']) : null;
-    
+
     if (empty($titleName) || empty($issueNumber)) {
         return json_encode(['error' => 'titleName and issueNumber are required']);
     }
-    
+
     $result = ComicDB_ComicVine::resolveIssue($titleName, $issueNumber, $coverDate);
-    
+
     if (!$result) {
         return json_encode(['found' => false, 'message' => 'No matching issue found on ComicVine']);
     }
-    
+
     return json_encode([
         'found' => true,
         'exactMatch' => isset($result['exact_match']) ? $result['exact_match'] : true,
@@ -2093,14 +2093,14 @@ function resolveComicVineIssue($dataJson)
 function grabComicVineTitleHistory($titleName)
 {
     $titleName = trim(urldecode($titleName));
-    
+
     if (empty($titleName)) {
         return json_encode(['error' => 'titleName is required']);
     }
-    
+
     // Search for all volumes with this title name
     $volumes = ComicDB_ComicVine::searchVolumes($titleName);
-    
+
     if (empty($volumes)) {
         return json_encode([
             'found' => false,
@@ -2109,14 +2109,14 @@ function grabComicVineTitleHistory($titleName)
             'attribution' => ComicDB_ComicVine::getAttribution()
         ]);
     }
-    
+
     // Sort volumes by start_year
     usort($volumes, function($a, $b) {
         $yearA = isset($a['start_year']) ? (int)$a['start_year'] : 9999;
         $yearB = isset($b['start_year']) ? (int)$b['start_year'] : 9999;
         return $yearA - $yearB;
     });
-    
+
     // Calculate running totals for legacy numbering
     $runningTotal = 0;
     $volumesWithLegacy = [];
@@ -2127,7 +2127,7 @@ function grabComicVineTitleHistory($titleName)
         $runningTotal += $issueCount;
         $volumesWithLegacy[] = $vol;
     }
-    
+
     return json_encode([
         'found' => true,
         'titleName' => $titleName,
@@ -2146,14 +2146,14 @@ function grabComicVineTitleHistory($titleName)
 function grabComicVineVolumeIssues($cvVolumeId)
 {
     $cvVolumeId = (int)$cvVolumeId;
-    
+
     if ($cvVolumeId <= 0) {
         return json_encode(['error' => 'valid cvVolumeId is required']);
     }
-    
+
     // Use getAllVolumeIssues to auto-paginate through all results
     $result = ComicDB_ComicVine::getAllVolumeIssues($cvVolumeId);
-    
+
     return json_encode([
         'cvVolumeId' => $cvVolumeId,
         'issueCount' => $result['total'],
@@ -2171,24 +2171,24 @@ function addIssueFromComicVine($dataJson)
 {
     $data = json_decode($dataJson, true);
     $db = ComicDB_DB::db();
-    
+
     // Required fields
     $cvVolumeId = isset($data['cvVolumeId']) ? (int) $data['cvVolumeId'] : 0;
     $cvIssueId = isset($data['cvIssueId']) ? (int) $data['cvIssueId'] : 0;
     $titleName = isset($data['titleName']) ? trim($data['titleName']) : '';
     $issueNumber = isset($data['issueNumber']) ? trim($data['issueNumber']) : '';
-    
+
     if ($cvVolumeId <= 0 || $cvIssueId <= 0 || empty($titleName) || $issueNumber === '') {
         return json_encode(['error' => 'cvVolumeId, cvIssueId, titleName, and issueNumber are required']);
     }
-    
+
     // Optional fields
     $volumeName = isset($data['volumeName']) ? trim($data['volumeName']) : $titleName;
     $publisherName = isset($data['publisher']) ? trim($data['publisher']) : '';
     $startYear = isset($data['startYear']) ? (int) $data['startYear'] : null;
     $coverDate = isset($data['coverDate']) ? trim($data['coverDate']) : null;
     $issueName = isset($data['issueName']) ? trim($data['issueName']) : '';
-    
+
     // Check if this issue is already owned (by cv_issue_id)
     $existingQuery = "SELECT id FROM issues WHERE cv_issue_id = " . (int) $cvIssueId . " LIMIT 1";
     $existingResult = $db->query($existingQuery);
@@ -2201,7 +2201,7 @@ function addIssueFromComicVine($dataJson)
             'message' => 'Issue already in collection'
         ]);
     }
-    
+
     // 1. Find or create Publisher
     $publisherId = null;
     if (!empty($publisherName)) {
@@ -2218,7 +2218,7 @@ function addIssueFromComicVine($dataJson)
             $publisherId = $publisher->id();
         }
     }
-    
+
     // 2. Find or create Title
     $escapedTitle = $db->real_escape_string($titleName);
     $titleQuery = "SELECT id FROM titles WHERE name = '$escapedTitle' LIMIT 1";
@@ -2233,7 +2233,7 @@ function addIssueFromComicVine($dataJson)
         $title->save();
         $titleId = $title->id();
     }
-    
+
     // 3. Find or create Series (by cv_volume_id)
     $seriesQuery = "SELECT id FROM series WHERE cv_volume_id = $cvVolumeId LIMIT 1";
     $seriesResult = $db->query($seriesQuery);
@@ -2256,7 +2256,7 @@ function addIssueFromComicVine($dataJson)
         $series->save();
         $seriesId = $series->id();
     }
-    
+
     // 4. Create the Issue
     ensureSeriesTotalSchema($db);
     $issue = new ComicDB_Issue();
@@ -2276,7 +2276,7 @@ function addIssueFromComicVine($dataJson)
     $issue->status(0); // Collected
     $issue->quantity(1);
     $issue->save();
-    
+
     return json_encode([
         'success' => true,
         'alreadyOwned' => false,
@@ -2285,4 +2285,22 @@ function addIssueFromComicVine($dataJson)
         'titleId' => $titleId,
         'message' => "Added $titleName #$issueNumber to collection"
     ]);
+}
+
+/**
+ * Get all owned issues that have a cv_issue_id (for grid highlighting)
+ * @return string JSON array of cv_issue_id values
+ */
+function getOwnedComicVineIssueIds() {
+    $db = ComicDB_DB::db();
+
+    $query = "SELECT cv_issue_id FROM issues WHERE cv_issue_id IS NOT NULL";
+    $result = $db->query($query);
+
+    $ids = [];
+    while ($row = $result->fetch_assoc()) {
+        $ids[] = (int) $row['cv_issue_id'];
+    }
+
+    return json_encode(['cvIssueIds' => $ids]);
 }
