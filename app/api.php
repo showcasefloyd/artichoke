@@ -2188,6 +2188,8 @@ function addIssueFromComicVine($dataJson)
     $startYear = isset($data['startYear']) ? (int) $data['startYear'] : null;
     $coverDate = isset($data['coverDate']) ? trim($data['coverDate']) : null;
     $issueName = isset($data['issueName']) ? trim($data['issueName']) : '';
+    $totalIssues = isset($data['totalIssues']) ? (int) $data['totalIssues'] : null;
+    $volumeNumber = isset($data['volumeNumber']) ? (int) $data['volumeNumber'] : null;
 
     // Check if this issue is already owned (by cv_issue_id)
     $existingQuery = "SELECT id FROM issues WHERE cv_issue_id = " . (int) $cvIssueId . " LIMIT 1";
@@ -2241,7 +2243,7 @@ function addIssueFromComicVine($dataJson)
     if ($seriesResult && $seriesResult->num_rows > 0) {
         $seriesId = (int) $seriesResult->fetch_assoc()['id'];
     } else {
-        // Create series
+        // Create series with full metadata from ComicVine
         ensureSeriesTotalSchema($db);
         $series = new ComicDB_Series();
         $series->titleId($titleId);
@@ -2252,6 +2254,12 @@ function addIssueFromComicVine($dataJson)
         }
         if ($startYear) {
             $series->startYear($startYear);
+        }
+        if ($totalIssues && $totalIssues > 0) {
+            $series->totalIssues($totalIssues);
+        }
+        if ($volumeNumber && $volumeNumber > 0) {
+            $series->volume($volumeNumber);
         }
         $series->save();
         $seriesId = $series->id();

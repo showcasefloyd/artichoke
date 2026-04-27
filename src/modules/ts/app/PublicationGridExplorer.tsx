@@ -336,7 +336,8 @@ const PublicationGridExplorer: React.FC<Props> = ({
     const quickAddIssue = useCallback(async (
         cvIssueId: number,
         volume: ComicVineVolume,
-        issue: ComicVineIssue
+        issue: ComicVineIssue,
+        volumeIndex: number
     ) => {
         if (addingIssue || ownedIssueIds.has(cvIssueId)) return;
 
@@ -356,7 +357,10 @@ const PublicationGridExplorer: React.FC<Props> = ({
                     startYear: volume.start_year ? parseInt(volume.start_year, 10) : null,
                     issueNumber: issue.issue_number,
                     coverDate: issue.cover_date,
-                    issueName: issue.name
+                    issueName: issue.name,
+                    // Series metadata
+                    totalIssues: volume.issue_count,
+                    volumeNumber: volumeIndex + 1  // 1-based volume number
                 })
             });
 
@@ -570,7 +574,7 @@ const PublicationGridExplorer: React.FC<Props> = ({
                                                                 title={`#${issue.issue_number || '?'} - ${issue.name || 'Untitled'}\nLegacy #${legacyNumber}\n${issue.cover_date || 'Unknown date'}${isOwned ? '\n✓ In Collection' : '\nClick to add to collection'}`}
                                                                 onClick={() => {
                                                                     if (!isOwned && !isAdding) {
-                                                                        quickAddIssue(issue.cv_id, volume, issue);
+                                                                        quickAddIssue(issue.cv_id, volume, issue, volumeIndex);
                                                                     }
                                                                 }}
                                                                 onMouseEnter={() => setHighlightedIssue(issue.cv_id)}
