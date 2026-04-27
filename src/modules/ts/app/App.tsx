@@ -3,6 +3,7 @@ import IssueDetail from './IssueDetail';
 import IssueGrid from './IssueGrid';
 import InventoryNavigation from './InventoryNavigation';
 import CollectorDashboard from './CollectorDashboard';
+import PublicationGridExplorer from './PublicationGridExplorer';
 
 export interface Title {
     id: number;
@@ -119,6 +120,7 @@ export interface DashboardResponse {
 }
 
 const App: React.FC = () => {
+    const [viewMode, setViewMode] = useState<'inventory' | 'explore'>('inventory');
     const [publishers, setPublishers] = useState<Publisher[]>([]);
     const [series, setSeries] = useState<SeriesListItem[]>([]);
     const [issues, setIssues] = useState<IssueListItem[]>([]);
@@ -244,7 +246,25 @@ const App: React.FC = () => {
             <div className="row">
                 <div className="col">
                     <h3 className="page-header">[ Artichoke, Comic Book Database &gt;&gt; Catalogue ]</h3>
-                    <div className="page-header-menu"><a className="btn btn-warning" href="/admin">Admin</a></div>
+                    <div className="page-header-menu">
+                        <div className="btn-group me-2" role="group" aria-label="View mode">
+                            <button
+                                type="button"
+                                className={`btn ${viewMode === 'inventory' ? 'btn-primary' : 'btn-outline-primary'}`}
+                                onClick={() => setViewMode('inventory')}
+                            >
+                                Inventory
+                            </button>
+                            <button
+                                type="button"
+                                className={`btn ${viewMode === 'explore' ? 'btn-primary' : 'btn-outline-primary'}`}
+                                onClick={() => setViewMode('explore')}
+                            >
+                                Explore
+                            </button>
+                        </div>
+                        <a className="btn btn-warning" href="/admin">Admin</a>
+                    </div>
                 </div>
             </div>
 
@@ -256,38 +276,48 @@ const App: React.FC = () => {
                 </div>
             )}
 
-            <div className="row">
-                <div className="col">
-                    <CollectorDashboard data={dashboard} loading={loadingDashboard} />
+            {viewMode === 'explore' && (
+                <div className="row">
+                    <div className="col">
+                        <PublicationGridExplorer />
+                    </div>
                 </div>
-            </div>
+            )}
 
-            <div className="row">
-                <InventoryNavigation
-                    publishers={publishers}
-                    series={series}
-                    issues={issues}
-                    selectedPublisherId={selectedPublisherId}
-                    selectedSeriesId={selectedSeriesId}
-                    selectedIssueId={selectedIssueId}
-                    loadingPublishers={loadingPublishers}
-                    loadingSeries={loadingSeries}
-                    loadingIssues={loadingIssues}
-                    onPublisherClick={grabSeries}
-                    onSeriesClick={grabIssues}
-                    onIssueClick={grabIssue}
-                />
-            </div>
+            {viewMode === 'inventory' && (
+                <>
+                    <div className="row">
+                        <div className="col">
+                            <CollectorDashboard data={dashboard} loading={loadingDashboard} />
+                        </div>
+                    </div>
 
-            <div className="row">
-                <div className="col">
-                    <div id="main-bottom">
-                        <div className="series-grid-controls">
-                            {selectedSeriesId && (
-                                <button
-                                    type="button"
-                                    className="btn btn-primary"
-                                    onClick={() => setShowGridModal(true)}
+                    <div className="row">
+                        <InventoryNavigation
+                            publishers={publishers}
+                            series={series}
+                            issues={issues}
+                            selectedPublisherId={selectedPublisherId}
+                            selectedSeriesId={selectedSeriesId}
+                            selectedIssueId={selectedIssueId}
+                            loadingPublishers={loadingPublishers}
+                            loadingSeries={loadingSeries}
+                            loadingIssues={loadingIssues}
+                            onPublisherClick={grabSeries}
+                            onSeriesClick={grabIssues}
+                            onIssueClick={grabIssue}
+                        />
+                    </div>
+
+                    <div className="row">
+                        <div className="col">
+                            <div id="main-bottom">
+                                <div className="series-grid-controls">
+                                    {selectedSeriesId && (
+                                        <button
+                                            type="button"
+                                            className="btn btn-primary"
+                                            onClick={() => setShowGridModal(true)}
                                 >
                                     See Grid
                                 </button>
@@ -306,6 +336,8 @@ const App: React.FC = () => {
                     </div>
                 </div>
             </div>
+            </>
+            )}
             {showGridModal && selectedSeriesId && (
                 <>
                     <div
