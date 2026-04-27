@@ -6,6 +6,7 @@ include_once "ComicDB/Serieses.php";
 include_once "ComicDB/Issue.php";
 include_once "ComicDB/Publisher.php";
 include_once "ComicDB/Publishers.php";
+include_once "ComicDB/ComicVine.php";
 include_once "ComicDB/SeriesTypes.php";
 
 function csvImportCanonicalFields()
@@ -2045,4 +2046,117 @@ function grabIssue($id)
     $issueArray['coverdate']    = $coverdate !== null ? date("M Y", (int) $coverdate) : '';
 
     return json_encode($issueArray);
+}
+
+// ============================================================
+// ComicVine API endpoints
+// ============================================================
+
+/**
+ * Resolve an issue to ComicVine data
+ * POST /api/comicvine/resolve
+ * Input: { titleName, issueNumber, coverDate (optional, format: "YYYY-MM") }
+ * Returns: matched volume + issue from ComicVine, or null if not found
+ */
+function resolveComicVineIssue($dataJson)
+{
+    $data = json_decode($dataJson, true);
+    
+    $titleName = isset($data['titleName']) ? trim($data['titleName']) : '';
+    $issueNumber = isset($data['issueNumber']) ? trim($data['issueNumber']) : '';
+    $coverDate = isset($data['coverDate']) ? trim($data['coverDate']) : null;
+    
+    if (empty($titleName) || empty($issueNumber)) {
+        return json_encode(['error' => 'titleName and issueNumber are required']);
+    }
+    
+    $result = ComicDB_ComicVine::resolveIssue($titleName, $issueNumber, $coverDate);
+    
+    if (!$result) {
+        return json_encode(['found' => false, 'message' => 'No matching issue found on ComicVine']);
+    }
+    
+    return json_encode([
+        'found' => true,
+        'exactMatch' => isset($result['exact_match']) ? $result['exact_match'] : true,
+        'issue' => $result['issue'],
+        'volume' => $result['volume'],
+        'attribution' => ComicDB_ComicVine::getAttribution()
+    ]);
+}
+
+/**
+ * Get full title history from ComicVine
+ * GET /api/comicvine/title-history/:title
+ * Returns: all volumes for a title with their issue counts, ordered by start year
+ */
+function grabComicVineTitleHistory($titleName)
+{
+    $titleName = trim(urldecode($titleName));
+    
+    if (empty($titleName)) {
+        return json_encode(['error' => 'titleName is required']);
+    }
+    
+    // Search for all volumes with this title name
+    $volumes = ComicDB_ComicVine::searchVolumes($titleName);
+    
+    if (empty($volumes)) {
+        return json_encode([
+            'found' => false,
+            'titleName' => $titleName,
+            'volumes' => [],
+            'attribution' => ComicDB_ComicVine::getAttribution()
+        ]);
+    }
+    
+    // Sort volumes by start_year
+    usort($volumes, function($a, $b) {
+        $yearA = isset($a['start_year']) ? (int)$a['start_year'] : 9999;
+        $yearB = isset($b['start_year']) ? (int)$b['start_year'] : 9999;
+        return $yearA - $yearB;
+    });
+    
+    // Calculate running totals for legacy numbering
+    $runningTotal = 0;
+    $volumesWithLegacy = [];
+    foreach ($volumes as $vol) {
+        $vol['legacy_start'] = $runningTotal + 1;
+        $issueCount = isset($vol['issue_count']) ? (int)$vol['issue_count'] : 0;
+        $vol['legacy_end'] = $runningTotal + $issueCount;
+        $runningTotal += $issueCount;
+        $volumesWithLegacy[] = $vol;
+    }
+    
+    return json_encode([
+        'found' => true,
+        'titleName' => $titleName,
+        'totalIssues' => $runningTotal,
+        'volumeCount' => count($volumesWithLegacy),
+        'volumes' => $volumesWithLegacy,
+        'attribution' => ComicDB_ComicVine::getAttribution()
+    ]);
+}
+
+/**
+ * Get all issues for a specific ComicVine volume
+ * GET /api/comicvine/volume/:cvVolumeId/issues
+ * Returns: all issues in the volume, ordered by issue number
+ */
+function grabComicVineVolumeIssues($cvVolumeId)
+{
+    $cvVolumeId = (int)$cvVolumeId;
+    
+    if ($cvVolumeId <= 0) {
+        return json_encode(['error' => 'valid cvVolumeId is required']);
+    }
+    
+    $issues = ComicDB_ComicVine::getVolumeIssues($cvVolumeId);
+    
+    return json_encode([
+        'cvVolumeId' => $cvVolumeId,
+        'issueCount' => count($issues),
+        'issues' => $issues,
+        'attribution' => ComicDB_ComicVine::getAttribution()
+    ]);
 }

@@ -222,6 +222,22 @@ app.get('/import/csv/skipped/:runId/export', function (req, res) {
    callPhp(res, 'grabcsvimportskippedrowscsv', [req.params.runId, String(req.query.limit || '2000')]);
 });
 
+// ComicVine API
+app.post('/api/comicvine/resolve', function (req, res) {
+   console.log('COMICVINE RESOLVE', req.body);
+   callPhp(res, 'resolvecomicvineissue', [JSON.stringify(req.body)]);
+});
+
+app.get('/api/comicvine/title-history/:title', function (req, res) {
+   console.log('COMICVINE TITLE HISTORY', req.params.title);
+   callPhp(res, 'grabcomicvinetitlehistory', [req.params.title]);
+});
+
+app.get('/api/comicvine/volume/:cvVolumeId/issues', function (req, res) {
+   console.log('COMICVINE VOLUME ISSUES', req.params.cvVolumeId);
+   callPhp(res, 'grabcomicvinevolumeissues', [req.params.cvVolumeId]);
+});
+
 // Error-handling middleware — must have 4 params so Express treats it as error handler
 app.use(function (err, req, res, next) { // eslint-disable-line no-unused-vars
    console.error('Unhandled error:', err);
