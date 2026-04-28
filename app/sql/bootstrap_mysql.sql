@@ -4,20 +4,19 @@
 CREATE DATABASE IF NOT EXISTS comicdb CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE comicdb;
 
-CREATE TABLE IF NOT EXISTS titles (
+CREATE TABLE IF NOT EXISTS publisher (
   id INT UNSIGNED NOT NULL AUTO_INCREMENT,
   name VARCHAR(255) NOT NULL,
   PRIMARY KEY (id),
-  UNIQUE KEY uq_titles_name (name)
+  UNIQUE KEY uq_publisher_name (name)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS series (
   id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  title INT UNSIGNED NOT NULL,
+  publisher_id INT UNSIGNED NOT NULL,
   name VARCHAR(255) NOT NULL,
   volume INT NULL,
   start_year INT NULL,
-  publisher VARCHAR(255) NOT NULL,
   type VARCHAR(100) NULL,
   default_price DECIMAL(10,2) NULL,
   first_issue INT NULL,
@@ -26,8 +25,8 @@ CREATE TABLE IF NOT EXISTS series (
   subscribed TINYINT(1) NOT NULL DEFAULT 0,
   comments TEXT NULL,
   PRIMARY KEY (id),
-  KEY idx_series_title (title),
-  CONSTRAINT fk_series_title FOREIGN KEY (title) REFERENCES titles(id) ON DELETE CASCADE
+  KEY idx_series_publisher (publisher_id),
+  CONSTRAINT fk_series_publisher FOREIGN KEY (publisher_id) REFERENCES publisher(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS issues (
@@ -50,17 +49,11 @@ CREATE TABLE IF NOT EXISTS issues (
   issue_value DECIMAL(10,2) NULL,
   comments TEXT NULL,
   story_title VARCHAR(255) NULL,
+  owned TINYINT(1) NOT NULL DEFAULT 0,
   PRIMARY KEY (id),
   KEY idx_issues_series (series),
   KEY idx_issues_number (number),
   CONSTRAINT fk_issues_series FOREIGN KEY (series) REFERENCES series(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE TABLE IF NOT EXISTS publisher (
-  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  name VARCHAR(255) NOT NULL,
-  PRIMARY KEY (id),
-  UNIQUE KEY uq_publisher_name (name)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS print_run (
@@ -131,6 +124,55 @@ CREATE TABLE IF NOT EXISTS import_skipped_rows (
   CONSTRAINT fk_import_skipped_rows_run_id FOREIGN KEY (run_id) REFERENCES import_runs(run_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE IF NOT EXISTS arc (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  series_id INT UNSIGNED NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  start_issue INT NULL,
+  end_issue INT NULL,
+  PRIMARY KEY (id),
+  KEY idx_arc_series (series_id),
+  CONSTRAINT fk_arc_series FOREIGN KEY (series_id) REFERENCES series(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS event (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  publisher_id INT UNSIGNED NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  start_date DATE NULL,
+  end_date DATE NULL,
+  PRIMARY KEY (id),
+  KEY idx_event_publisher (publisher_id),
+  CONSTRAINT fk_event_publisher FOREIGN KEY (publisher_id) REFERENCES publisher(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS era (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  name VARCHAR(255) NOT NULL,
+  start_year INT NULL,
+  end_year INT NULL,
+  PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS initiative (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  publisher_id INT UNSIGNED NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  start_year INT NULL,
+  end_year INT NULL,
+  PRIMARY KEY (id),
+  KEY idx_initiative_publisher (publisher_id),
+  CONSTRAINT fk_initiative_publisher FOREIGN KEY (publisher_id) REFERENCES publisher(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS comicvine_cache (
+  resource_type VARCHAR(100) NOT NULL,
+  resource_id VARCHAR(100) NOT NULL,
+  payload JSON NOT NULL,
+  fetched_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (resource_type, resource_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 INSERT IGNORE INTO publisher (name) VALUES
   ('Marvel'),
   ('DC'),
@@ -156,11 +198,8 @@ INSERT IGNORE INTO series_type (name) VALUES
   ('Ongoing'),
   ('Limited');
 
-INSERT IGNORE INTO titles (id, name) VALUES
-  (1, 'Sample Title');
-
-INSERT IGNORE INTO series (id, title, name, volume, start_year, publisher, type, default_price, first_issue, final_issue, total_issues, subscribed, comments) VALUES
-  (1, 1, 'Sample Series', 1, 2024, 'Marvel', 'Ongoing', 3.99, 1, 12, 1, 0, 'Bootstrap sample series');
+INSERT IGNORE INTO series (id, publisher_id, name, volume, start_year, type, default_price, first_issue, final_issue, total_issues, subscribed, comments) VALUES
+  (1, 1, 'Sample Series', 1, 2024, 'Ongoing', 3.99, 1, 12, 1, 0, 'Bootstrap sample series');
 
 INSERT IGNORE INTO issues (
   id, series, number, sort, printrun, quantity, cover_date, location, type, status,

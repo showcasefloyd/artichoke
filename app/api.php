@@ -622,10 +622,10 @@ function csvImportIssueStoryTitleColumnExists($db)
     return $result->num_rows > 0;
 }
 
-function csvImportFindTitleId($db, $titleName)
+function csvImportFindPublisherId($db, $publisherName)
 {
-    $titleNameEscaped = $db->real_escape_string($titleName);
-    $query = "SELECT id FROM titles WHERE name = '$titleNameEscaped' LIMIT 1";
+    $escaped = $db->real_escape_string($publisherName);
+    $query = "SELECT id FROM publisher WHERE name = '$escaped' LIMIT 1";
     $result = $db->query($query);
     if (! $result) {
         die('There was an error running the query [' . $db->error . ']');
@@ -634,28 +634,20 @@ function csvImportFindTitleId($db, $titleName)
     return $row ? (int) $row['id'] : null;
 }
 
-function csvImportCreateTitle($db, $titleName)
+function csvImportFindOrCreatePublisher($db, $publisherName)
 {
-    $titleNameEscaped = $db->real_escape_string($titleName);
-    $query = "INSERT INTO titles (name) VALUES ('$titleNameEscaped')";
-    if (! $db->query($query)) {
-        if ((int) $db->errno === 1062) {
-            $existing = csvImportFindTitleId($db, $titleName);
-            if ($existing !== null) {
-                return $existing;
-            }
-        }
-        die('There was an error running the query [' . $db->error . ']');
-    }
-    return (int) $db->insert_id;
+    $escaped = $db->real_escape_string($publisherName);
+    $query = "INSERT IGNORE INTO publisher (name) VALUES ('$escaped')";
+    $db->query($query);
+    return csvImportFindPublisherId($db, $publisherName);
 }
 
-function csvImportFindSeriesId($db, $titleId, $seriesName, $volume, $startYear)
+function csvImportFindSeriesId($db, $publisherId, $seriesName, $volume, $startYear)
 {
     $seriesNameEscaped = $db->real_escape_string($seriesName);
     $volumeCondition = $volume === null ? 'volume IS NULL' : ('volume=' . (int) $volume);
     $startYearCondition = $startYear === null ? 'start_year IS NULL' : ('start_year=' . (int) $startYear);
-    $query = "SELECT id FROM series WHERE title=$titleId AND name='$seriesNameEscaped' AND $volumeCondition AND $startYearCondition LIMIT 1";
+    $query = "SELECT id FROM series WHERE publisher_id=$publisherId AND name='$seriesNameEscaped' AND $volumeCondition AND $startYearCondition LIMIT 1";
     $result = $db->query($query);
     if (! $result) {
         die('There was an error running the query [' . $db->error . ']');
@@ -664,13 +656,11 @@ function csvImportFindSeriesId($db, $titleId, $seriesName, $volume, $startYear)
     return $row ? (int) $row['id'] : null;
 }
 
-function csvImportCreateSeries($db, $titleId, $normalized)
+function csvImportCreateSeries($db, $publisherId, $normalized)
 {
     $seriesName = $db->real_escape_string($normalized['seriesName']);
-    $publisher = isset($normalized['publisher']) && trim($normalized['publisher']) !== '' ? trim($normalized['publisher']) : 'Unknown';
-    $publisherEscaped = $db->real_escape_string($publisher);
-    $columns = ['title', 'name', 'publisher'];
-    $values = [(int) $titleId, "'$seriesName'", "'$publisherEscaped'"];
+    $columns = ['publisher_id', 'name'];
+    $values = [(int) $publisherId, "'$seriesName'"];
     if (isset($normalized['volume']) && $normalized['volume'] !== null) {
         $columns[] = 'volume';
         $values[] = (int) $normalized['volume'];
@@ -695,7 +685,10 @@ function csvImportUpdateSeriesMetadata($db, $seriesId, $normalized, $mappedField
     $terms = [];
     if (isset($mappedFieldSet['publisher'])) {
         $publisher = isset($normalized['publisher']) && trim((string) $normalized['publisher']) !== '' ? trim((string) $normalized['publisher']) : 'Unknown';
-        $terms[] = "publisher='" . $db->real_escape_string($publisher) . "'";
+        $pubId = csvImportFindOrCreatePublisher($db, $publisher);
+        if ($pubId !== null) {
+            $terms[] = "publisher_id=" . (int) $pubId;
+        }
     }
     if (isset($mappedFieldSet['seriesType'])) {
         $seriesType = isset($normalized['seriesType']) ? trim((string) $normalized['seriesType']) : '';
@@ -1030,7 +1023,7 @@ function csvImportCommit($dataJson)
         $analysis['warnings'][] = "Mapped field 'storyTitle' is ignored because issues.story_title does not exist in this database.";
     }
 
-    $titleCache = [];
+    $publisherCache = [];
     $seriesCache = [];
     $issueFieldMap = csvImportIssueFieldMap();
 
@@ -1041,35 +1034,31 @@ function csvImportCommit($dataJson)
         }
 
         $normalized = $rowState['normalized'];
-        $titleName = isset($normalized['titleName']) ? trim((string) $normalized['titleName']) : '';
         $seriesName = isset($normalized['seriesName']) ? trim((string) $normalized['seriesName']) : '';
         $issueNumber = isset($normalized['issueNumber']) ? trim((string) $normalized['issueNumber']) : '';
-        if ($titleName === '' || $seriesName === '' || $issueNumber === '') {
+        if ($seriesName === '' || $issueNumber === '') {
             $summary['skippedInvalidRows']++;
             continue;
         }
 
-        $titleCacheKey = strtolower($titleName);
-        if (isset($titleCache[$titleCacheKey])) {
-            $titleId = $titleCache[$titleCacheKey];
+        $publisherName = isset($normalized['publisher']) && trim((string) $normalized['publisher']) !== '' ? trim((string) $normalized['publisher']) : 'Unknown';
+        $publisherCacheKey = strtolower($publisherName);
+        if (isset($publisherCache[$publisherCacheKey])) {
+            $publisherId = $publisherCache[$publisherCacheKey];
         } else {
-            $titleId = csvImportFindTitleId($db, $titleName);
-            if ($titleId === null) {
-                $titleId = csvImportCreateTitle($db, $titleName);
-                $summary['insertedTitles']++;
-            }
-            $titleCache[$titleCacheKey] = $titleId;
+            $publisherId = csvImportFindOrCreatePublisher($db, $publisherName);
+            $publisherCache[$publisherCacheKey] = $publisherId;
         }
 
         $volume = isset($normalized['volume']) ? $normalized['volume'] : null;
         $startYear = isset($normalized['startYear']) ? $normalized['startYear'] : null;
-        $seriesCacheKey = $titleId . '|' . strtolower($seriesName) . '|' . ($volume === null ? 'null' : (string) $volume) . '|' . ($startYear === null ? 'null' : (string) $startYear);
+        $seriesCacheKey = $publisherId . '|' . strtolower($seriesName) . '|' . ($volume === null ? 'null' : (string) $volume) . '|' . ($startYear === null ? 'null' : (string) $startYear);
         if (isset($seriesCache[$seriesCacheKey])) {
             $seriesId = $seriesCache[$seriesCacheKey];
         } else {
-            $seriesId = csvImportFindSeriesId($db, $titleId, $seriesName, $volume, $startYear);
+            $seriesId = csvImportFindSeriesId($db, $publisherId, $seriesName, $volume, $startYear);
             if ($seriesId === null) {
-                $seriesId = csvImportCreateSeries($db, $titleId, $normalized);
+                $seriesId = csvImportCreateSeries($db, $publisherId, $normalized);
                 $summary['insertedSeries']++;
             } elseif ($mode === 'upsert') {
                 if (csvImportUpdateSeriesMetadata($db, $seriesId, $normalized, $mappedFieldSet)) {
@@ -1253,17 +1242,13 @@ function grabSeries($id)
 function grabSeriesList($dataJson)
 {
     $filters = json_decode($dataJson, true);
-    $titleId = isset($filters['titleId']) ? (int) $filters['titleId'] : 0;
     $publisherId = isset($filters['publisherId']) ? (int) $filters['publisherId'] : 0;
     $db = ComicDB_DB::db();
     ensureSeriesTotalSchema($db);
     $whereClauses = [];
-    if ($titleId > 0) {
-        $whereClauses[] = "s.title = $titleId";
-    }
 
     if ($publisherId > 0) {
-        $whereClauses[] = "p.id = $publisherId";
+        $whereClauses[] = "s.publisher_id = $publisherId";
     }
 
     $where = '';
@@ -1275,12 +1260,11 @@ function grabSeriesList($dataJson)
 
     $query = <<<EOT
       SELECT s.id,
-             s.title AS title_id,
+             s.publisher_id,
              s.name,
              s.volume,
              s.start_year,
-             s.publisher,
-             t.name AS title_name,
+             p.name AS publisher_name,
              COALESCE(s.total_issues, 0) AS total_issues,
              COUNT(i.id) AS issue_count,
              GREATEST(COALESCE(s.total_issues, 0) - COUNT(i.id), 0) AS missing_issues,
@@ -1290,13 +1274,12 @@ function grabSeriesList($dataJson)
                  ELSE 0
              END AS completion_percent
         FROM series s
-   LEFT JOIN titles t ON t.id = s.title
-    LEFT JOIN publisher p ON p.name = s.publisher
-    LEFT JOIN issues i ON i.series = s.id
+   LEFT JOIN publisher p ON p.id = s.publisher_id
+   LEFT JOIN issues i ON i.series = s.id
         $where
-     GROUP BY s.id, s.title, s.name, s.volume, s.start_year, s.publisher, t.name, s.total_issues
+     GROUP BY s.id, s.publisher_id, s.name, s.volume, s.start_year, p.name, s.total_issues
       $having
-     ORDER BY t.name ASC, s.name ASC
+     ORDER BY p.name ASC, s.name ASC
 EOT;
     $result = $db->query($query);
     if (! $result) {
@@ -1307,12 +1290,11 @@ EOT;
     while ($row = $result->fetch_assoc()) {
         $list[] = [
             'id' => (int) $row['id'],
-            'titleId' => (int) $row['title_id'],
+            'publisherId' => (int) $row['publisher_id'],
             'name' => $row['name'],
             'volume' => isset($row['volume']) ? (int) $row['volume'] : 0,
             'startYear' => isset($row['start_year']) ? (int) $row['start_year'] : 0,
-            'publisher' => $row['publisher'],
-            'titleName' => $row['title_name'] ?? '',
+            'publisherName' => $row['publisher_name'] ?? '',
             'issueCount' => isset($row['issue_count']) ? (int) $row['issue_count'] : 0,
             'totalIssues' => isset($row['total_issues']) ? (int) $row['total_issues'] : 0,
             'missingIssues' => isset($row['missing_issues']) ? (int) $row['missing_issues'] : 0,
@@ -1330,11 +1312,10 @@ function grabSerieById($id)
     $series->restore();
     return json_encode([
         'id'           => $series->id(),
-        'titleId'      => $series->titleId(),
+        'publisherId'  => $series->publisherId(),
         'name'         => $series->name(),
         'volume'       => $series->volume(),
         'startYear'    => $series->startYear(),
-        'publisher'    => $series->publisher(),
         'type'         => $series->type(),
         'defaultPrice' => $series->defaultPrice(),
         'firstIssue'   => $series->firstIssue(),
@@ -1379,7 +1360,7 @@ function createSeries($dataJson)
     $data   = json_decode($dataJson, true);
     ensureSeriesTotalSchema(ComicDB_DB::db());
     $series = new ComicDB_Series();
-    $series->titleId($data['titleId']);
+    $series->publisherId($data['publisherId']);
     $series->name($data['name']);
     if (isset($data['volume'])) {
         $series->volume($data['volume']);
@@ -1387,7 +1368,6 @@ function createSeries($dataJson)
     if (isset($data['startYear'])) {
         $series->startYear($data['startYear']);
     }
-    $series->publisher($data['publisher']);
     if (isset($data['type'])) {
         $series->type($data['type']);
     }
@@ -1427,16 +1407,12 @@ function updateSeries($id, $dataJson)
     ensureSeriesTotalSchema(ComicDB_DB::db());
     $series = new ComicDB_Series($id);
     $series->restore();
-    if (isset($data['titleId'])) {
-        $series->titleId($data['titleId']);
+    if (isset($data['publisherId'])) {
+        $series->publisherId($data['publisherId']);
     }
 
     if (isset($data['name'])) {
         $series->name($data['name']);
-    }
-
-    if (isset($data['publisher'])) {
-        $series->publisher($data['publisher']);
     }
 
     if (isset($data['volume'])) {
@@ -1556,13 +1532,9 @@ function deleteIssue($id)
 function grabIssuesList($dataJson)
 {
     $filters = json_decode($dataJson, true);
-    $titleId = isset($filters['titleId']) ? (int) $filters['titleId'] : 0;
     $seriesId = isset($filters['seriesId']) ? (int) $filters['seriesId'] : 0;
     $db = ComicDB_DB::db();
     $whereClauses = [];
-    if ($titleId > 0) {
-        $whereClauses[] = "s.title = $titleId";
-    }
 
     if ($seriesId > 0) {
         $whereClauses[] = "i.series = $seriesId";
@@ -1578,15 +1550,11 @@ function grabIssuesList($dataJson)
              i.number,
              i.sort,
              i.series AS series_id,
-             s.name AS series_name,
-             s.title AS title_id,
-             t.name AS title_name
+             s.name AS series_name
         FROM issues i
    LEFT JOIN series s ON s.id = i.series
-   LEFT JOIN titles t ON t.id = s.title
        $where
-    ORDER BY t.name ASC,
-             s.name ASC,
+    ORDER BY s.name ASC,
              CASE WHEN i.sort IS NOT NULL AND i.sort > 0 THEN 0 ELSE 1 END ASC,
              CASE WHEN i.sort IS NOT NULL AND i.sort > 0 THEN i.sort ELSE 2147483647 END ASC,
              CASE WHEN i.number REGEXP '^-?[0-9]+$' THEN 0 ELSE 1 END ASC,
@@ -1605,8 +1573,6 @@ EOT;
             'number' => $row['number'],
             'seriesId' => (int) $row['series_id'],
             'seriesName' => $row['series_name'] ?? '',
-            'titleId' => (int) $row['title_id'],
-            'titleName' => $row['title_name'] ?? '',
         ];
     }
 
@@ -1657,9 +1623,9 @@ function grabPublishers()
 {
     $db = ComicDB_DB::db();
     $query = <<<EOT
-      SELECT p.id, p.name, COUNT(DISTINCT s.title) AS title_count
+      SELECT p.id, p.name, COUNT(DISTINCT s.id) AS title_count
         FROM publisher p
-   LEFT JOIN series s ON s.publisher = p.name
+   LEFT JOIN series s ON s.publisher_id = p.id
     GROUP BY p.id, p.name
     ORDER BY p.name ASC
 EOT;
@@ -1682,7 +1648,6 @@ function grabDashboard()
 
     $totalsQuery = <<<EOT
       SELECT (SELECT COUNT(*) FROM publisher) AS publishers,
-             (SELECT COUNT(*) FROM titles) AS titles,
              (SELECT COUNT(*) FROM series) AS series,
              (SELECT COUNT(*) FROM issues) AS issues_owned
 EOT;
@@ -1727,11 +1692,12 @@ EOT;
     ];
 
     $topPublishersQuery = <<<EOT
-      SELECT s.publisher AS name, COUNT(i.id) AS issue_count
-        FROM series s
+      SELECT p.name, COUNT(i.id) AS issue_count
+        FROM publisher p
+   LEFT JOIN series s ON s.publisher_id = p.id
    LEFT JOIN issues i ON i.series = s.id
-    GROUP BY s.publisher
-    ORDER BY issue_count DESC, s.publisher ASC
+    GROUP BY p.id, p.name
+    ORDER BY issue_count DESC, p.name ASC
        LIMIT 5
 EOT;
     $topPublishersResult = $db->query($topPublishersQuery);
@@ -1747,12 +1713,11 @@ EOT;
     }
 
     $topTitlesQuery = <<<EOT
-      SELECT t.name, COUNT(i.id) AS issue_count
-        FROM titles t
-   LEFT JOIN series s ON s.title = t.id
+      SELECT s.name, COUNT(i.id) AS issue_count
+        FROM series s
    LEFT JOIN issues i ON i.series = s.id
-    GROUP BY t.id, t.name
-    ORDER BY issue_count DESC, t.name ASC
+    GROUP BY s.id, s.name
+    ORDER BY issue_count DESC, s.name ASC
        LIMIT 5
 EOT;
     $topTitlesResult = $db->query($topTitlesQuery);
@@ -1797,7 +1762,7 @@ EOT;
     return json_encode([
         'totals' => [
             'publishers' => (int) $totalsRow['publishers'],
-            'titles' => (int) $totalsRow['titles'],
+            'titles' => 0,
             'series' => (int) $totalsRow['series'],
             'issuesOwned' => (int) $totalsRow['issues_owned'],
         ],

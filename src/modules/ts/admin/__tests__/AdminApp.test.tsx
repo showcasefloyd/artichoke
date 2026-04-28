@@ -18,12 +18,6 @@ beforeEach(() => {
                 json: () => Promise.resolve({ series_types: [] }),
             } as Response);
         }
-        if (url.startsWith('/list')) {
-            return Promise.resolve({
-                ok: true,
-                json: () => Promise.resolve({ titles: [] }),
-            } as Response);
-        }
         if (url.startsWith('/series')) {
             return Promise.resolve({
                 ok: true,
@@ -54,7 +48,6 @@ describe('AdminApp', () => {
         await waitFor(() => expect(fetch).toHaveBeenCalled());
 
         expect(screen.getByRole('button', { name: 'Publishers' })).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: 'Titles' })).toBeInTheDocument();
         expect(screen.getByRole('button', { name: 'Series' })).toBeInTheDocument();
         expect(screen.getByRole('button', { name: 'Issues' })).toBeInTheDocument();
         expect(screen.getByRole('button', { name: 'Import' })).toBeInTheDocument();

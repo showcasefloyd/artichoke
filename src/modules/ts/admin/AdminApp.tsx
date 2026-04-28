@@ -1,6 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import TitleEditor from './TitleEditor';
-import TitleCreator from './TitleCreator';
 import SeriesEditor from './SeriesEditor';
 import SeriesCreator from './SeriesCreator';
 import IssueEditor from './IssueEditor';
@@ -9,41 +7,31 @@ import PublisherEditor from './PublisherEditor';
 import PublisherCreator from './PublisherCreator';
 import { Publisher } from '../app/App';
 
-export interface Title {
-    id: number;
-    name: string;
-}
-
 interface IssueItem {
     id: number;
     number: string;
     seriesId: number;
     seriesName: string;
-    titleId: number;
-    titleName: string;
 }
 
 export type AdminView =
     | { mode: 'idle' }
     | { mode: 'editPublisher'; publisherId: number }
     | { mode: 'newPublisher' }
-    | { mode: 'editTitle'; titleId: number }
-    | { mode: 'newTitle' }
     | { mode: 'editSeries'; seriesId: number }
-    | { mode: 'newSeries'; titleId: number }
+    | { mode: 'newSeries'; publisherId: number }
     | { mode: 'editIssue'; issueId: number }
     | { mode: 'newIssue'; seriesId: number; initialNumber?: string; initialSort?: string };
 
-type AdminTab = 'publishers' | 'titles' | 'series' | 'issues' | 'import';
+type AdminTab = 'publishers' | 'series' | 'issues' | 'import';
 
 interface SeriesItem {
     id: number;
-    titleId: number;
+    publisherId: number;
     name: string;
     volume?: number;
     startYear?: number;
-    publisher: string;
-    titleName: string;
+    publisherName: string;
     issueCount?: number;
     totalIssues?: number;
     missingIssues?: number;
@@ -193,22 +181,20 @@ function formatSeriesLabel(series: SeriesItem): string {
         const completion = typeof series.completionPercent === 'number'
             ? series.completionPercent
             : Math.min(Math.round((owned / total) * 100), 100);
-        return `${series.titleName}: ${series.name}${volumePart}${yearPart} [${owned}/${total}, ${completion}% complete, ${missing} missing]`;
+        return `${series.publisherName}: ${series.name}${volumePart}${yearPart} [${owned}/${total}, ${completion}% complete, ${missing} missing]`;
     }
-    return `${series.titleName}: ${series.name}${volumePart}${yearPart}`;
+    return `${series.publisherName}: ${series.name}${volumePart}${yearPart}`;
 }
 
 const AdminApp: React.FC = () => {
     const [activeTab, setActiveTab] = useState<AdminTab>('issues');
     const [publishers, setPublishers] = useState<Publisher[]>([]);
     const [selectedPublisherId, setSelectedPublisherId] = useState<number | null>(null);
-    const [titles, setTitles] = useState<Title[]>([]);
-    const [selectedTitleId, setSelectedTitleId] = useState<number | null>(null);
     const [seriesList, setSeriesList] = useState<SeriesItem[]>([]);
-    const [seriesFilterTitleId, setSeriesFilterTitleId] = useState<number | null>(null);
+    const [seriesFilterPublisherId, setSeriesFilterPublisherId] = useState<number | null>(null);
     const [selectedSeriesId, setSelectedSeriesId] = useState<number | null>(null);
     const [issueSeriesList, setIssueSeriesList] = useState<SeriesItem[]>([]);
-    const [issuesFilterTitleId, setIssuesFilterTitleId] = useState<number | null>(null);
+    const [issuesFilterPublisherId, setIssuesFilterPublisherId] = useState<number | null>(null);
     const [issuesFilterSeriesId, setIssuesFilterSeriesId] = useState<number | null>(null);
     const [issueList, setIssueList] = useState<IssueItem[]>([]);
     const [seriesMissing, setSeriesMissing] = useState<SeriesMissingResponse | null>(null);
@@ -231,13 +217,6 @@ const AdminApp: React.FC = () => {
     const [importError, setImportError] = useState('');
     const [error, setError] = useState<string>('');
 
-    const loadTitles = () => {
-        fetch('/list')
-            .then(res => { if (!res.ok) throw new Error(`Failed to load titles (${res.status})`); return res.json(); })
-            .then(data => setTitles(data.titles ?? []))
-            .catch(e => setError(String(e.message ?? e)));
-    };
-
     const loadPublishers = () => {
         fetch('/publishers')
             .then(res => { if (!res.ok) throw new Error(`Failed to load publishers (${res.status})`); return res.json(); })
@@ -245,10 +224,10 @@ const AdminApp: React.FC = () => {
             .catch(e => setError(String(e.message ?? e)));
     };
 
-    const loadSeries = (titleId: number | null, onLoaded: (rows: SeriesItem[]) => void) => {
+    const loadSeries = (publisherId: number | null, onLoaded: (rows: SeriesItem[]) => void) => {
         const params = new URLSearchParams();
-        if (titleId) {
-            params.set('titleId', String(titleId));
+        if (publisherId) {
+            params.set('publisherId', String(publisherId));
         }
         const query = params.toString();
         fetch(`/series${query ? `?${query}` : ''}`)
@@ -257,11 +236,8 @@ const AdminApp: React.FC = () => {
             .catch(e => setError(String(e.message ?? e)));
     };
 
-    const loadIssues = (titleId: number | null, seriesId: number | null) => {
+    const loadIssues = (seriesId: number | null) => {
         const params = new URLSearchParams();
-        if (titleId) {
-            params.set('titleId', String(titleId));
-        }
         if (seriesId) {
             params.set('seriesId', String(seriesId));
         }
@@ -274,40 +250,37 @@ const AdminApp: React.FC = () => {
 
     useEffect(() => {
         loadPublishers();
-        loadTitles();
         loadSeries(null, setSeriesList);
         loadSeries(null, setIssueSeriesList);
-        loadIssues(null, null);
+        loadIssues(null);
     }, []);
 
     const refreshAllEntityLists = () => {
         loadPublishers();
-        loadTitles();
-        loadSeries(seriesFilterTitleId, setSeriesList);
-        loadSeries(issuesFilterTitleId, setIssueSeriesList);
-        loadIssues(issuesFilterTitleId, issuesFilterSeriesId);
+        loadSeries(seriesFilterPublisherId, setSeriesList);
+        loadSeries(issuesFilterPublisherId, setIssueSeriesList);
+        loadIssues(issuesFilterSeriesId);
     };
 
-    const handleSeriesFilterTitleChange = (titleId: number | null) => {
-        setSeriesFilterTitleId(titleId);
+    const handleSeriesFilterPublisherChange = (publisherId: number | null) => {
+        setSeriesFilterPublisherId(publisherId);
         setSelectedSeriesId(null);
-        loadSeries(titleId, setSeriesList);
+        loadSeries(publisherId, setSeriesList);
     };
 
-    const handleIssuesFilterTitleChange = (titleId: number | null) => {
-        setIssuesFilterTitleId(titleId);
+    const handleIssuesFilterPublisherChange = (publisherId: number | null) => {
+        setIssuesFilterPublisherId(publisherId);
         setIssuesFilterSeriesId(null);
         setSelectedIssueId(null);
         setSeriesMissing(null);
-        loadSeries(titleId, setIssueSeriesList);
-        loadIssues(titleId, null);
+        loadSeries(publisherId, setIssueSeriesList);
+        loadIssues(null);
     };
-
     const handleIssuesFilterSeriesChange = (seriesId: number | null) => {
         setIssuesFilterSeriesId(seriesId);
         setSelectedIssueId(null);
         setSeriesMissing(null);
-        loadIssues(issuesFilterTitleId, seriesId);
+        loadIssues(seriesId);
     };
 
     const loadSeriesMissing = () => {
@@ -327,13 +300,6 @@ const AdminApp: React.FC = () => {
                 setError(String(e.message ?? e));
                 setSeriesMissingLoading(false);
             });
-    };
-
-    const handleLoadTitle = () => {
-        if (!selectedTitleId) { setError('Please select a title first'); return; }
-        setError('');
-        loadTitles();
-        setView({ mode: 'editTitle', titleId: selectedTitleId });
     };
 
     const handleLoadPublisher = () => {
@@ -451,9 +417,8 @@ const AdminApp: React.FC = () => {
             setImportCommitResult(payload);
             await loadSkippedRowsFromLog(payload.runId);
             await loadImportRuns();
-            loadTitles();
-            loadSeries(seriesFilterTitleId, setSeriesList);
-            loadIssues(issuesFilterTitleId, issuesFilterSeriesId);
+            loadSeries(seriesFilterPublisherId, setSeriesList);
+            loadIssues(issuesFilterSeriesId);
         } catch (e) {
             setImportError(String((e as Error).message ?? e));
         } finally {
@@ -517,7 +482,6 @@ const AdminApp: React.FC = () => {
                     <div id="admin-titles-list">
                         <div className="mb-3 btn-group w-100" role="group" aria-label="Admin sections">
                             <button type="button" className={`btn btn-sm ${activeTab === 'publishers' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => switchTab('publishers')}>Publishers</button>
-                            <button type="button" className={`btn btn-sm ${activeTab === 'titles' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => switchTab('titles')}>Titles</button>
                             <button type="button" className={`btn btn-sm ${activeTab === 'series' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => switchTab('series')}>Series</button>
                             <button type="button" className={`btn btn-sm ${activeTab === 'issues' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => switchTab('issues')}>Issues</button>
                             <button type="button" className={`btn btn-sm ${activeTab === 'import' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => switchTab('import')}>Import</button>
@@ -541,37 +505,19 @@ const AdminApp: React.FC = () => {
                             </div>
                         )}
 
-                        {activeTab === 'titles' && (
-                            <div className="mb-3">
-                                <h6>Titles</h6>
-                                <select
-                                    className="form-select mb-2"
-                                    value={selectedTitleId ?? ''}
-                                    onChange={e => setSelectedTitleId(Number(e.target.value) || null)}
-                                >
-                                    <option value="">-- select a title --</option>
-                                    {titles.map(t => (
-                                        <option key={t.id} value={t.id}>{t.name}</option>
-                                    ))}
-                                </select>
-                                <button className="btn btn-primary btn-sm me-1" onClick={handleLoadTitle}>Load Title</button>
-                                <button className="btn btn-warning btn-sm" onClick={() => { setError(''); setView({ mode: 'newTitle' }); }}>New Title</button>
-                            </div>
-                        )}
-
                         {activeTab === 'series' && (
                             <div className="mb-3">
                                 <h6>Series</h6>
-                                <label className="form-label" htmlFor="series-title-filter">Title filter</label>
+                                <label className="form-label" htmlFor="series-publisher-filter">Publisher filter</label>
                                 <select
-                                    id="series-title-filter"
+                                    id="series-publisher-filter"
                                     className="form-select mb-2"
-                                    value={seriesFilterTitleId ?? ''}
-                                    onChange={e => handleSeriesFilterTitleChange(Number(e.target.value) || null)}
+                                    value={seriesFilterPublisherId ?? ''}
+                                    onChange={e => handleSeriesFilterPublisherChange(Number(e.target.value) || null)}
                                 >
-                                    <option value="">-- all titles --</option>
-                                    {titles.map(t => (
-                                        <option key={t.id} value={t.id}>{t.name}</option>
+                                    <option value="">-- all publishers --</option>
+                                    {publishers.map(p => (
+                                        <option key={p.id} value={p.id}>{p.name}</option>
                                     ))}
                                 </select>
                                 <select
@@ -588,9 +534,9 @@ const AdminApp: React.FC = () => {
                                 <button
                                     className="btn btn-warning btn-sm"
                                     onClick={() => {
-                                        if (!seriesFilterTitleId) { setError('Select a title filter before creating a series.'); return; }
+                                        if (!seriesFilterPublisherId) { setError('Select a publisher filter before creating a series.'); return; }
                                         setError('');
-                                        setView({ mode: 'newSeries', titleId: seriesFilterTitleId });
+                                        setView({ mode: 'newSeries', publisherId: seriesFilterPublisherId });
                                     }}
                                 >
                                     New Series
@@ -601,16 +547,16 @@ const AdminApp: React.FC = () => {
                         {activeTab === 'issues' && (
                             <div className="mb-3">
                                 <h6>Issues</h6>
-                                <label className="form-label" htmlFor="issues-title-filter">Title filter</label>
+                                <label className="form-label" htmlFor="issues-publisher-filter">Publisher filter</label>
                                 <select
-                                    id="issues-title-filter"
+                                    id="issues-publisher-filter"
                                     className="form-select mb-2"
-                                    value={issuesFilterTitleId ?? ''}
-                                    onChange={e => handleIssuesFilterTitleChange(Number(e.target.value) || null)}
+                                    value={issuesFilterPublisherId ?? ''}
+                                    onChange={e => handleIssuesFilterPublisherChange(Number(e.target.value) || null)}
                                 >
-                                    <option value="">-- all titles --</option>
-                                    {titles.map(t => (
-                                        <option key={t.id} value={t.id}>{t.name}</option>
+                                    <option value="">-- all publishers --</option>
+                                    {publishers.map(p => (
+                                        <option key={p.id} value={p.id}>{p.name}</option>
                                     ))}
                                 </select>
                                 <label className="form-label" htmlFor="issues-series-filter">Series filter</label>
@@ -632,7 +578,7 @@ const AdminApp: React.FC = () => {
                                 >
                                     <option value="">-- select an issue --</option>
                                     {issueList.map(i => (
-                                        <option key={i.id} value={i.id}>{i.titleName} / {i.seriesName} #{i.number}</option>
+                                        <option key={i.id} value={i.id}>{i.seriesName} #{i.number}</option>
                                     ))}
                                 </select>
                                 <button className="btn btn-primary btn-sm me-1" onClick={handleLoadIssue}>Load Issue</button>
@@ -1090,30 +1036,6 @@ const AdminApp: React.FC = () => {
                             onCancel={() => setView({ mode: 'idle' })}
                         />
                     )}
-                    {view.mode === 'editTitle' && (
-                        <TitleEditor
-                            titleId={view.titleId}
-                            onSaved={() => {
-                                refreshAllEntityLists();
-                                setActiveTab('titles');
-                            }}
-                            onDeleted={() => {
-                                refreshAllEntityLists();
-                                setSelectedTitleId(null);
-                                setView({ mode: 'idle' });
-                            }}
-                        />
-                    )}
-                    {view.mode === 'newTitle' && (
-                        <TitleCreator
-                            onCreated={(id) => {
-                                refreshAllEntityLists();
-                                setSelectedTitleId(id);
-                                setView({ mode: 'editTitle', titleId: id });
-                            }}
-                            onCancel={() => setView({ mode: 'idle' })}
-                        />
-                    )}
                     {view.mode === 'editSeries' && (
                         <SeriesEditor
                             seriesId={view.seriesId}
@@ -1130,7 +1052,7 @@ const AdminApp: React.FC = () => {
                     )}
                     {view.mode === 'newSeries' && (
                         <SeriesCreator
-                            titleId={view.titleId}
+                            publisherId={view.publisherId}
                             onCreated={(id) => {
                                 refreshAllEntityLists();
                                 setSelectedSeriesId(id);

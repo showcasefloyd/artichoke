@@ -3,11 +3,10 @@ import { Publisher, SeriesType } from '../app/App';
 
 interface SeriesData {
     id: number;
-    titleId: number;
+    publisherId: number;
     name: string;
     volume: string;
     startYear: string;
-    publisher: string;
     type: string;
     defaultPrice: string;
     firstIssue: string;
@@ -58,6 +57,11 @@ const SeriesEditor: React.FC<Props> = ({ seriesId, onSaved, onDeleted }) => {
 
     const set = (field: keyof SeriesData) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
         setData(prev => prev ? { ...prev, [field]: e.target.value } : prev);
+
+    const handlePublisherChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const id = parseInt(e.target.value, 10);
+        setData(prev => prev ? { ...prev, publisherId: isNaN(id) ? 0 : id } : prev);
+    };
 
     const handleSave = (e: React.FormEvent) => {
         e.preventDefault();
@@ -114,14 +118,12 @@ const SeriesEditor: React.FC<Props> = ({ seriesId, onSaved, onDeleted }) => {
                         <select
                             className="form-select"
                             id="input-publisher"
-                            value={data.publisher ?? ''}
-                            onChange={set('publisher')}
+                            value={String(data.publisherId ?? '')}
+                            onChange={handlePublisherChange}
                         >
-                            {publishers.find(p => p.name === data.publisher) ? null : (
-                                <option value={data.publisher}>{data.publisher}</option>
-                            )}
+                            <option value="">-- select publisher --</option>
                             {publishers.map(p => (
-                                <option key={p.id} value={p.name}>{p.name}</option>
+                                <option key={p.id} value={String(p.id)}>{p.name}</option>
                             ))}
                         </select>
                     )}

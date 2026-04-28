@@ -5,7 +5,7 @@ include_once("ComicDB/Series.php");
 
 class ComicDB_Serieses {
 	var $series;
-	var $titleId;
+	var $publisherId;
 
 	public function __construct(...$args) {
 
@@ -14,8 +14,8 @@ class ComicDB_Serieses {
 	}
 
 
-	function ComicDB_Serieses($titleId) {
-		$this->titleId = $titleId;
+	function ComicDB_Serieses($publisherId) {
+		$this->publisherId = $publisherId;
 	}
 
 	// public methods
@@ -28,7 +28,7 @@ class ComicDB_Serieses {
 		$db = ComicDB_DB::db();
 		$seriesModel = new ComicDB_Series();
 		$includeTotalIssues = $seriesModel->hasTotalIssuesColumn();
-		$query = "SELECT id, title, name, volume, start_year, publisher, type,\n";
+		$query = "SELECT id, publisher_id, name, volume, start_year, type,\n";
 		if ($includeTotalIssues) {
 			$query .= "       default_price, first_issue, final_issue, total_issues, subscribed, comments\n";
 		} else {
@@ -36,7 +36,7 @@ class ComicDB_Serieses {
 		}
 		$query .= ""
 			. "  FROM series\n"
-			. " WHERE title=$this->titleId\n"
+			. " WHERE publisher_id=$this->publisherId\n"
 			. " ORDER BY name ASC";
 
 		$db->query($query);
@@ -53,11 +53,10 @@ class ComicDB_Serieses {
 		while ($row = $result->fetch_assoc()) {
 			$s = new ComicDB_Series();
 			$s->id($row['id']);
-			$s->titleId($row['title']);
+			$s->publisherId($row['publisher_id']);
 			$s->name($row['name']);
 			$s->volume($row['volume']);
 			$s->startYear($row['start_year']);
-			$s->publisher($row['publisher']);
 			$s->type($row['type']);
 			$s->defaultPrice($row['default_price']);
 			$s->firstIssue($row['first_issue']);
@@ -91,7 +90,7 @@ class ComicDB_Serieses {
 
 		// then remove all series
 		$query = "DELETE FROM series\n"
-			. " WHERE title=$this->titleId";
+			. " WHERE publisher_id=$this->publisherId";
 
 		$db = ComicDB_DB::db();
 		return $db->query($query);

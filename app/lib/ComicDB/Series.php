@@ -3,15 +3,13 @@
 include_once("ComicDB/DB.php");
 include_once("ComicDB/Object.php");
 include_once("ComicDB/Issues.php");
-include_once("ComicDB/Title.php");
 
 class ComicDB_Series extends ComicDB_Object {
 
-	public $titleId;
+	public $publisherId;
 	public $name;
 	public $volume;
 	public $startYear;
-	public $publisher;
 	public $type;
 	public $defaultPrice;
 	public $firstIssue;
@@ -19,7 +17,6 @@ class ComicDB_Series extends ComicDB_Object {
 	public $totalIssues;
 	public $subscribed;
 	public $comments;
-	public $title;
 	public $issues;
 
 	public function __construct(...$args) {
@@ -35,12 +32,12 @@ class ComicDB_Series extends ComicDB_Object {
 
 	// accessors
 
-	public function titleId($titleId=null) {
-		if (isset($titleId)) {
-			$this->titleId = $titleId;
+	public function publisherId($publisherId=null) {
+		if (isset($publisherId)) {
+			$this->publisherId = $publisherId;
 			$this->isDirty = 1;
 		}
-		return $this->titleId;
+		return $this->publisherId;
 	}
 
 	public function name($name=null) {
@@ -49,14 +46,6 @@ class ComicDB_Series extends ComicDB_Object {
 			$this->isDirty = 1;
 		}
 		return $this->name;
-	}
-
-	public function publisher($publisher=null) {
-		if (isset($publisher)) {
-			$this->publisher = $publisher;
-			$this->isDirty = 1;
-		}
-		return $this->publisher;
 	}
 
 	public function volume($volume=null) {
@@ -195,26 +184,12 @@ class ComicDB_Series extends ComicDB_Object {
 		return $this->issues->getAll();
 	}
 
-	public function title() {
-		if ($this->title) {
-			return $this->title;
-		}
-
-		$title = new ComicDB_Title($this->titleId());
-		$rv = $title->restore();
-		if (PEAR::isError($rv)) {
-			return $rv;
-		}
-
-		return $title;
-	}
-
 	// interface methods
 
 	protected function select() {
 		$db = ComicDB_DB::db();
 		$includeTotalIssues = $this->hasTotalIssuesColumn();
-		$query = "SELECT id, title, name, volume, start_year, publisher, type,\n";
+		$query = "SELECT id, publisher_id, name, volume, start_year, type,\n";
 		if ($includeTotalIssues) {
 			$query .= "       default_price, first_issue, final_issue, total_issues, subscribed, comments\n";
 		} else {
@@ -229,11 +204,10 @@ class ComicDB_Series extends ComicDB_Object {
 		$row = $result->fetch_assoc();
 
 		$this->id($row['id']);
-		$this->titleId($row['title']);
+		$this->publisherId($row['publisher_id']);
 		$this->name($row['name']);
 		$this->volume($row['volume']);
 		$this->startYear($row['start_year']);
-		$this->publisher($row['publisher']);
 		$this->type($row['type']);
 		$this->defaultPrice($row['default_price']);
 		$this->firstIssue($row['first_issue']);
@@ -254,9 +228,8 @@ class ComicDB_Series extends ComicDB_Object {
 		$db = ComicDB_DB::db();
 
 		// mandatory fields
-		$data['title'] = $this->titleId();
+		$data['publisher_id'] = $this->publisherId();
 		$data['name'] = "'" . $this->name() . "'";
-		$data['publisher'] = "'" . $this->publisher() . "'";
 
 		// optional fields
 		$volume = $this->volume();
@@ -342,21 +315,16 @@ class ComicDB_Series extends ComicDB_Object {
 		$data = array();
 		$db = ComicDB_DB::db();
 
-		$titleId = $this->titleId();
-		if ($titleId) {
-			$data['title'] = $titleId;
+		$publisherId = $this->publisherId();
+		if ($publisherId) {
+			$data['publisher_id'] = $publisherId;
 		} else {
-			$data['title'] = "NULL";
+			$data['publisher_id'] = "NULL";
 		}
 
 		$name = $this->name();
 		if ($name) {
 			$data['name'] = "'$name'";
-		}
-
-		$publisher = $this->publisher();
-		if ($publisher) {
-			$data['publisher'] = "'$publisher'";
 		}
 
 		$volume = $this->volume();
