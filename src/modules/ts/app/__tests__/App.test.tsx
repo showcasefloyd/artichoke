@@ -1,5 +1,6 @@
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
+import '@testing-library/jest-dom';
 import App from '../App';
 
 describe('App', () => {
@@ -20,9 +21,11 @@ describe('App', () => {
         jest.restoreAllMocks();
     });
 
-    it('renders the page header', () => {
+    it('renders the page header', async () => {
         render(<App />);
-        expect(screen.getByText(/Artichoke, Comic Book Database/)).toBeInTheDocument();
+        await waitFor(() => {
+            expect(screen.getByText(/Artichoke, Comic Book Database/)).toBeInTheDocument();
+        });
     });
 
     it('fetches and displays publishers', async () => {

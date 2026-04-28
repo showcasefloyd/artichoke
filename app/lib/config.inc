@@ -31,6 +31,10 @@ if (! defined('DB_NAME')) {
     define('DB_NAME', getenv('ARTICHOKE_DB_NAME') ?: 'comicdb');
 }
 
+if (! defined('COMICVINE_API_KEY')) {
+    define('COMICVINE_API_KEY', getenv('COMICVINE_API_KEY') ?: '');
+}
+
 // prefixed to the title of every HTML page
 define('HTML_TITLE_PREFIX', 'jsComicDB');
 

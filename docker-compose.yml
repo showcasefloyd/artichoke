@@ -32,6 +32,7 @@ services:
       ARTICHOKE_DB_PASS: comicdb
       ARTICHOKE_DB_NAME: comicdb
       ARTICHOKE_DEBUG: "1"
+      COMICVINE_API_KEY: "${COMICVINE_API_KEY:-}"
     volumes:
       - .:/workspace
       - node_modules:/workspace/node_modules

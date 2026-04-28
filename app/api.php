@@ -7,6 +7,7 @@ include_once "ComicDB/Issue.php";
 include_once "ComicDB/Publisher.php";
 include_once "ComicDB/Publishers.php";
 include_once "ComicDB/SeriesTypes.php";
+include_once "./lib/ComicVine.php";
 
 function csvImportCanonicalFields()
 {
@@ -1195,6 +1196,16 @@ function grabCsvImportSkippedRowsCsv($runId, $limit = '2000')
     return $csv;
 }
 
+function comicVineSearch($query)
+{
+    $db      = ComicDB_DB::db();
+    $results = ComicVine::searchVolumes($db, trim((string) $query));
+    if (isset($results['error'])) {
+        return json_encode(['error' => $results['error']]);
+    }
+    return json_encode(['results' => $results]);
+}
+
 // Grab all Titles (used by GET /list)
 function grabList()
 {
@@ -1354,11 +1365,12 @@ function deleteTitle($id)
     return json_encode(['deleted' => true, 'id' => (int) $id]);
 }
 
-// Create a Series
+// Create a Series — optionally seed issue stubs from a ComicVine volume
 function createSeries($dataJson)
 {
     $data   = json_decode($dataJson, true);
-    ensureSeriesTotalSchema(ComicDB_DB::db());
+    $db     = ComicDB_DB::db();
+    ensureSeriesTotalSchema($db);
     $series = new ComicDB_Series();
     $series->publisherId($data['publisherId']);
     $series->name($data['name']);
@@ -1397,7 +1409,28 @@ function createSeries($dataJson)
     }
 
     $series->save();
-    return json_encode(['id' => $series->id(), 'name' => $series->name()]);
+    $seriesId = $series->id();
+
+    // Seed issue stubs from ComicVine when a volume ID is provided
+    $seededIssues = 0;
+    if (!empty($data['comicvineVolumeId'])) {
+        $volumeId = (int) $data['comicvineVolumeId'];
+        $volume   = ComicVine::getVolumeIssues($db, $volumeId);
+        if (!isset($volume['error']) && !empty($volume['issues'])) {
+            foreach ($volume['issues'] as $i => $issue) {
+                $number  = isset($issue['issueNumber']) && trim((string) $issue['issueNumber']) !== ''
+                    ? $db->real_escape_string(trim((string) $issue['issueNumber']))
+                    : (string) ($i + 1);
+                $sort    = is_numeric($number) ? (int) $number : ($i + 1);
+                $query   = "INSERT IGNORE INTO issues (series, number, sort, owned) VALUES ($seriesId, '$number', $sort, 0)";
+                if ($db->query($query)) {
+                    $seededIssues++;
+                }
+            }
+        }
+    }
+
+    return json_encode(['id' => $seriesId, 'name' => $series->name(), 'seededIssues' => $seededIssues]);
 }
 
 // Update a Series

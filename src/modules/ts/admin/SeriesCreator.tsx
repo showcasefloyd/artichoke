@@ -1,133 +1,134 @@
-import React, { useEffect, useState } from 'react';
-import { SeriesType } from '../app/App';
+import React, { useState } from 'react';
 
 interface Props {
     publisherId: number;
-    onCreated: (id: number, name: string) => void;
+    onCreated: (id: number) => void;
     onCancel: () => void;
 }
 
-const SeriesCreator: React.FC<Props> = ({ publisherId, onCreated, onCancel }) => {
-    const [name, setName] = useState('');
-    const [volume, setVolume] = useState('');
-    const [startYear, setStartYear] = useState('');
-    const [totalIssues, setTotalIssues] = useState('1');
-    const [seriesType, setSeriesType] = useState('');
-    const [seriesTypes, setSeriesTypes] = useState<SeriesType[]>([]);
-    const [loadingSeriesTypes, setLoadingSeriesTypes] = useState(true);
-    const [error, setError] = useState('');
+interface ComicVineVolume {
+    id: number;
+    name: string;
+    publisher: string | null;
+    countOfIssues: number;
+    startYear: number | null;
+}
 
-    useEffect(() => {
-        setLoadingSeriesTypes(true);
-        fetch('/series-types')
-            .then(res => { if (!res.ok) throw new Error(`Failed to load series types (${res.status})`); return res.json(); })
+const SeriesCreator: React.FC<Props> = ({ publisherId, onCreated, onCancel }) => {
+    const [query, setQuery]           = useState('');
+    const [searching, setSearching]   = useState(false);
+    const [results, setResults]       = useState<ComicVineVolume[]>([]);
+    const [searchError, setSearchError] = useState('');
+    const [seeding, setSeeding]       = useState(false);
+    const [seedError, setSeedError]   = useState('');
+    const [searched, setSearched]     = useState(false);
+
+    const handleSearch = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!query.trim()) return;
+        setSearching(true);
+        setSearchError('');
+        setResults([]);
+        setSearched(false);
+        fetch(`/comicvine/search?q=${encodeURIComponent(query.trim())}`)
+            .then(res => { if (!res.ok) throw new Error(`Search failed (${res.status})`); return res.json(); })
             .then(data => {
-                const list = data.series_types ?? [];
-                setSeriesTypes(list);
-                if (!seriesType && list.length > 0) {
-                    setSeriesType(list[0].name);
-                }
-                setLoadingSeriesTypes(false);
+                if (data.error) throw new Error(data.error);
+                setResults(data.results ?? []);
+                setSearched(true);
+                setSearching(false);
             })
             .catch(e => {
-                setError(String(e.message ?? e));
-                setLoadingSeriesTypes(false);
+                setSearchError(String(e.message ?? e));
+                setSearching(false);
             });
-    }, []);
+    };
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!name.trim()) { setError('Name is required'); return; }
+    const handleSelect = (vol: ComicVineVolume) => {
+        setSeeding(true);
+        setSeedError('');
         fetch('/series', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ publisherId, name, volume, startYear, totalIssues, type: seriesType }),
+            body: JSON.stringify({
+                publisherId,
+                name: vol.name,
+                startYear: vol.startYear ?? undefined,
+                totalIssues: vol.countOfIssues || 1,
+                comicvineVolumeId: vol.id,
+            }),
         })
-            .then(res => res.json())
-            .then(data => { setError(''); onCreated(data.id, data.name); });
+            .then(res => { if (!res.ok) throw new Error(`Failed to create series (${res.status})`); return res.json(); })
+            .then(data => {
+                setSeeding(false);
+                onCreated(data.id);
+            })
+            .catch(e => {
+                setSeedError(String(e.message ?? e));
+                setSeeding(false);
+            });
     };
 
     return (
         <div>
-            <p className="lead text-primary">Create New Series</p>
-            {error && <div className="alert alert-danger">{error}</div>}
-            <form onSubmit={handleSubmit}>
-                <div className="mb-3">
-                    <label className="form-label" htmlFor="inputSeriesName">
-                        Name <span className="mandatory-field-marker">*</span>
-                    </label>
+            <p className="lead text-primary">Add Series via ComicVine</p>
+
+            <form onSubmit={handleSearch} className="mb-3">
+                <div className="input-group">
                     <input
                         type="text"
                         className="form-control"
-                        id="inputSeriesName"
-                        value={name}
-                        placeholder="Series name"
-                        onChange={e => setName(e.target.value)}
+                        placeholder="Search ComicVine e.g. Daredevil"
+                        value={query}
+                        onChange={e => setQuery(e.target.value)}
                         autoFocus
+                        disabled={searching || seeding}
                     />
-                </div>
-                <div className="mb-3">
-                    <label className="form-label" htmlFor="inputSeriesVolume">Volume</label>
-                    <input
-                        type="number"
-                        className="form-control"
-                        id="inputSeriesVolume"
-                        value={volume}
-                        min={1}
-                        placeholder="1"
-                        onChange={e => setVolume(e.target.value)}
-                    />
-                </div>
-                <div className="mb-3">
-                    <label className="form-label" htmlFor="inputSeriesStartYear">Start Year</label>
-                    <input
-                        type="number"
-                        className="form-control"
-                        id="inputSeriesStartYear"
-                        value={startYear}
-                        min={1900}
-                        max={2999}
-                        placeholder="1986"
-                        onChange={e => setStartYear(e.target.value)}
-                    />
-                </div>
-                <div className="mb-3">
-                    <label className="form-label" htmlFor="inputSeriesTotalIssues">Total Issues</label>
-                    <input
-                        type="number"
-                        className="form-control"
-                        id="inputSeriesTotalIssues"
-                        value={totalIssues}
-                        min={1}
-                        placeholder="e.g. 87"
-                        onChange={e => setTotalIssues(e.target.value)}
-                    />
-                </div>
-                <div className="mb-3">
-                    <label className="form-label" htmlFor="inputSeriesType">Series Type</label>
-                    {loadingSeriesTypes ? (
-                        <p className="form-text">Loading series types&hellip;</p>
-                    ) : (
-                        <select
-                            className="form-select"
-                            id="inputSeriesType"
-                            value={seriesType}
-                            onChange={e => setSeriesType(e.target.value)}
-                        >
-                            <option value="">-- none --</option>
-                            {seriesTypes.map(t => (
-                                <option key={t.id} value={t.name}>{t.name}</option>
-                            ))}
-                        </select>
-                    )}
-                </div>
-                <div className="mb-3">
-                    <button type="submit" className="btn btn-primary me-2" disabled={loadingSeriesTypes}>Save</button>
-                    <button type="button" className="btn btn-secondary" onClick={onCancel}>Cancel</button>
+                    <button
+                        type="submit"
+                        className="btn btn-primary"
+                        disabled={searching || seeding || !query.trim()}
+                    >
+                        {searching ? 'Searching\u2026' : 'Search'}
+                    </button>
                 </div>
             </form>
+
+            {searchError && <div className="alert alert-danger">{searchError}</div>}
+            {seedError   && <div className="alert alert-danger">{seedError}</div>}
+
+            {searched && results.length === 0 && (
+                <p className="text-muted">No results found.</p>
+            )}
+
+            {results.length > 0 && (
+                <ul className="list-group mb-3">
+                    {results.map(vol => (
+                        <li key={vol.id} className="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                            <span>
+                                <strong>{vol.name}</strong>
+                                {vol.startYear ? ` (${vol.startYear})` : ''}
+                                {vol.publisher ? <span className="text-muted ms-2">— {vol.publisher}</span> : ''}
+                                <span className="badge bg-secondary ms-2">{vol.countOfIssues} issues</span>
+                            </span>
+                            <button
+                                className="btn btn-sm btn-success"
+                                onClick={() => handleSelect(vol)}
+                                disabled={seeding}
+                            >
+                                {seeding ? 'Adding\u2026' : 'Add'}
+                            </button>
+                        </li>
+                    ))}
+                </ul>
+            )}
+
+            <button type="button" className="btn btn-secondary" onClick={onCancel} disabled={seeding}>
+                Cancel
+            </button>
         </div>
     );
 };
 
 export default SeriesCreator;
+

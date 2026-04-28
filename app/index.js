@@ -162,6 +162,12 @@ app.get('/publishers', function (req, res) {
    callPhp(res, 'grabpublishers', []);
 });
 
+// ComicVine
+app.get('/comicvine/search', function (req, res) {
+   console.log('COMICVINE SEARCH', req.query.q);
+   callPhp(res, 'comicVineSearch', [req.query.q || '']);
+});
+
 app.get('/dashboard', function (req, res) {
    console.log('GET DASHBOARD');
    callPhp(res, 'grabdashboard', []);
