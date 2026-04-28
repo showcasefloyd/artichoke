@@ -10,4 +10,4 @@ Data visualizations. Big picture - To show the depth and breath of a Title and a
 
 1) Being able to showing entire series as a data grid own copies highlighted and uncollected books show as grayed out.
 2) Show multiple grids connected across volumes (Daredevil Vol 1, Daredevil Vol 2, Daredevil Vol 2). How renumbering of each volume and legacy numbers work
-
+3) Delete all for Series. Delete a Series should delete any books added for that series. (or should it?)

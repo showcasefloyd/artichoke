@@ -2249,8 +2249,8 @@ function addIssueFromComicVine($dataJson)
         $series->titleId($titleId);
         $series->name($volumeName);
         $series->cvVolumeId($cvVolumeId);
-        if ($publisherId) {
-            $series->publisher($publisherId);
+        if (!empty($publisherName)) {
+            $series->publisher($publisherName);
         }
         if ($startYear) {
             $series->startYear($startYear);
