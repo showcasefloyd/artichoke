@@ -5,7 +5,7 @@ use Tests\ComicDBTestCase;
 
 require_once __DIR__ . '/../../app/lib/ComicDB/DB.php';
 require_once __DIR__ . '/../../app/lib/ComicDB/Object.php';
-require_once __DIR__ . '/../../app/lib/ComicDB/Title.php';
+require_once __DIR__ . '/../../app/lib/ComicDB/Publisher.php';
 require_once __DIR__ . '/../../app/lib/ComicDB/Serieses.php';
 require_once __DIR__ . '/../../app/lib/ComicDB/Issues.php';
 require_once __DIR__ . '/../../app/lib/ComicDB/Series.php';
@@ -19,14 +19,13 @@ class IssueTest extends ComicDBTestCase
     {
         parent::setUp();
 
-        $title = new \ComicDB_Title();
-        $title->name('Issue Test Title');
-        $title->save();
+        $publisher = new \ComicDB_Publisher();
+        $publisher->name('Issue Test Publisher');
+        $publisher->save();
 
         $series = new \ComicDB_Series();
-        $series->titleId((int) $title->id());
+        $series->publisherId((int) $publisher->id());
         $series->name('Issue Test Series');
-        $series->publisher('Issue Pub');
         $series->save();
 
         $this->seriesId = (int) $series->id();

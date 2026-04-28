@@ -3,81 +3,39 @@ namespace Tests\ComicDB;
 
 use Tests\ComicDBTestCase;
 
-require_once __DIR__ . '/../../app/lib/ComicDB/DB.php';
-require_once __DIR__ . '/../../app/lib/ComicDB/Object.php';
-require_once __DIR__ . '/../../app/lib/ComicDB/Title.php';
-
+/**
+ * TitleTest — skipped. The `titles` table was removed in Slice 1.
+ * Title functionality is replaced by Publisher (see PublisherTest).
+ */
 class TitleTest extends ComicDBTestCase
 {
-    // ------------------------------------------------------------------ create
-
     public function testInsertPersistsTitle(): void
     {
-        $title = new \ComicDB_Title();
-        $title->name('Test Title');
-        $title->save();
-
-        $this->assertGreaterThan(0, $title->id(), 'insert() should set a numeric id');
+        $this->markTestSkipped('titles table removed in Slice 1; use Publisher instead.');
     }
 
     public function testInsertedTitleCanBeRestored(): void
     {
-        $title = new \ComicDB_Title();
-        $title->name('Restorable Title');
-        $title->save();
-        $id = $title->id();
-
-        $loaded = new \ComicDB_Title($id);
-        $loaded->restore();
-
-        $this->assertSame('Restorable Title', $loaded->name());
+        $this->markTestSkipped('titles table removed in Slice 1; use Publisher instead.');
     }
-
-    // ------------------------------------------------------------------ update
 
     public function testUpdateChangesName(): void
     {
-        $title = new \ComicDB_Title();
-        $title->name('Original Name');
-        $title->save();
-        $id = $title->id();
-
-        $title->name('Updated Name');
-        $title->save();
-
-        $loaded = new \ComicDB_Title($id);
-        $loaded->restore();
-        $this->assertSame('Updated Name', $loaded->name());
+        $this->markTestSkipped('titles table removed in Slice 1; use Publisher instead.');
     }
-
-    // ------------------------------------------------------------------ delete
 
     public function testDeleteRemovesTitle(): void
     {
-        $title = new \ComicDB_Title();
-        $title->name('Title To Delete');
-        $title->save();
-        $id = (int) $title->id();
-
-        $title->remove();
-
-        $this->assertRowDeleted('titles', $id);
+        $this->markTestSkipped('titles table removed in Slice 1; use Publisher instead.');
     }
-
-    // ------------------------------------------------------------------ flags
 
     public function testNewObjectHasIsNewFlag(): void
     {
-        $title = new \ComicDB_Title();
-        $this->assertSame(1, $title->isNew);
+        $this->markTestSkipped('titles table removed in Slice 1; use Publisher instead.');
     }
 
     public function testAfterSaveIsNewFlagCleared(): void
     {
-        $title = new \ComicDB_Title();
-        $title->name('Flag Test');
-        $title->save();
-        $this->assertSame(0, $title->isNew);
-        $this->assertSame(0, $title->isDirty);
+        $this->markTestSkipped('titles table removed in Slice 1; use Publisher instead.');
     }
 }

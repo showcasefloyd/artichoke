@@ -34,47 +34,14 @@ class ApiTest extends ComicDBTestCase
         self::$apiLoaded = true;
     }
 
-    // ------------------------------------------------------------------ Title
-
-    public function testCreateTitleReturnsIdAndName(): void
-    {
-        $json   = createTitle('API Test Title');
-        $result = json_decode($json, true);
-
-        $this->assertArrayHasKey('id', $result);
-        $this->assertGreaterThan(0, $result['id']);
-        $this->assertSame('API Test Title', $result['name']);
-    }
-
-    public function testUpdateTitleChangesName(): void
-    {
-        $created = json_decode(createTitle('Before API Update'), true);
-        $json    = updateTitle($created['id'], 'After API Update');
-        $result  = json_decode($json, true);
-
-        $this->assertSame('After API Update', $result['name']);
-        $this->assertSame($created['id'], $result['id']);
-    }
-
-    public function testDeleteTitleReturnsDeletedTrue(): void
-    {
-        $created = json_decode(createTitle('Title To API Delete'), true);
-        $json    = deleteTitle($created['id']);
-        $result  = json_decode($json, true);
-
-        $this->assertTrue($result['deleted']);
-        $this->assertEquals($created['id'], $result['id']);
-    }
-
     // ------------------------------------------------------------------ Series
 
     public function testCreateSeriesReturnsIdAndName(): void
     {
-        $title   = json_decode(createTitle('Series Parent Title'), true);
+        $pub     = json_decode(createPublisher(json_encode(['name' => 'API Pub'])), true);
         $payload = json_encode([
-            'titleId'   => $title['id'],
-            'name'      => 'API Series',
-            'publisher' => 'API Pub',
+            'publisherId' => $pub['id'],
+            'name'        => 'API Series',
         ]);
 
         $json   = createSeries($payload);
@@ -87,11 +54,10 @@ class ApiTest extends ComicDBTestCase
 
     public function testUpdateSeriesChangesName(): void
     {
-        $title   = json_decode(createTitle('Series Update Title'), true);
+        $pub     = json_decode(createPublisher(json_encode(['name' => 'Update Pub'])), true);
         $created = json_decode(createSeries(json_encode([
-            'titleId'   => $title['id'],
-            'name'      => 'Before Series Update',
-            'publisher' => 'Pub',
+            'publisherId' => $pub['id'],
+            'name'        => 'Before Series Update',
         ])), true);
 
         $json   = updateSeries($created['id'], json_encode(['name' => 'After Series Update']));
@@ -102,11 +68,10 @@ class ApiTest extends ComicDBTestCase
 
     public function testSeriesTotalIssuesPersistsInApiPayloads(): void
     {
-        $title = json_decode(createTitle('Series Total Parent Title'), true);
+        $pub     = json_decode(createPublisher(json_encode(['name' => 'Total Pub'])), true);
         $created = json_decode(createSeries(json_encode([
-            'titleId' => $title['id'],
-            'name' => 'Series Total API',
-            'publisher' => 'Total Pub',
+            'publisherId' => $pub['id'],
+            'name'        => 'Series Total API',
             'totalIssues' => 48,
         ])), true);
 
@@ -120,11 +85,10 @@ class ApiTest extends ComicDBTestCase
 
     public function testDeleteSeriesReturnsDeletedTrue(): void
     {
-        $title   = json_decode(createTitle('Series Delete Title'), true);
+        $pub     = json_decode(createPublisher(json_encode(['name' => 'Del Pub'])), true);
         $created = json_decode(createSeries(json_encode([
-            'titleId'   => $title['id'],
-            'name'      => 'Series To Delete',
-            'publisher' => 'Del Pub',
+            'publisherId' => $pub['id'],
+            'name'        => 'Series To Delete',
         ])), true);
 
         $json   = deleteSeries($created['id']);
@@ -138,11 +102,10 @@ class ApiTest extends ComicDBTestCase
 
     public function testCreateIssueReturnsIdAndNumber(): void
     {
-        $title  = json_decode(createTitle('Issue Parent Title'), true);
+        $pub    = json_decode(createPublisher(json_encode(['name' => 'Iss Pub'])), true);
         $series = json_decode(createSeries(json_encode([
-            'titleId'   => $title['id'],
-            'name'      => 'Issue Parent Series',
-            'publisher' => 'Iss Pub',
+            'publisherId' => $pub['id'],
+            'name'        => 'Issue Parent Series',
         ])), true);
 
         $json = createIssue(json_encode([
@@ -158,11 +121,10 @@ class ApiTest extends ComicDBTestCase
 
     public function testUpdateIssueChangesNumber(): void
     {
-        $title  = json_decode(createTitle('Issue Update Title'), true);
+        $pub    = json_decode(createPublisher(json_encode(['name' => 'Upd Pub'])), true);
         $series = json_decode(createSeries(json_encode([
-            'titleId'   => $title['id'],
-            'name'      => 'Issue Update Series',
-            'publisher' => 'Upd Pub',
+            'publisherId' => $pub['id'],
+            'name'        => 'Issue Update Series',
         ])), true);
         $created = json_decode(createIssue(json_encode([
             'seriesId' => $series['id'],
@@ -177,11 +139,10 @@ class ApiTest extends ComicDBTestCase
 
     public function testDeleteIssueReturnsDeletedTrue(): void
     {
-        $title  = json_decode(createTitle('Issue Delete Title'), true);
+        $pub    = json_decode(createPublisher(json_encode(['name' => 'Iss Pub 2'])), true);
         $series = json_decode(createSeries(json_encode([
-            'titleId'   => $title['id'],
-            'name'      => 'Issue Delete Series',
-            'publisher' => 'Iss Pub',
+            'publisherId' => $pub['id'],
+            'name'        => 'Issue Delete Series',
         ])), true);
         $created = json_decode(createIssue(json_encode([
             'seriesId' => $series['id'],
@@ -197,11 +158,10 @@ class ApiTest extends ComicDBTestCase
 
     public function testIssueRawIncludesStoryTitle(): void
     {
-        $title  = json_decode(createTitle('Issue Story Title Parent'), true);
+        $pub    = json_decode(createPublisher(json_encode(['name' => 'Story Pub'])), true);
         $series = json_decode(createSeries(json_encode([
-            'titleId'   => $title['id'],
-            'name'      => 'Issue Story Title Series',
-            'publisher' => 'Story Pub',
+            'publisherId' => $pub['id'],
+            'name'        => 'Issue Story Title Series',
         ])), true);
 
         $created = json_decode(createIssue(json_encode([
@@ -252,13 +212,12 @@ class ApiTest extends ComicDBTestCase
 
     public function testGrabSeriesGridReturnsOwnedAndMissingSlots(): void
     {
-        $title  = json_decode(createTitle('Grid Parent Title'), true);
+        $pub    = json_decode(createPublisher(json_encode(['name' => 'Grid Pub'])), true);
         $series = json_decode(createSeries(json_encode([
-            'titleId' => $title['id'],
-            'name' => 'Grid Parent Series',
-            'publisher' => 'Grid Pub',
-            'firstIssue' => 1,
-            'finalIssue' => 4,
+            'publisherId' => $pub['id'],
+            'name'        => 'Grid Parent Series',
+            'firstIssue'  => 1,
+            'finalIssue'  => 4,
         ])), true);
 
         $ownedOne = json_decode(createIssue(json_encode([
@@ -290,13 +249,12 @@ class ApiTest extends ComicDBTestCase
 
     public function testGrabSeriesGridReturnsNotGridableForSingleIssueRun(): void
     {
-        $title  = json_decode(createTitle('Single Grid Title'), true);
+        $pub    = json_decode(createPublisher(json_encode(['name' => 'Grid Pub 2'])), true);
         $series = json_decode(createSeries(json_encode([
-            'titleId' => $title['id'],
-            'name' => 'Single Grid Series',
-            'publisher' => 'Grid Pub',
-            'firstIssue' => 1,
-            'finalIssue' => 1,
+            'publisherId' => $pub['id'],
+            'name'        => 'Single Grid Series',
+            'firstIssue'  => 1,
+            'finalIssue'  => 1,
         ])), true);
 
         $json = grabSeriesGrid($series['id']);
@@ -308,13 +266,12 @@ class ApiTest extends ComicDBTestCase
 
     public function testGrabSeriesGridSupportsIssueZeroStart(): void
     {
-        $title  = json_decode(createTitle('Zero Start Title'), true);
+        $pub    = json_decode(createPublisher(json_encode(['name' => 'Grid Pub 3'])), true);
         $series = json_decode(createSeries(json_encode([
-            'titleId' => $title['id'],
-            'name' => 'Zero Start Series',
-            'publisher' => 'Grid Pub',
-            'firstIssue' => 0,
-            'finalIssue' => 2,
+            'publisherId' => $pub['id'],
+            'name'        => 'Zero Start Series',
+            'firstIssue'  => 0,
+            'finalIssue'  => 2,
         ])), true);
 
         $ownedZero = json_decode(createIssue(json_encode([
@@ -336,11 +293,10 @@ class ApiTest extends ComicDBTestCase
 
     public function testGrabSeriesGridUsesSortOrderWhenTotalIssuesIsSet(): void
     {
-        $title  = json_decode(createTitle('Sort Grid Title'), true);
+        $pub    = json_decode(createPublisher(json_encode(['name' => 'Grid Pub 4'])), true);
         $series = json_decode(createSeries(json_encode([
-            'titleId' => $title['id'],
-            'name' => 'Sort Grid Series',
-            'publisher' => 'Grid Pub',
+            'publisherId' => $pub['id'],
+            'name'        => 'Sort Grid Series',
             'totalIssues' => 4,
         ])), true);
 
@@ -376,11 +332,10 @@ class ApiTest extends ComicDBTestCase
 
     public function testGrabSeriesMissingReturnsUnownedSlots(): void
     {
-        $title  = json_decode(createTitle('Missing Slots Title'), true);
+        $pub    = json_decode(createPublisher(json_encode(['name' => 'Missing Pub'])), true);
         $series = json_decode(createSeries(json_encode([
-            'titleId' => $title['id'],
-            'name' => 'Missing Slots Series',
-            'publisher' => 'Grid Pub',
+            'publisherId' => $pub['id'],
+            'name'        => 'Missing Slots Series',
             'totalIssues' => 6,
         ])), true);
 
@@ -410,11 +365,10 @@ class ApiTest extends ComicDBTestCase
 
     public function testGrabIssuesListOrdersBySortThenFallbackNumber(): void
     {
-        $title  = json_decode(createTitle('Issues Sort Parent'), true);
+        $pub    = json_decode(createPublisher(json_encode(['name' => 'Sort Pub'])), true);
         $series = json_decode(createSeries(json_encode([
-            'titleId' => $title['id'],
-            'name' => 'Issues Sort Series',
-            'publisher' => 'Sort Pub',
+            'publisherId' => $pub['id'],
+            'name'        => 'Issues Sort Series',
         ])), true);
 
         createIssue(json_encode([

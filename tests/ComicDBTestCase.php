@@ -25,7 +25,7 @@ abstract class ComicDBTestCase extends TestCase
     {
         $pdo = $this->pdo();
         $pdo->exec("SET FOREIGN_KEY_CHECKS=0");
-        foreach (['issues', 'series', 'titles'] as $table) {
+        foreach (['issues', 'series', 'publisher'] as $table) {
             $pdo->exec("TRUNCATE TABLE `$table`");
         }
         $pdo->exec("SET FOREIGN_KEY_CHECKS=1");
