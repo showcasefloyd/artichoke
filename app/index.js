@@ -165,7 +165,7 @@ app.get('/publishers', function (req, res) {
 // ComicVine
 app.get('/comicvine/search', function (req, res) {
    console.log('COMICVINE SEARCH', req.query.q);
-   callPhp(res, 'comicVineSearch', [req.query.q || '']);
+   callPhp(res, 'comicvinesearch', [req.query.q || '']);
 });
 
 app.get('/dashboard', function (req, res) {

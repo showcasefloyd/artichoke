@@ -73,7 +73,7 @@ class ComicDB_Publisher extends ComicDB_Object {
 		. "     VALUES (NULL, '$name')";
 
 	if (! $db->query($query)) {
-	    die('There was an error running the query [' . $db->error . ']');
+	    throw new RuntimeException($db->error);
 	}
 
 	$query = "SELECT id\n"

@@ -1196,7 +1196,7 @@ function grabCsvImportSkippedRowsCsv($runId, $limit = '2000')
     return $csv;
 }
 
-function comicVineSearch($query)
+function comicvinesearch($query)
 {
     $db      = ComicDB_DB::db();
     $results = ComicVine::searchVolumes($db, trim((string) $query));
@@ -1828,7 +1828,7 @@ function grabSeriesTypes()
     return json_encode(['series_types' => $list]);
 }
 
-function createPublisher($dataJson)
+function createpublisher($dataJson)
 {
     $data = json_decode($dataJson, true);
     if (!isset($data['name']) || trim($data['name']) === '') {
@@ -1836,7 +1836,14 @@ function createPublisher($dataJson)
     }
     $publisher = new ComicDB_Publisher();
     $publisher->name($data['name']);
-    $publisher->save();
+    try {
+        $publisher->save();
+    } catch (RuntimeException $e) {
+        if (strpos($e->getMessage(), 'Duplicate entry') !== false) {
+            return json_encode(['error' => 'A publisher with that name already exists.']);
+        }
+        return json_encode(['error' => $e->getMessage()]);
+    }
     return json_encode(['id' => $publisher->id(), 'name' => $publisher->name()]);
 }
 
