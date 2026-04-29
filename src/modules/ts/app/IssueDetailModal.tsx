@@ -35,20 +35,38 @@ const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
     const [toggling, setToggling] = useState(false);
 
     useEffect(() => {
+        let cancelled = false;
         setLoading(true);
-        fetch(`/issue/${issueId}`)
-            .then(res => {
-                if (!res.ok) throw new Error(`Failed to load issue (${res.status})`);
-                return res.json();
-            })
+
+        const fetchIssue = (): Promise<IssueDetail> =>
+            fetch(`/issue/${issueId}`)
+                .then(res => {
+                    if (!res.ok) throw new Error(`Failed to load issue (${res.status})`);
+                    return res.json() as Promise<IssueDetail>;
+                });
+
+        fetchIssue()
             .then((data: IssueDetail) => {
-                setDetail(data);
-                setLoading(false);
+                const needsEnrich = data.status === 'Collected' && !data.storytitle;
+                if (!needsEnrich) {
+                    if (!cancelled) { setDetail(data); setLoading(false); }
+                    return;
+                }
+                // Auto-enrich then re-fetch so we get the same formatted response shape
+                return fetch(`/issue/${issueId}/enrich`, { method: 'POST' })
+                    .then(res => {
+                        if (!res.ok) throw new Error(`Enrichment failed (${res.status})`);
+                        return fetchIssue();
+                    })
+                    .then((enriched: IssueDetail) => {
+                        if (!cancelled) { setDetail(enriched); setLoading(false); }
+                    });
             })
             .catch(e => {
-                setError(String(e.message ?? e));
-                setLoading(false);
+                if (!cancelled) { setError(String(e.message ?? e)); setLoading(false); }
             });
+
+        return () => { cancelled = true; };
     }, [issueId]);
 
     const handleToggleOwned = useCallback(() => {
@@ -95,20 +113,27 @@ const IssueDetailModal: React.FC<IssueDetailModalProps> = ({
                     {loading && <p>Loading&hellip;</p>}
                     {error && <div className="alert alert-danger">{error}</div>}
                     {!loading && !error && detail && (
-                        <>
-                            <p className="mb-1"><strong>Series:</strong> {seriesName}</p>
-                            <p className="mb-3"><strong>Issue:</strong> #{detail.number}</p>
-                            <button
-                                type="button"
-                                className={`btn btn-sm ${owned ? 'btn-success' : 'btn-outline-secondary'}`}
-                                onClick={handleToggleOwned}
-                                disabled={toggling}
-                                aria-label={owned ? 'Mark as not owned' : 'Mark as owned'}
-                            >
-                                {owned ? 'Owned ✓' : 'Not Owned'}
-                            </button>
-                        </>
-                    )}
+    <>
+        <p className="mb-1"><strong>Series:</strong> {seriesName}</p>
+        <p className="mb-1"><strong>Issue:</strong> #{detail.number}</p>
+        <p className="mb-1"><strong>Story Title:</strong> {detail.storytitle || '—'}</p>
+        <p className="mb-1"><strong>Cover Date:</strong> {detail.coverdate || '—'}</p>
+        <p className="mb-1"><strong>Condition:</strong> {detail.condition || '—'}</p>
+        <p className="mb-1"><strong>Purchase Price:</strong> {detail.purchaseprice || '—'}</p>
+        <p className="mb-1"><strong>Purchase Date:</strong> {detail.purchasedate || '—'}</p>
+        <p className="mb-1"><strong>Guide Value:</strong> {detail.priceguidevalue || '—'}</p>
+        <p className="mb-1"><strong>Comments:</strong> {detail.comments || '—'}</p>
+        <button
+            type="button"
+            className={`btn btn-sm ${owned ? 'btn-success' : 'btn-outline-secondary'}`}
+            onClick={handleToggleOwned}
+            disabled={toggling}
+            aria-label={owned ? 'Mark as not owned' : 'Mark as owned'}
+        >
+            {owned ? 'Owned ✓' : 'Not Owned'}
+        </button>
+    </>
+)}
                 </div>
             </div>
         </div>
