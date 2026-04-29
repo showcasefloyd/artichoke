@@ -1,5 +1,6 @@
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import SeriesGrid from '../SeriesGrid';
@@ -13,19 +14,21 @@ const mockIssues = {
     ],
 };
 
-function renderAtSeriesRoute(id: string) {
-    global.fetch = jest.fn().mockImplementation((url: string) => {
-        if (url === `/series/${id}`) {
-            return Promise.resolve({ ok: true, json: async () => mockSeries });
-        }
-        if (url === `/series/${id}/issues`) {
-            return Promise.resolve({ ok: true, json: async () => mockIssues });
+function mockFetch(overrides: Record<string, unknown> = {}) {
+    global.fetch = jest.fn().mockImplementation((url: string, opts?: RequestInit) => {
+        if (url === '/series/1') return Promise.resolve({ ok: true, json: async () => mockSeries });
+        if (url === '/series/1/issues') return Promise.resolve({ ok: true, json: async () => mockIssues });
+        if (url.startsWith('/issues/') && url.endsWith('/owned') && opts?.method === 'PUT') {
+            const issueId = parseInt(url.split('/')[2]);
+            return Promise.resolve({ ok: true, json: async () => ({ id: issueId, owned: true, ...overrides }) });
         }
         return Promise.reject(new Error('Unexpected URL: ' + url));
     }) as jest.Mock;
+}
 
+function renderGrid() {
     render(
-        <MemoryRouter initialEntries={[`/view/series/${id}`]}>
+        <MemoryRouter initialEntries={['/view/series/1']}>
             <Routes>
                 <Route path="/view/series/:id" element={<SeriesGrid />} />
             </Routes>
@@ -40,51 +43,91 @@ describe('SeriesGrid', () => {
 
     it('renders a loading state initially', () => {
         global.fetch = jest.fn().mockReturnValue(new Promise(() => {})) as jest.Mock;
-        render(
-            <MemoryRouter initialEntries={['/view/series/1']}>
-                <Routes>
-                    <Route path="/view/series/:id" element={<SeriesGrid />} />
-                </Routes>
-            </MemoryRouter>
-        );
+        renderGrid();
         expect(screen.getByText(/loading/i)).toBeInTheDocument();
     });
 
     it('renders the series title and issue cells', async () => {
-        renderAtSeriesRoute('1');
-        await waitFor(() => {
-            expect(screen.getByText(/Daredevil Vol\. 1 \(1964\)/)).toBeInTheDocument();
-        });
-        expect(screen.getByText('1')).toBeInTheDocument();
-        expect(screen.getByText('2')).toBeInTheDocument();
-        expect(screen.getByText('3')).toBeInTheDocument();
+        mockFetch();
+        renderGrid();
+        await waitFor(() => expect(screen.getByText(/Daredevil Vol\. 1 \(1964\)/)).toBeInTheDocument());
+        expect(screen.getByRole('button', { name: /issue 1/i })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /issue 2/i })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /issue 3/i })).toBeInTheDocument();
     });
 
     it('shows owned count summary', async () => {
-        renderAtSeriesRoute('1');
-        await waitFor(() => {
-            expect(screen.getByText(/2 \/ 3 issues owned/i)).toBeInTheDocument();
-        });
+        mockFetch();
+        renderGrid();
+        await waitFor(() => expect(screen.getByText(/2 \/ 3 issues owned/i)).toBeInTheDocument());
+    });
+
+    it('shows Full History and My Collection toggle buttons', async () => {
+        mockFetch();
+        renderGrid();
+        await waitFor(() => expect(screen.getByRole('button', { name: /full history/i })).toBeInTheDocument());
+        expect(screen.getByRole('button', { name: /my collection/i })).toBeInTheDocument();
+    });
+
+    it('My Collection mode shows gap cells for unowned issues', async () => {
+        mockFetch();
+        renderGrid();
+        await waitFor(() => expect(screen.getByRole('button', { name: /full history/i })).toBeInTheDocument());
+
+        // Switch to My Collection
+        await userEvent.click(screen.getByRole('button', { name: /my collection/i }));
+
+        // Issue 2 is unowned — it should become a hidden gap cell (aria-hidden)
+        const gapCells = document.querySelectorAll('.gap-cell');
+        expect(gapCells.length).toBe(1);
+
+        // Owned issues 1 and 3 should still be visible as buttons
+        expect(screen.getByRole('button', { name: /issue 1/i })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /issue 3/i })).toBeInTheDocument();
+    });
+
+    it('optimistically toggles owned on click', async () => {
+        mockFetch();
+        renderGrid();
+        await waitFor(() => expect(screen.getByRole('button', { name: /issue 2/i })).toBeInTheDocument());
+
+        const cell = screen.getByRole('button', { name: /issue 2/i });
+        expect(cell).not.toHaveClass('owned');
+
+        await userEvent.click(cell);
+
+        // Optimistic update — should become owned immediately
+        await waitFor(() => expect(screen.getByRole('button', { name: /issue 2 \(owned\)/i })).toBeInTheDocument());
+    });
+
+    it('reverts optimistic update on API failure', async () => {
+        global.fetch = jest.fn().mockImplementation((url: string, opts?: RequestInit) => {
+            if (url === '/series/1') return Promise.resolve({ ok: true, json: async () => mockSeries });
+            if (url === '/series/1/issues') return Promise.resolve({ ok: true, json: async () => mockIssues });
+            if (url.startsWith('/issues/') && opts?.method === 'PUT') {
+                return Promise.resolve({ ok: false, json: async () => ({}) });
+            }
+            return Promise.reject(new Error('Unexpected URL'));
+        }) as jest.Mock;
+
+        renderGrid();
+        await waitFor(() => expect(screen.getByRole('button', { name: /issue 2/i })).toBeInTheDocument());
+
+        await userEvent.click(screen.getByRole('button', { name: /issue 2/i }));
+
+        // After revert, issue 2 should not be owned
+        await waitFor(() => expect(screen.queryByRole('button', { name: /issue 2 \(owned\)/i })).not.toBeInTheDocument());
     });
 
     it('shows a back link', async () => {
-        renderAtSeriesRoute('1');
-        await waitFor(() => {
-            expect(screen.getByRole('link', { name: /back to publishers/i })).toBeInTheDocument();
-        });
+        mockFetch();
+        renderGrid();
+        await waitFor(() => expect(screen.getByRole('link', { name: /back to publishers/i })).toBeInTheDocument());
     });
 
     it('shows an error when the fetch fails', async () => {
         global.fetch = jest.fn().mockRejectedValue(new Error('Network error')) as jest.Mock;
-        render(
-            <MemoryRouter initialEntries={['/view/series/1']}>
-                <Routes>
-                    <Route path="/view/series/:id" element={<SeriesGrid />} />
-                </Routes>
-            </MemoryRouter>
-        );
-        await waitFor(() => {
-            expect(screen.getByText(/network error/i)).toBeInTheDocument();
-        });
+        renderGrid();
+        await waitFor(() => expect(screen.getByText(/network error/i)).toBeInTheDocument());
     });
 });

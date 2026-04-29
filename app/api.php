@@ -242,6 +242,22 @@ function ensureSeriesTotalSchema($db)
     $ensured = true;
 }
 
+function ensureIssueDetailSchema($db)
+{
+    static $ensured = false;
+    if ($ensured) {
+        return;
+    }
+    $cols = ['cover_image_url' => 'VARCHAR(1024) NULL', 'comicvine_issue_id' => 'INT NULL'];
+    foreach ($cols as $col => $def) {
+        $result = $db->query("SHOW COLUMNS FROM issues LIKE '$col'");
+        if ($result && $result->num_rows === 0) {
+            $db->query("ALTER TABLE issues ADD COLUMN $col $def");
+        }
+    }
+    $ensured = true;
+}
+
 function parseSeriesSlotFromSortValue($value)
 {
     if (!isset($value)) {
@@ -1416,13 +1432,16 @@ function createSeries($dataJson)
     if (!empty($data['comicvineVolumeId'])) {
         $volumeId = (int) $data['comicvineVolumeId'];
         $volume   = ComicVine::getVolumeIssues($db, $volumeId);
+        ensureIssueDetailSchema($db);
         if (!isset($volume['error']) && !empty($volume['issues'])) {
             foreach ($volume['issues'] as $i => $issue) {
                 $number  = isset($issue['issueNumber']) && trim((string) $issue['issueNumber']) !== ''
                     ? $db->real_escape_string(trim((string) $issue['issueNumber']))
                     : (string) ($i + 1);
                 $sort    = is_numeric($number) ? (int) $number : ($i + 1);
-                $query   = "INSERT IGNORE INTO issues (series, number, sort, owned) VALUES ($seriesId, '$number', $sort, 0)";
+                $cvId    = isset($issue['id']) ? (int) $issue['id'] : 'NULL';
+                $query   = "INSERT IGNORE INTO issues (series, number, sort, owned, comicvine_issue_id)"
+                    . " VALUES ($seriesId, '$number', $sort, 0, $cvId)";
                 if ($db->query($query)) {
                     $seededIssues++;
                 }
@@ -1560,6 +1579,41 @@ function deleteIssue($id)
     $issue->restore();
     $issue->remove();
     return json_encode(['deleted' => true, 'id' => (int) $id]);
+}
+
+// Toggle owned status for an issue; enriches with ComicVine detail on first mark-owned
+function toggleIssueOwned($id)
+{
+    $issueId = (int) $id;
+    $db      = ComicDB_DB::db();
+    ensureIssueDetailSchema($db);
+
+    $result = $db->query("SELECT owned, comicvine_issue_id FROM issues WHERE id=$issueId LIMIT 1");
+    if (!$result || $result->num_rows === 0) {
+        return json_encode(['error' => 'Issue not found']);
+    }
+    $row       = $result->fetch_assoc();
+    $wasOwned  = (bool) $row['owned'];
+    $cvIssueId = $row['comicvine_issue_id'] ? (int) $row['comicvine_issue_id'] : null;
+    $newOwned  = $wasOwned ? 0 : 1;
+
+    // On first mark-owned, fetch ComicVine detail and update metadata
+    if ($newOwned === 1 && $cvIssueId) {
+        $detail = ComicVine::getIssueDetail($db, $cvIssueId);
+        if (!isset($detail['error'])) {
+            $coverDate    = $detail['cover_date']      ? "'" . $db->real_escape_string($detail['cover_date']) . "'" : 'NULL';
+            $storyTitle   = $detail['story_title']     ? "'" . $db->real_escape_string($detail['story_title']) . "'" : 'NULL';
+            $coverImg     = $detail['cover_image_url'] ? "'" . $db->real_escape_string($detail['cover_image_url']) . "'" : 'NULL';
+            $db->query(
+                "UPDATE issues SET owned=1, cover_date=$coverDate, story_title=$storyTitle, cover_image_url=$coverImg"
+                . " WHERE id=$issueId"
+            );
+            return json_encode(['id' => $issueId, 'owned' => true]);
+        }
+    }
+
+    $db->query("UPDATE issues SET owned=$newOwned WHERE id=$issueId");
+    return json_encode(['id' => $issueId, 'owned' => (bool) $newOwned]);
 }
 
 function grabIssuesList($dataJson)

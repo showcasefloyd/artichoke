@@ -142,4 +142,41 @@ class ComicVine
         self::putCached($db, 'volume', $cacheId, $result);
         return $result;
     }
+
+    /**
+     * Fetch detail for a single ComicVine issue by its numeric ID.
+     * Returns an array with cover_date, story_title, cover_image_url, or ['error' => '...'] on failure.
+     */
+    public static function getIssueDetail($db, $comicvineIssueId)
+    {
+        $cacheId = (string) (int) $comicvineIssueId;
+        $cached  = self::getCached($db, 'issue', $cacheId);
+        if ($cached !== null) {
+            return $cached;
+        }
+
+        $key = self::apiKey();
+        if ($key === '') {
+            return ['error' => 'COMICVINE_API_KEY is not configured'];
+        }
+
+        $url = self::API_BASE . '/issue/4000-' . (int) $comicvineIssueId . '/?api_key=' . urlencode($key)
+            . '&format=json'
+            . '&field_list=id,cover_date,name,image';
+
+        $response = self::httpGet($url);
+        if (!$response || (int) ($response['status_code'] ?? 0) !== 1) {
+            return ['error' => 'ComicVine API request failed'];
+        }
+
+        $r      = $response['results'] ?? [];
+        $result = [
+            'cover_date'      => $r['cover_date'] ?? null,
+            'story_title'     => $r['name'] ?? null,
+            'cover_image_url' => $r['image']['medium_url'] ?? ($r['image']['original_url'] ?? null),
+        ];
+
+        self::putCached($db, 'issue', $cacheId, $result);
+        return $result;
+    }
 }

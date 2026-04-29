@@ -30,12 +30,29 @@
   border: 1px solid #ccc;
   background: #f0f0f0;
   color: #999;
-  cursor: default;
+  cursor: pointer;
   user-select: none;
+  transition: background 0.15s, border-color 0.15s;
+
+  &:hover {
+    border-color: #28a745;
+    color: #28a745;
+  }
 
   &.owned {
     background: #28a745;
     border-color: #1e7e34;
     color: #fff;
+
+    &:hover {
+      background: #1e7e34;
+    }
+  }
+
+  &.gap-cell {
+    background: transparent;
+    border-color: transparent;
+    cursor: default;
+    pointer-events: none;
   }
 }

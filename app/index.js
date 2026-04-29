@@ -156,6 +156,11 @@ app.delete('/issue/:id', function (req, res) {
    callPhp(res, 'deleteissue', [req.params.id]);
 });
 
+app.put('/issues/:id/owned', function (req, res) {
+   console.log('TOGGLE OWNED', req.params.id);
+   callPhp(res, 'toggleissueowned', [req.params.id]);
+});
+
 // Publisher
 app.get('/publishers', function (req, res) {
    console.log('GET PUBLISHERS');

@@ -1,7 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import type { Issue } from './App';
 import './SeriesGrid.scss';
+
+type ViewMode = 'full' | 'collection';
 
 interface SeriesInfo {
     id: number;
@@ -19,6 +21,8 @@ const SeriesGrid: React.FC = () => {
     const [issues, setIssues]           = useState<Issue[]>([]);
     const [loading, setLoading]         = useState(true);
     const [error, setError]             = useState('');
+    const [viewMode, setViewMode]       = useState<ViewMode>('full');
+    const [toggling, setToggling]       = useState<Set<number>>(new Set());
 
     useEffect(() => {
         if (!seriesId) return;
@@ -48,6 +52,25 @@ const SeriesGrid: React.FC = () => {
             });
     }, [seriesId]);
 
+    const handleToggleOwned = useCallback((issue: Issue) => {
+        if (toggling.has(issue.id)) return;
+
+        // Optimistic update
+        setIssues(prev => prev.map(i => i.id === issue.id ? { ...i, owned: !i.owned } : i));
+        setToggling(prev => new Set(prev).add(issue.id));
+
+        fetch(`/issues/${issue.id}/owned`, { method: 'PUT' })
+            .then(res => { if (!res.ok) throw new Error(`Toggle failed (${res.status})`); return res.json(); })
+            .then(() => {
+                setToggling(prev => { const s = new Set(prev); s.delete(issue.id); return s; });
+            })
+            .catch(() => {
+                // Revert on error
+                setIssues(prev => prev.map(i => i.id === issue.id ? { ...i, owned: issue.owned } : i));
+                setToggling(prev => { const s = new Set(prev); s.delete(issue.id); return s; });
+            });
+    }, [toggling]);
+
     if (loading) return <div className="container py-3"><p>Loading&hellip;</p></div>;
     if (error)   return <div className="container py-3"><div className="alert alert-danger">{error}</div></div>;
 
@@ -63,19 +86,46 @@ const SeriesGrid: React.FC = () => {
                 <Link to="/">&larr; Back to Publishers</Link>
             </div>
             <h4>{title}</h4>
-            <p className="series-grid-meta">
-                {ownedCount} / {issues.length} issues owned
-            </p>
-            <div className="series-grid-cells">
-                {issues.map(issue => (
-                    <div
-                        key={issue.id}
-                        className={`issue-cell${issue.owned ? ' owned' : ''}`}
-                        title={`#${issue.number}${issue.cover_date ? ` — ${issue.cover_date}` : ''}`}
+            <div className="d-flex align-items-center gap-3 mb-2">
+                <p className="series-grid-meta mb-0">
+                    {ownedCount} / {issues.length} issues owned
+                </p>
+                <div className="btn-group btn-group-sm" role="group" aria-label="View mode">
+                    <button
+                        type="button"
+                        className={`btn ${viewMode === 'full' ? 'btn-primary' : 'btn-outline-primary'}`}
+                        onClick={() => setViewMode('full')}
                     >
-                        {issue.number}
-                    </div>
-                ))}
+                        Full History
+                    </button>
+                    <button
+                        type="button"
+                        className={`btn ${viewMode === 'collection' ? 'btn-primary' : 'btn-outline-primary'}`}
+                        onClick={() => setViewMode('collection')}
+                    >
+                        My Collection
+                    </button>
+                </div>
+            </div>
+            <div className="series-grid-cells">
+                {issues.map(issue => {
+                    if (viewMode === 'collection' && !issue.owned) {
+                        return <div key={issue.id} className="issue-cell gap-cell" aria-hidden="true" />;
+                    }
+                    return (
+                        <div
+                            key={issue.id}
+                            className={`issue-cell${issue.owned ? ' owned' : ''}`}
+                            title={`#${issue.number}${issue.cover_date ? ` — ${issue.cover_date}` : ''}`}
+                            onClick={() => handleToggleOwned(issue)}
+                            role="button"
+                            aria-label={`Issue ${issue.number}${issue.owned ? ' (owned)' : ''}`}
+                            style={{ cursor: toggling.has(issue.id) ? 'wait' : 'pointer' }}
+                        >
+                            {issue.number}
+                        </div>
+                    );
+                })}
             </div>
         </div>
     );
