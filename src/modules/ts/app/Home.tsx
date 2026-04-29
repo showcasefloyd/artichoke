@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import PublisherList from './PublisherList';
+import Dashboard from './Dashboard';
 import type { Publisher, Series } from './App';
 
 const Home: React.FC = () => {
@@ -51,6 +52,11 @@ const Home: React.FC = () => {
                 <div className="col-sm-12">
                     <h3 className="page-header">[ Artichoke, Comic Book Database ]</h3>
                     <div className="page-header-menu"><a className="btn btn-warning" href="/admin">Admin</a></div>
+                </div>
+            </div>
+            <div className="row">
+                <div className="col-sm-12">
+                    <Dashboard />
                 </div>
             </div>
             <div className="row">

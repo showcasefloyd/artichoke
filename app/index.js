@@ -178,6 +178,11 @@ app.get('/dashboard', function (req, res) {
    callPhp(res, 'grabdashboard', []);
 });
 
+app.get('/stats', function (req, res) {
+   console.log('GET STATS');
+   callPhp(res, 'grabstats', []);
+});
+
 // Series Type
 app.get('/series-types', function (req, res) {
    console.log('GET SERIES TYPES');

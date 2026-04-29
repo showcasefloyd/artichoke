@@ -5,15 +5,23 @@ import App from '../App';
 
 describe('App', () => {
     beforeEach(() => {
-        global.fetch = jest.fn().mockResolvedValue({
-            ok: true,
-            json: async () => ({
-                publishers: [
-                    { id: 1, name: 'Marvel' },
-                    { id: 2, name: 'DC' },
-                    { id: 3, name: 'Image' },
-                ],
-            }),
+        global.fetch = jest.fn().mockImplementation((url: string) => {
+            if (url === '/stats') {
+                return Promise.resolve({
+                    ok: true,
+                    json: async () => ({ seriesCount: 0, ownedIssueCount: 0, recentlyAdded: [] }),
+                });
+            }
+            return Promise.resolve({
+                ok: true,
+                json: async () => ({
+                    publishers: [
+                        { id: 1, name: 'Marvel' },
+                        { id: 2, name: 'DC' },
+                        { id: 3, name: 'Image' },
+                    ],
+                }),
+            });
         }) as jest.Mock;
     });
 

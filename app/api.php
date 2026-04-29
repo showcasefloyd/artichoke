@@ -248,7 +248,11 @@ function ensureIssueDetailSchema($db)
     if ($ensured) {
         return;
     }
-    $cols = ['cover_image_url' => 'VARCHAR(1024) NULL', 'comicvine_issue_id' => 'INT NULL'];
+    $cols = [
+        'cover_image_url'    => 'VARCHAR(1024) NULL',
+        'comicvine_issue_id' => 'INT NULL',
+        'owned_at'           => 'TIMESTAMP NULL DEFAULT NULL',
+    ];
     foreach ($cols as $col => $def) {
         $result = $db->query("SHOW COLUMNS FROM issues LIKE '$col'");
         if ($result && $result->num_rows === 0) {
@@ -1597,6 +1601,8 @@ function toggleIssueOwned($id)
     $cvIssueId = $row['comicvine_issue_id'] ? (int) $row['comicvine_issue_id'] : null;
     $newOwned  = $wasOwned ? 0 : 1;
 
+    $ownedAt = $newOwned === 1 ? 'NOW()' : 'NULL';
+
     // On first mark-owned, fetch ComicVine detail and update metadata
     if ($newOwned === 1 && $cvIssueId) {
         $detail = ComicVine::getIssueDetail($db, $cvIssueId);
@@ -1605,15 +1611,57 @@ function toggleIssueOwned($id)
             $storyTitle   = $detail['story_title']     ? "'" . $db->real_escape_string($detail['story_title']) . "'" : 'NULL';
             $coverImg     = $detail['cover_image_url'] ? "'" . $db->real_escape_string($detail['cover_image_url']) . "'" : 'NULL';
             $db->query(
-                "UPDATE issues SET owned=1, cover_date=$coverDate, story_title=$storyTitle, cover_image_url=$coverImg"
+                "UPDATE issues SET owned=1, owned_at=$ownedAt, cover_date=$coverDate, story_title=$storyTitle, cover_image_url=$coverImg"
                 . " WHERE id=$issueId"
             );
             return json_encode(['id' => $issueId, 'owned' => true]);
         }
     }
 
-    $db->query("UPDATE issues SET owned=$newOwned WHERE id=$issueId");
+    $db->query("UPDATE issues SET owned=$newOwned, owned_at=$ownedAt WHERE id=$issueId");
     return json_encode(['id' => $issueId, 'owned' => (bool) $newOwned]);
+}
+
+function grabStats()
+{
+    $db = ComicDB_DB::db();
+    ensureIssueDetailSchema($db);
+
+    $totals = $db->query(
+        "SELECT (SELECT COUNT(*) FROM series) AS series_count,
+                (SELECT COUNT(*) FROM issues WHERE owned = 1) AS owned_count"
+    );
+    $totalsRow = $totals ? $totals->fetch_assoc() : ['series_count' => 0, 'owned_count' => 0];
+
+    $recentResult = $db->query(
+        "SELECT i.id, s.name AS seriesName, s.volume, i.number, i.cover_date"
+        . " FROM issues i"
+        . " JOIN series s ON i.series = s.id"
+        . " WHERE i.owned = 1"
+        . " ORDER BY i.owned_at DESC, i.id DESC"
+        . " LIMIT 5"
+    );
+    $recentlyAdded = [];
+    if ($recentResult) {
+        while ($row = $recentResult->fetch_assoc()) {
+            $label = $row['seriesName'];
+            if ($row['volume']) {
+                $label .= ' Vol. ' . $row['volume'];
+            }
+            $recentlyAdded[] = [
+                'id'         => (int) $row['id'],
+                'seriesName' => $label,
+                'number'     => $row['number'],
+                'cover_date' => $row['cover_date'],
+            ];
+        }
+    }
+
+    return json_encode([
+        'seriesCount'     => (int) $totalsRow['series_count'],
+        'ownedIssueCount' => (int) $totalsRow['owned_count'],
+        'recentlyAdded'   => $recentlyAdded,
+    ]);
 }
 
 function grabIssuesList($dataJson)

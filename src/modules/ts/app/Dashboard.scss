@@ -1,0 +1,71 @@
+.dashboard-strip {
+  background: #f8f9fa;
+  border-bottom: 1px solid #dee2e6;
+  padding: 0.6rem 1rem;
+  margin-bottom: 1rem;
+  border-radius: 4px;
+
+  &--loading {
+    color: #999;
+    font-size: 0.85rem;
+  }
+}
+
+.dashboard-counts {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  margin-bottom: 0.4rem;
+}
+
+.dashboard-sep {
+  color: #aaa;
+}
+
+.dashboard-recent {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.dashboard-recent-label {
+  font-size: 0.8rem;
+  color: #666;
+  white-space: nowrap;
+  line-height: 2;
+}
+
+.dashboard-recent-cards {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.dashboard-card {
+  background: #fff;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  padding: 0.3rem 0.6rem;
+  font-size: 0.78rem;
+  min-width: 80px;
+
+  &-series {
+    font-weight: 600;
+    color: #333;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 140px;
+  }
+
+  &-issue {
+    color: #555;
+  }
+
+  &-date {
+    color: #999;
+    font-size: 0.72rem;
+  }
+}
