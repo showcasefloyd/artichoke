@@ -2042,16 +2042,15 @@ EOT;
 
 function deletePublisher($id)
 {
+    $publisherId = (int) $id;
     $publisher = new ComicDB_Publisher();
-    $publisher->id($id);
+    $publisher->id($publisherId);
     $publisher->restore();
-    $name = $publisher->name();
     $db = ComicDB_DB::db();
-    $nameEscaped = $db->real_escape_string($name);
     $countQuery = <<<EOT
       SELECT COUNT(*) AS series_count
         FROM series
-       WHERE publisher = '$nameEscaped'
+       WHERE publisher_id = $publisherId
 EOT;
     $countResult = $db->query($countQuery);
     if (! $countResult) {
