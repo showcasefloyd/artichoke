@@ -1,5 +1,7 @@
-import React, { useEffect, useState } from 'react';
-import PublisherList from './PublisherList';
+import React from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import Home from './Home';
+import SeriesGrid from './SeriesGrid';
 
 export interface Publisher {
     id: number;
@@ -7,46 +9,35 @@ export interface Publisher {
     series_count?: number;
 }
 
+export interface Series {
+    id: number;
+    name: string;
+    volume: number | null;
+    startYear: number | null;
+    totalIssues: number;
+    ownedCount: number;
+}
+
+export interface Issue {
+    id: number;
+    number: string;
+    sort: number | null;
+    cover_date: string | null;
+    owned: boolean;
+}
+
 export interface SeriesType {
     id: number;
     name: string;
 }
 
-const App: React.FC = () => {
-    const [publishers, setPublishers] = useState<Publisher[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
-
-    useEffect(() => {
-        setLoading(true);
-        fetch('/publishers')
-            .then(res => { if (!res.ok) throw new Error(`Failed to load publishers (${res.status})`); return res.json(); })
-            .then(data => {
-                setPublishers(data.publishers ?? []);
-                setLoading(false);
-            })
-            .catch(e => {
-                setError(String(e.message ?? e));
-                setLoading(false);
-            });
-    }, []);
-
-    return (
-        <div className="container">
-            <div className="row">
-                <div className="col-sm-12">
-                    <h3 className="page-header">[ Artichoke, Comic Book Database ]</h3>
-                    <div className="page-header-menu"><a className="btn btn-warning" href="/admin">Admin</a></div>
-                </div>
-            </div>
-            <div className="row">
-                <div className="col-sm-12">
-                    <h4>Publishers</h4>
-                    <PublisherList publishers={publishers} loading={loading} error={error} />
-                </div>
-            </div>
-        </div>
-    );
-};
+const App: React.FC = () => (
+    <BrowserRouter>
+        <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/series/:id" element={<SeriesGrid />} />
+        </Routes>
+    </BrowserRouter>
+);
 
 export default App;

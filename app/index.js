@@ -179,6 +179,16 @@ app.get('/series-types', function (req, res) {
    callPhp(res, 'grabseriestypes', []);
 });
 
+app.get('/publishers/:id/series', function (req, res) {
+   console.log('GET PUBLISHER SERIES', req.params.id);
+   callPhp(res, 'grabpublisherseries', [req.params.id]);
+});
+
+app.get('/series/:id/issues', function (req, res) {
+   console.log('GET SERIES ISSUES', req.params.id);
+   callPhp(res, 'grabseriesissues', [req.params.id]);
+});
+
 app.get('/publisher/:id', function (req, res) {
    console.log('GET PUBLISHER', req.params.id);
    callPhp(res, 'grabpublisher', [req.params.id]);

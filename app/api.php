@@ -1674,6 +1674,62 @@ EOT;
     return json_encode(['publishers' => $list]);
 }
 
+function grabPublisherSeries($publisherId)
+{
+    $pid = (int) $publisherId;
+    $db  = ComicDB_DB::db();
+    $query = <<<EOT
+      SELECT s.id,
+             s.name,
+             s.volume,
+             s.start_year,
+             s.total_issues,
+             COUNT(CASE WHEN i.owned = 1 THEN 1 END) AS owned_count
+        FROM series s
+   LEFT JOIN issues i ON i.series = s.id
+       WHERE s.publisher_id = $pid
+    GROUP BY s.id, s.name, s.volume, s.start_year, s.total_issues
+    ORDER BY s.name ASC, s.start_year ASC
+EOT;
+    $result = $db->query($query);
+    $list = [];
+    while ($row = $result->fetch_assoc()) {
+        $list[] = [
+            'id'          => (int) $row['id'],
+            'name'        => $row['name'],
+            'volume'      => $row['volume'] !== null ? (int) $row['volume'] : null,
+            'startYear'   => $row['start_year'] !== null ? (int) $row['start_year'] : null,
+            'totalIssues' => (int) $row['total_issues'],
+            'ownedCount'  => (int) $row['owned_count'],
+        ];
+    }
+    return json_encode(['series' => $list]);
+}
+
+function grabSeriesIssues($id)
+{
+    $seriesId = (int) $id;
+    $db       = ComicDB_DB::db();
+    $query = <<<EOT
+      SELECT id, number, sort, cover_date, owned
+        FROM issues
+       WHERE series = $seriesId
+    ORDER BY sort ASC, number ASC
+EOT;
+    $result = $db->query($query);
+    $issues = [];
+    while ($row = $result->fetch_assoc()) {
+        $issues[] = [
+            'id'         => (int) $row['id'],
+            'number'     => $row['number'],
+            'sort'       => $row['sort'] !== null ? (int) $row['sort'] : null,
+            'cover_date' => $row['cover_date'],
+            'owned'      => (bool) $row['owned'],
+        ];
+    }
+    return json_encode(['issues' => $issues]);
+}
+
 function grabDashboard()
 {
     $db = ComicDB_DB::db();
