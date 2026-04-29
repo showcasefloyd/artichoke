@@ -35,7 +35,7 @@ const App: React.FC = () => (
     <BrowserRouter>
         <Routes>
             <Route path="/" element={<Home />} />
-            <Route path="/series/:id" element={<SeriesGrid />} />
+            <Route path="/view/series/:id" element={<SeriesGrid />} />
         </Routes>
     </BrowserRouter>
 );

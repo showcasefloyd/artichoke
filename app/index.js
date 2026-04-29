@@ -244,6 +244,11 @@ app.use(function (err, req, res, next) { // eslint-disable-line no-unused-vars
    res.status(500).json({ error: 'Internal server error' });
 });
 
+// SPA catch-all: serve index.html for any non-API GET so react-router handles routing
+app.get('*', function (req, res) {
+   res.sendFile(__dirname + '/index.html');
+});
+
 app.listen('3000', function () {
    console.log("Listening on port 3000");
 });

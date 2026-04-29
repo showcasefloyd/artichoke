@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import PublisherList from './PublisherList';
-import { Publisher, Series } from './App';
+import type { Publisher, Series } from './App';
 
 const Home: React.FC = () => {
     const [publishers, setPublishers]               = useState<Publisher[]>([]);

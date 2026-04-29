@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Issue } from './App';
+import type { Issue } from './App';
 import './SeriesGrid.scss';
 
 interface SeriesInfo {

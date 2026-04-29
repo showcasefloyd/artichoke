@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Publisher, Series } from './App';
+import type { Publisher, Series } from './App';
 
 interface Props {
     publishers: Publisher[];
@@ -46,7 +46,7 @@ const PublisherList: React.FC<Props> = ({
                                 <ul className="list-unstyled mb-1">
                                     {series.map(s => (
                                         <li key={s.id} className="d-flex align-items-center gap-2 py-1">
-                                            <Link to={`/series/${s.id}`}>
+                                            <Link to={`/view/series/${s.id}`}>
                                                 {s.name}
                                                 {s.volume ? ` Vol. ${s.volume}` : ''}
                                                 {s.startYear ? ` (${s.startYear})` : ''}

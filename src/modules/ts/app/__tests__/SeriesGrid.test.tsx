@@ -25,9 +25,9 @@ function renderAtSeriesRoute(id: string) {
     }) as jest.Mock;
 
     render(
-        <MemoryRouter initialEntries={[`/series/${id}`]}>
+        <MemoryRouter initialEntries={[`/view/series/${id}`]}>
             <Routes>
-                <Route path="/series/:id" element={<SeriesGrid />} />
+                <Route path="/view/series/:id" element={<SeriesGrid />} />
             </Routes>
         </MemoryRouter>
     );
@@ -41,9 +41,9 @@ describe('SeriesGrid', () => {
     it('renders a loading state initially', () => {
         global.fetch = jest.fn().mockReturnValue(new Promise(() => {})) as jest.Mock;
         render(
-            <MemoryRouter initialEntries={['/series/1']}>
+            <MemoryRouter initialEntries={['/view/series/1']}>
                 <Routes>
-                    <Route path="/series/:id" element={<SeriesGrid />} />
+                    <Route path="/view/series/:id" element={<SeriesGrid />} />
                 </Routes>
             </MemoryRouter>
         );
@@ -77,9 +77,9 @@ describe('SeriesGrid', () => {
     it('shows an error when the fetch fails', async () => {
         global.fetch = jest.fn().mockRejectedValue(new Error('Network error')) as jest.Mock;
         render(
-            <MemoryRouter initialEntries={['/series/1']}>
+            <MemoryRouter initialEntries={['/view/series/1']}>
                 <Routes>
-                    <Route path="/series/:id" element={<SeriesGrid />} />
+                    <Route path="/view/series/:id" element={<SeriesGrid />} />
                 </Routes>
             </MemoryRouter>
         );
