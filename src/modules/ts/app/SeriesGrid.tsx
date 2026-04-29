@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import type { Issue } from './App';
+import IssueDetailModal from './IssueDetailModal';
 import './SeriesGrid.scss';
 
 type ViewMode = 'full' | 'collection';
@@ -21,8 +22,8 @@ const SeriesGrid: React.FC = () => {
     const [issues, setIssues]           = useState<Issue[]>([]);
     const [loading, setLoading]         = useState(true);
     const [error, setError]             = useState('');
-    const [viewMode, setViewMode]       = useState<ViewMode>('full');
-    const [toggling, setToggling]       = useState<Set<number>>(new Set());
+    const [viewMode, setViewMode]           = useState<ViewMode>('full');
+    const [selectedIssueId, setSelectedIssueId] = useState<number | null>(null);
 
     useEffect(() => {
         if (!seriesId) return;
@@ -52,24 +53,9 @@ const SeriesGrid: React.FC = () => {
             });
     }, [seriesId]);
 
-    const handleToggleOwned = useCallback((issue: Issue) => {
-        if (toggling.has(issue.id)) return;
-
-        // Optimistic update
-        setIssues(prev => prev.map(i => i.id === issue.id ? { ...i, owned: !i.owned } : i));
-        setToggling(prev => new Set(prev).add(issue.id));
-
-        fetch(`/issues/${issue.id}/owned`, { method: 'PUT' })
-            .then(res => { if (!res.ok) throw new Error(`Toggle failed (${res.status})`); return res.json(); })
-            .then(() => {
-                setToggling(prev => { const s = new Set(prev); s.delete(issue.id); return s; });
-            })
-            .catch(() => {
-                // Revert on error
-                setIssues(prev => prev.map(i => i.id === issue.id ? { ...i, owned: issue.owned } : i));
-                setToggling(prev => { const s = new Set(prev); s.delete(issue.id); return s; });
-            });
-    }, [toggling]);
+    const handleOwnedChange = useCallback((issueId: number, owned: boolean) => {
+        setIssues(prev => prev.map(i => i.id === issueId ? { ...i, owned } : i));
+    }, []);
 
     if (loading) return <div className="container py-3"><p>Loading&hellip;</p></div>;
     if (error)   return <div className="container py-3"><div className="alert alert-danger">{error}</div></div>;
@@ -117,16 +103,25 @@ const SeriesGrid: React.FC = () => {
                             key={issue.id}
                             className={`issue-cell${issue.owned ? ' owned' : ''}`}
                             title={`#${issue.number}${issue.cover_date ? ` — ${issue.cover_date}` : ''}`}
-                            onClick={() => handleToggleOwned(issue)}
+                            onClick={() => setSelectedIssueId(issue.id)}
                             role="button"
                             aria-label={`Issue ${issue.number}${issue.owned ? ' (owned)' : ''}`}
-                            style={{ cursor: toggling.has(issue.id) ? 'wait' : 'pointer' }}
+                            style={{ cursor: 'pointer' }}
                         >
                             {issue.number}
                         </div>
                     );
                 })}
             </div>
+            {selectedIssueId !== null && seriesInfo && (
+                <IssueDetailModal
+                    issueId={selectedIssueId}
+                    seriesName={seriesInfo.name}
+                    initialOwned={issues.find(i => i.id === selectedIssueId)?.owned ?? false}
+                    onClose={() => setSelectedIssueId(null)}
+                    onOwnedChange={handleOwnedChange}
+                />
+            )}
         </div>
     );
 };

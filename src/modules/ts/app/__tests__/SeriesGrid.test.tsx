@@ -14,10 +14,13 @@ const mockIssues = {
     ],
 };
 
+const mockIssueDetail = { number: '1', storytitle: '', coverdate: '', condition: '', purchaseprice: '', purchasedate: '', priceguidevalue: '', comments: '', status: 'Collected' };
+
 function mockFetch(overrides: Record<string, unknown> = {}) {
     global.fetch = jest.fn().mockImplementation((url: string, opts?: RequestInit) => {
         if (url === '/series/1') return Promise.resolve({ ok: true, json: async () => mockSeries });
         if (url === '/series/1/issues') return Promise.resolve({ ok: true, json: async () => mockIssues });
+        if (/^\/issue\/\d+$/.test(url)) return Promise.resolve({ ok: true, json: async () => ({ ...mockIssueDetail, ...overrides }) });
         if (url.startsWith('/issues/') && url.endsWith('/owned') && opts?.method === 'PUT') {
             const issueId = parseInt(url.split('/')[2]);
             return Promise.resolve({ ok: true, json: async () => ({ id: issueId, owned: true, ...overrides }) });
@@ -86,37 +89,15 @@ describe('SeriesGrid', () => {
         expect(screen.getByRole('button', { name: /issue 3/i })).toBeInTheDocument();
     });
 
-    it('optimistically toggles owned on click', async () => {
+    it('clicking an issue cell opens the detail modal', async () => {
         mockFetch();
         renderGrid();
-        await waitFor(() => expect(screen.getByRole('button', { name: /issue 2/i })).toBeInTheDocument());
+        await waitFor(() => expect(screen.getByRole('button', { name: /issue 1/i })).toBeInTheDocument());
 
-        const cell = screen.getByRole('button', { name: /issue 2/i });
-        expect(cell).not.toHaveClass('owned');
+        await userEvent.click(screen.getByRole('button', { name: /issue 1/i }));
 
-        await userEvent.click(cell);
-
-        // Optimistic update — should become owned immediately
-        await waitFor(() => expect(screen.getByRole('button', { name: /issue 2 \(owned\)/i })).toBeInTheDocument());
-    });
-
-    it('reverts optimistic update on API failure', async () => {
-        global.fetch = jest.fn().mockImplementation((url: string, opts?: RequestInit) => {
-            if (url === '/series/1') return Promise.resolve({ ok: true, json: async () => mockSeries });
-            if (url === '/series/1/issues') return Promise.resolve({ ok: true, json: async () => mockIssues });
-            if (url.startsWith('/issues/') && opts?.method === 'PUT') {
-                return Promise.resolve({ ok: false, json: async () => ({}) });
-            }
-            return Promise.reject(new Error('Unexpected URL'));
-        }) as jest.Mock;
-
-        renderGrid();
-        await waitFor(() => expect(screen.getByRole('button', { name: /issue 2/i })).toBeInTheDocument());
-
-        await userEvent.click(screen.getByRole('button', { name: /issue 2/i }));
-
-        // After revert, issue 2 should not be owned
-        await waitFor(() => expect(screen.queryByRole('button', { name: /issue 2 \(owned\)/i })).not.toBeInTheDocument());
+        // Modal should appear
+        await waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument());
     });
 
     it('shows a back link', async () => {
