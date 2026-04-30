@@ -450,8 +450,12 @@ class ComicDB_Issue extends ComicDB_Object {
 
 		$coverDate = $this->coverDate();
 		if ($coverDate) {
-			$coverDate = date("Ymd", $coverDate);
-			$data['cover_date'] = "'$coverDate'";
+			if (is_string($coverDate) && !is_numeric($coverDate)) {
+				$data['cover_date'] = "'" . $coverDate . "'";
+			} else {
+				$coverDate = date("Y-m-d", (int) $coverDate);
+				$data['cover_date'] = "'$coverDate'";
+			}
 		} else {
 			$data['cover_date'] = "NULL";
 		}
@@ -500,8 +504,12 @@ class ComicDB_Issue extends ComicDB_Object {
 
 		$purchaseDate = $this->purchaseDate();
 		if ($purchaseDate) {
-			$purchaseDate = date("Ymd", $purchaseDate);
-			$data['purchase_date'] = "'$purchaseDate'";
+			if (is_string($purchaseDate) && !is_numeric($purchaseDate)) {
+				$data['purchase_date'] = "'" . $purchaseDate . "'";
+			} else {
+				$purchaseDate = date("Y-m-d", (int) $purchaseDate);
+				$data['purchase_date'] = "'$purchaseDate'";
+			}
 		} else {
 			$data['purchase_date'] = "NULL";
 		}

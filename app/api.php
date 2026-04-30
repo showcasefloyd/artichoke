@@ -2169,6 +2169,14 @@ function grabIssues($id)
     return json_encode($payload['issues']);
 }
 
+function formatDate($timestamp, $format) {
+    if (!$timestamp) return '';
+    if (is_string($timestamp) && !is_numeric($timestamp)) {
+        return $timestamp;
+    }
+    return date($format, (int) $timestamp);
+}
+
 function buildIssueArray($issue) {
     $issueArray = [];
     $issueArray['number']          = htmlspecialchars($issue->number() ?? '');
@@ -2196,10 +2204,8 @@ function buildIssueArray($issue) {
         $status = "Unknown";
     }
     $issueArray['status']       = $status;
-    $purchasedate               = $issue->purchasedate();
-    $issueArray['purchasedate'] = $purchasedate !== null ? date("M d, Y", (int) $purchasedate) : '';
-    $coverdate                  = $issue->coverdate();
-    $issueArray['coverdate']    = $coverdate !== null ? date("M Y", (int) $coverdate) : '';
+    $issueArray['purchasedate'] = formatDate($issue->purchasedate(), "M d, Y");
+    $issueArray['coverdate']    = formatDate($issue->coverdate(), "M Y");
 
     return $issueArray;
 }
