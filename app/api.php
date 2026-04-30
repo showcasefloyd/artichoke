@@ -2213,6 +2213,7 @@ function grabIssue($id)
 function enrichissue($id) {
     $db = ComicDB_DB::db();
     $issue = new ComicDB_Issue($id);
+    $issue->restore();
     if (!$issue->id) {
         return json_encode(['error' => 'Issue not found']);
     }
