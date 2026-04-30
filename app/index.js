@@ -168,6 +168,10 @@ app.get('/publishers', function (req, res) {
 });
 
 // ComicVine
+app.post('/issue/:id/enrich', function (req, res) {
+    console.log('ENRICH ISSUE', req.params.id);
+    callPhp(res, 'enrichissue', [req.params.id]);
+});
 app.get('/comicvine/search', function (req, res) {
    console.log('COMICVINE SEARCH', req.query.q);
    callPhp(res, 'comicvinesearch', [req.query.q || '']);

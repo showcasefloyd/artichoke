@@ -2208,3 +2208,45 @@ function grabIssue($id)
 
     return json_encode($issueArray);
 }
+
+// Enrich issue with ComicVine metadata
+function enrichissue($id) {
+    $db = ComicDB_DB::db();
+    $issue = new ComicDB_Issue($id);
+    if (!$issue->id) {
+        return json_encode(['error' => 'Issue not found']);
+    }
+    // Only enrich if owned
+    if ((int)$issue->status !== 0) {
+        return json_encode($issue->toArray());
+    }
+    // If already has storyTitle and coverDate, return as is
+    if ($issue->storyTitle() && $issue->coverDate()) {
+        return json_encode($issue->toArray());
+    }
+    // Try to find ComicVine issue ID
+    $series = $issue->series();
+    $seriesName = $series ? $series->name() : '';
+    $issueNumber = $issue->number();
+    $results = ComicVine::searchVolumes($db, $seriesName);
+    $comicvineIssueId = null;
+    foreach ($results as $vol) {
+        if (!isset($vol['id'])) continue;
+        $volDetail = ComicVine::getVolumeIssues($db, $vol['id']);
+        foreach ($volDetail['issues'] ?? [] as $iss) {
+            if ((string)$iss['issueNumber'] === (string)$issueNumber) {
+                $comicvineIssueId = $iss['id'];
+                break 2;
+            }
+        }
+    }
+    if ($comicvineIssueId) {
+        $cv = ComicVine::getIssueDetail($db, $comicvineIssueId);
+        if (!empty($cv['story_title'])) $issue->storyTitle($cv['story_title']);
+        if (!empty($cv['cover_date'])) $issue->coverDate($cv['cover_date']);
+        if (!empty($cv['cover_image_url'])) $issue->coverImageUrl($cv['cover_image_url']);
+        $issue->comicvineIssueId($comicvineIssueId);
+        $issue->update();
+    }
+    return json_encode($issue->toArray());
+}
