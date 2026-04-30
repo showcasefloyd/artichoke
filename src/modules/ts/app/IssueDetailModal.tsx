@@ -11,6 +11,8 @@ interface IssueDetail {
     priceguidevalue: number | string;
     comments: string;
     status: string;
+    comicvinissueid?: string;
+    coverimageurl?: string;
 }
 
 interface IssueDetailModalProps {

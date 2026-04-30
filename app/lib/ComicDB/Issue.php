@@ -23,6 +23,8 @@ class ComicDB_Issue extends ComicDB_Object {
 	var $issueValue;
 	var $comments;
 	var $storyTitle;
+	var $comicvineIssueId;
+	var $coverImageUrl;
 	var $series;
 	var $id;
 
@@ -183,6 +185,22 @@ class ComicDB_Issue extends ComicDB_Object {
 			$this->isDirty = 1;
 		}
 		return $this->storyTitle;
+	}
+
+	function comicvineIssueId($comicvineIssueId=null) {
+		if (isset($comicvineIssueId)) {
+			$this->comicvineIssueId = $comicvineIssueId;
+			$this->isDirty = 1;
+		}
+		return $this->comicvineIssueId;
+	}
+
+	function coverImageUrl($coverImageUrl=null) {
+		if (isset($coverImageUrl)) {
+			$this->coverImageUrl = $coverImageUrl;
+			$this->isDirty = 1;
+		}
+		return $this->coverImageUrl;
 	}
 
 	// public methods
