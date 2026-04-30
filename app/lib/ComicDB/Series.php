@@ -203,6 +203,7 @@ class ComicDB_Series extends ComicDB_Object {
 		}
 		$row = $result->fetch_assoc();
 		if (!$row) {
+			$this->id = null;
 			return null;
 		}
 

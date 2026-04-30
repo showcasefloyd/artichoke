@@ -260,6 +260,7 @@ class ComicDB_Issue extends ComicDB_Object {
 
 		$row = $result->fetch_array();
 		if (!$row) {
+			$this->id = null;
 			return null;
 		}
 
