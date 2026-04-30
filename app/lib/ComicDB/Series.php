@@ -202,6 +202,9 @@ class ComicDB_Series extends ComicDB_Object {
 		    die('There was an error running the query [' . $db->error . ']');
 		}
 		$row = $result->fetch_assoc();
+		if (!$row) {
+			return null;
+		}
 
 		$this->id($row['id']);
 		$this->publisherId($row['publisher_id']);

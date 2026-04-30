@@ -259,6 +259,9 @@ class ComicDB_Issue extends ComicDB_Object {
 		}
 
 		$row = $result->fetch_array();
+		if (!$row) {
+			return null;
+		}
 
 		$this->id($row[0]);
 		$this->seriesId($row[1]);
