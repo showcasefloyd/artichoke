@@ -2251,6 +2251,14 @@ function enrichissue($id) {
     $seriesName = $series ? $series->name() : '';
     $issueNumber = $issue->number();
     $results = ComicVine::searchVolumes($db, $seriesName);
+
+    // Sort by count_of_issues descending (US/English version has most issues)
+    if (!isset($results['error'])) {
+        usort($results, function($a, $b) {
+            return ($b['countOfIssues'] ?? 0) - ($a['countOfIssues'] ?? 0);
+        });
+    }
+
     $comicvineIssueId = null;
     foreach ($results as $vol) {
         if (!isset($vol['id'])) continue;
