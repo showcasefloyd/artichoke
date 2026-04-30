@@ -2217,6 +2217,19 @@ function grabIssue($id)
     return json_encode(buildIssueArray($issue));
 }
 
+function isLikelyEnglish($text) {
+    if (!$text) return true;
+    $spanishIndicators = ['á', 'é', 'í', 'ó', 'ú', 'ñ', 'ü', ' de ', ' la ', ' el ', ' los '];
+    $lowerText = mb_strtolower($text, 'UTF-8');
+    $spanishCount = 0;
+    foreach ($spanishIndicators as $indicator) {
+        if (stripos($lowerText, $indicator) !== false) {
+            $spanishCount++;
+        }
+    }
+    return $spanishCount < 2;
+}
+
 // Enrich issue with ComicVine metadata
 function enrichissue($id) {
     $db = ComicDB_DB::db();
@@ -2251,7 +2264,9 @@ function enrichissue($id) {
     }
     if ($comicvineIssueId) {
         $cv = ComicVine::getIssueDetail($db, $comicvineIssueId);
-        if (!empty($cv['story_title'])) $issue->storyTitle($cv['story_title']);
+        if (!empty($cv['story_title']) && isLikelyEnglish($cv['story_title'])) {
+            $issue->storyTitle($cv['story_title']);
+        }
         if (!empty($cv['cover_date'])) $issue->coverDate($cv['cover_date']);
         if (!empty($cv['cover_image_url'])) $issue->coverImageUrl($cv['cover_image_url']);
         $issue->comicvineIssueId($comicvineIssueId);
