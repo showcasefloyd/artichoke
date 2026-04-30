@@ -2222,7 +2222,7 @@ function enrichissue($id) {
     $db = ComicDB_DB::db();
     $issue = new ComicDB_Issue($id);
     $issue->restore();
-    if (!$issue->id) {
+    if ($issue->id === null || $issue->id === '') {
         return json_encode(['error' => 'Issue not found']);
     }
     // Only enrich if owned
