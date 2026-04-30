@@ -2169,12 +2169,8 @@ function grabIssues($id)
     return json_encode($payload['issues']);
 }
 
-function grabIssue($id)
-{
+function buildIssueArray($issue) {
     $issueArray = [];
-    $issue      = new ComicDB_Issue($id);
-    $issue->restore();
-
     $issueArray['number']          = htmlspecialchars($issue->number() ?? '');
     $issueArray['printrun']        = htmlspecialchars($issue->printRun() ?? '');
     $issueArray['quantity']        = $issue->quantity();
@@ -2188,7 +2184,6 @@ function grabIssue($id)
     $issueArray['priceguide']      = htmlspecialchars($issue->guide() ?? '');
     $issueArray['comments']        = htmlspecialchars($issue->comments() ?? '');
     $issueArray['storytitle']      = htmlspecialchars($issue->storyTitle() ?? '');
-    //$issueArray['image'] = "";
 
     $status = $issue->status();
     if ($status == 0) {
@@ -2206,7 +2201,14 @@ function grabIssue($id)
     $coverdate                  = $issue->coverdate();
     $issueArray['coverdate']    = $coverdate !== null ? date("M Y", (int) $coverdate) : '';
 
-    return json_encode($issueArray);
+    return $issueArray;
+}
+
+function grabIssue($id)
+{
+    $issue = new ComicDB_Issue($id);
+    $issue->restore();
+    return json_encode(buildIssueArray($issue));
 }
 
 // Enrich issue with ComicVine metadata
@@ -2219,11 +2221,11 @@ function enrichissue($id) {
     }
     // Only enrich if owned
     if ((int)$issue->status !== 0) {
-        return json_encode($issue->toArray());
+        return json_encode(buildIssueArray($issue));
     }
     // If already has storyTitle and coverDate, return as is
     if ($issue->storyTitle() && $issue->coverDate()) {
-        return json_encode($issue->toArray());
+        return json_encode(buildIssueArray($issue));
     }
     // Try to find ComicVine issue ID
     $series = $issue->series();
@@ -2249,5 +2251,5 @@ function enrichissue($id) {
         $issue->comicvineIssueId($comicvineIssueId);
         $issue->update();
     }
-    return json_encode($issue->toArray());
+    return json_encode(buildIssueArray($issue));
 }
