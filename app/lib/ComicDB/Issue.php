@@ -425,7 +425,7 @@ class ComicDB_Issue extends ComicDB_Object {
 		}
 
 		$number = $this->number();
-		if ($number) {
+		if ($number !== null && $number !== '') {
 			$data['number'] = "'$number'";
 		} else {
 			$data['number'] = "NULL";

@@ -2213,7 +2213,10 @@ function buildIssueArray($issue) {
 function grabIssue($id)
 {
     $issue = new ComicDB_Issue($id);
-    $issue->restore();
+    $rv = $issue->restore();
+    if ($rv === null || $issue->id === null || $issue->id === '') {
+        return json_encode(['error' => 'Issue not found']);
+    }
     return json_encode(buildIssueArray($issue));
 }
 
@@ -2234,8 +2237,8 @@ function isLikelyEnglish($text) {
 function enrichissue($id) {
     $db = ComicDB_DB::db();
     $issue = new ComicDB_Issue($id);
-    $issue->restore();
-    if ($issue->id === null || $issue->id === '') {
+    $rv = $issue->restore();
+    if ($rv === null || $issue->id === null || $issue->id === '') {
         return json_encode(['error' => 'Issue not found']);
     }
     // Only enrich if owned
