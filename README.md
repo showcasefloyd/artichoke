@@ -54,3 +54,12 @@ docker compose exec db mysqldump -u root -proot comicdb > comicdb.sql
 | Webpack watch (host) | `npm run wp` |
 | Production build | `npm run wpprod` |
 | PHP tests | `npm run test:php` |
+
+## Tech Stack
+- React 18
+- TypeScript
+- SCSS
+- Webpack
+- Node.js / Express
+- PHP
+- MySQL
