@@ -1,10 +1,15 @@
+// .gitignore for a PHP project
 node_modules
 vendor
+
 composer.phar
 composer.lock
+
+// Ignore build artifacts and dependencies
 app/css
 app/fonts
 app/js
 app/build
+
 .vscode/
 .phpunit.result.cache
