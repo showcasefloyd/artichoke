@@ -1,153 +1,56 @@
-# Artichoke ComicBook Catalog
+# Artichoke Comic Book Catalog
 
-## Docker Development (Recommended)
+A React + TypeScript comic book collection manager with an Express/PHP backend, served via a Docker dev stack.
+See [hist/HISTORY.md](hist/HISTORY.md) for background, requirements, and legacy notes.
 
-This repository now includes a Docker Compose setup that runs:
+## Docker Stack
 
-* MySQL on port `3307`
-* Adminer on port `8100`
-* Backend (Express + PHP bridge) on port `3000`
-* Frontend (webpack-dev-server) on port `8093`
+| Service | Port |
+|---|---|
+| Frontend (webpack-dev-server) | `8093` |
+| Backend (Express + PHP) | `3000` |
+| MySQL | `3307` |
+| Adminer | `8100` |
 
-### One-time setup
-
-```bash
-docker compose build
-```
-
-### Start all services
+### Start
 
 ```bash
 npm run stack:up
 ```
 
-### App URLs
+- App: `http://localhost:8093`
+- Adminer: `http://localhost:8100` (user/pass/db: `comicdb`)
 
-* Frontend dev server: `http://localhost:8093`
-* Backend app endpoint: `http://localhost:3000`
-* MySQL: `localhost:3307` (`comicdb` / `comicdb`, DB `comicdb`)
-
-### Stop services
+### Stop
 
 ```bash
 npm run stack:down
 ```
 
-These scripts wrap Docker Compose:
-
-* `npm run stack:up` -> `docker compose up -d --build`
-* `npm run stack:down` -> `docker compose down`
-
-### MySQL data persistence (important)
-
-MySQL data is persisted in the named Docker volume `db_data` mounted at `/var/lib/mysql` inside the DB container. This means data survives container restarts and `docker compose down`, as long as the same Compose project name is used.
-
-This repo pins the Compose project name in `docker-compose.yml` (`name: js-artichoke`) so Docker reuses the same volume consistently.
-
-Data is removed only if you explicitly remove volumes (for example `docker compose down -v`).
-
-To export a backup:
-
-```bash
-docker compose exec db mysqldump -u root -proot comicdb > comicdb.sql
-```
-
-### Reset DB volume (fresh bootstrap)
-
-```bash
-docker compose down -v
-docker compose up
-```
-
-### To only serve the application you just need to serve the db and backend
+### Backend only (skip webpack)
 
 ```bash
 docker compose up -d db backend
 ```
 
-### Frontend watch mode
-
-The `frontend` service in Docker Compose runs webpack-dev-server automatically when you do `npm run stack:up`. It watches for file changes and proxies API calls to the backend.
-
-If you want a plain webpack watch (rebuilds bundles without a dev-server) inside Docker:
+### Reset DB (wipes all data)
 
 ```bash
-docker compose run --rm frontend webpack --watch --progress
+docker compose down -v && docker compose up
 ```
 
-To run webpack watch directly on the host (requires local `node_modules`):
+MySQL data persists in the `db_data` named volume across restarts. Use `-v` only when you want a clean slate.
+
+### Backup DB
 
 ```bash
-npm run wp
+docker compose exec db mysqldump -u root -proot comicdb > comicdb.sql
 ```
 
-> **Note:** Do not use `docker compose exec backend npm run wp`. The `backend` container runs the Express server, not webpack. The `frontend` container is the correct target for all webpack work.
+## Dev Commands
 
-###
-
-The schema/bootstrap script is loaded from `app/sql/bootstrap_mysql.sql`.
-
-## Install Instructions
-
-* This project is managed with NPM and Composer.
-* Install JavaScript dependencies with `npm install`.
-* Install PHP dependencies with `composer install`.
-
-* __Note__ This application still relies heavily on PHP and PEAR Packages. The quickest way to satisfy these requirements is to user Composer (the
-PHP Package manager).
-
-* Development uses Webpack + webpack-dev-server (`npm run dev-client`) and the backend Node/PHP bridge (`npm run dev-server`).
-
-
-## Development Workflow
-
-The stack uses **webpack 5** with a React + TypeScript frontend. Source files live in `src/`; generated output goes to `app/build/` (do not hand-edit).
-
-| What you want | Command |
+| Task | Command |
 |---|---|
-| Full stack with hot reload | `npm run stack:up` (then open `http://localhost:8093`) |
-| Backend only (no webpack) | `docker compose up -d db backend` |
-| Webpack watch on host | `npm run wp` |
-| Webpack watch in Docker | `docker compose run --rm frontend webpack --watch --progress` |
+| Webpack watch (host) | `npm run wp` |
 | Production build | `npm run wpprod` |
-| Run PHP tests | `npm run test:php` |
-
-`nodemon` watches `app/index.js` and restarts the Express server on changes automatically.
-
-## CSV Import Workflow (Admin)
-
-Use `/admin` -> **Import** to load CSV data into Artichoke.
-
-1. Upload a CSV file and run **Preview Mapping**
-2. Adjust column mappings if needed and re-run validation
-3. Choose an import mode:
-   - `dry-run`: validate and log skipped rows only
-   - `create-only`: insert only missing records, skip existing issues
-   - `upsert`: insert missing records and update matched issues
-4. Click **Commit Import**
-
-Each run is persisted with a `runId` in `import_runs`. Invalid rows are stored in `import_skipped_rows` and can be reloaded/exported from the Import panel for cleanup.
-
-## Requirements
-1. A user can browse all titles, series and issues in a collection
-2. A user can see meta data about the any issue
-3. A user can see a photo of the cover with the metadata
-4. An admin can add and remove titles, series and issue
-5. An admin needs to be authenticated
-
-### Dependencies
-**Node, NPM, Webpack 5, TypeScript, React, Bootstrap 5, SASS, Express, PHP (ComicDB)**
-
-### Updates: To Do April 2026
-Convert home page into Miller Columns
-
-### Update: July 2017
-`npm run dev-client` and then `npm run wp`
-
-### Update: June 2017
-Webpack-Dev-Server working. To run use NPM scripts.
-
-`npm run dev-client` and `npm run dev-server`
-
-### Update: May 2017
-The project now requires Webpack to compile the JavaScript. All configurations can be found in the `webpack.config.js`in the project's root.
+| PHP tests | `npm run test:php` |

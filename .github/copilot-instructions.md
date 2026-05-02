@@ -2,14 +2,14 @@
 
 ## Code Style
 - Follow existing legacy style in touched files instead of reformatting broadly.
-- JavaScript is AngularJS 1.x style with module/controller patterns and array-based DI. Use existing patterns in [src/modules/js/app.js](src/modules/js/app.js) and [src/modules/js/admin.js](src/modules/js/admin.js).
+- JavaScript is React and TypeScript with functional components and hooks. Follow existing patterns in `src/` and use ESLint/Prettier for formatting.
 - PHP uses `ComicDB_*` class naming with explicit getter/setter and persistence methods. Follow existing patterns in [app/lib/ComicDB/Object.php](app/lib/ComicDB/Object.php).
 - Keep edits focused; do not rewrite old code to modern frameworks unless explicitly requested.
 
 ## Architecture
 - Frontend source lives in `src/` and is bundled by Webpack into `app/build/`.
 - Runtime flow:
-  - AngularJS app/admin clients -> Express server in [app/index.js](app/index.js)
+  - React app/admin clients -> Express server in [app/index.js](app/index.js)
   - Express API routes bridge into PHP via `exec-php` and [app/api.php](app/api.php)
   - PHP data layer is in `app/lib/ComicDB/`.
 - Key boundary: treat `src/` and `app/lib/ComicDB/` as source-of-truth; treat `app/build/` as generated output.
@@ -36,10 +36,6 @@
 - Database is auto-bootstrapped from [app/sql/bootstrap_mysql.sql](app/sql/bootstrap_mysql.sql) on first DB container start.
 - DB connection is configured via environment variables: `ARTICHOKE_DB_HOST`, `ARTICHOKE_DB_USER`, `ARTICHOKE_DB_PASS`, `ARTICHOKE_DB_NAME`; these are set in [docker-compose.yml](docker-compose.yml) for Docker and in [app/lib/config.inc](app/lib/config.inc) for local dev.
 - The `node_modules` directory is mounted as a named Docker volume to avoid host/container permission conflicts — do not delete this volume without rebuilding.
-
-## Known Bugs
-- ~~Deleting an issue deletes the entire series~~ — fixed; covered by `Series::delete()` and FK `ON DELETE CASCADE`.
-- ~~Issue condition does not persist correctly~~ — fixed; `insert()` and `update()` in `Issue.php` both persist `bkcondition`.
 
 ## Conventions
 - Edit source files, not generated assets:
