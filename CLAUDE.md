@@ -38,10 +38,8 @@ Before implementing any new feature or non-trivial change:
 
 When working with the user:
 
-- Be direct and precise
 - Challenge vague requirements
 - Ask follow-up questions when needed
-- Prefer clarity over speed
 
 If a request is underspecified:
 > Ask questions instead of guessing.
@@ -61,32 +59,11 @@ Never default to MCP tools if a CLI equivalent exists.
 
 ---
 
-## 🧩 Subagent Usage Policy (Important)
+## 🧩 Subagent Policy
 
-Subagents should be used sparingly.
+Do NOT use subagents unless absolutely necessary. Before using one, explain why it is needed and ask for explicit user permission.
 
-### Default rule:
-- Do NOT use subagents unless absolutely necessary
-
-### If a subagent might be useful:
-You MUST:
-- Explain why it is needed
-- Ask for explicit user permission first
-
-Example:
-> “I could use a subagent to analyze X in parallel, but it will increase context usage. Do you want me to proceed?”
-
----
-
-## ⚠️ Subagent Constraints
-
-Avoid subagents for:
-- Simple file edits
-- Small refactors
-- Straightforward debugging
-- Tasks that can be handled in a single context
-
-Prefer single-context execution whenever possible.
+Avoid subagents for simple edits, refactors, debugging, or anything that fits in a single context.
 
 ---
 
@@ -106,17 +83,6 @@ When producing changes:
 - Explain what you are going to do (before doing it)
 - Provide concise reasoning
 - Deliver complete, working code
-- Avoid filler or overly verbose explanations
-
----
-
-## 🚫 What to Avoid
-
-- Skipping planning phase
-- Guessing requirements instead of asking
-- Overusing subagents
-- Introducing MCP tools unnecessarily
-- Large refactors without explicit request
 
 ---
 
