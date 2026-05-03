@@ -45,7 +45,7 @@ function normalizeCsvImportKey($value)
 
 function resolveCsvImportDelimiter($delimiter)
 {
-    if (!isset($delimiter) || $delimiter === '') {
+    if (! isset($delimiter) || $delimiter === '') {
         return ',';
     }
     if ($delimiter === '\\t') {
@@ -57,75 +57,75 @@ function resolveCsvImportDelimiter($delimiter)
 function guessCsvImportField($header)
 {
     $normalized = normalizeCsvImportKey($header);
-    $exactMap = [
-        'titlename' => 'titleName',
-        'title_name' => 'titleName',
-        'full_title' => 'storyTitle',
-        'story_title' => 'storyTitle',
-        'seriesname' => 'seriesName',
-        'series_name' => 'seriesName',
-        'issuenumber' => 'issueNumber',
-        'issue_number' => 'issueNumber',
-        'publisher' => 'publisher',
-        'volume' => 'volume',
-        'startyear' => 'startYear',
-        'start_year' => 'startYear',
-        'seriestype' => 'seriesType',
-        'series_type' => 'seriesType',
-        'printrun' => 'printRun',
-        'print_run' => 'printRun',
-        'quantity' => 'quantity',
-        'coverdate' => 'coverDate',
-        'cover_date' => 'coverDate',
-        'purchasedate' => 'purchaseDate',
-        'purchase_date' => 'purchaseDate',
-        'coverprice' => 'coverPrice',
-        'cover_price' => 'coverPrice',
-        'purchaseprice' => 'purchasePrice',
+    $exactMap   = [
+        'titlename'      => 'titleName',
+        'title_name'     => 'titleName',
+        'full_title'     => 'storyTitle',
+        'story_title'    => 'storyTitle',
+        'seriesname'     => 'seriesName',
+        'series_name'    => 'seriesName',
+        'issuenumber'    => 'issueNumber',
+        'issue_number'   => 'issueNumber',
+        'publisher'      => 'publisher',
+        'volume'         => 'volume',
+        'startyear'      => 'startYear',
+        'start_year'     => 'startYear',
+        'seriestype'     => 'seriesType',
+        'series_type'    => 'seriesType',
+        'printrun'       => 'printRun',
+        'print_run'      => 'printRun',
+        'quantity'       => 'quantity',
+        'coverdate'      => 'coverDate',
+        'cover_date'     => 'coverDate',
+        'purchasedate'   => 'purchaseDate',
+        'purchase_date'  => 'purchaseDate',
+        'coverprice'     => 'coverPrice',
+        'cover_price'    => 'coverPrice',
+        'purchaseprice'  => 'purchasePrice',
         'purchase_price' => 'purchasePrice',
-        'status' => 'status',
-        'condition' => 'condition',
-        'bkcondition' => 'condition',
-        'location' => 'location',
-        'guide' => 'guide',
-        'guidevalue' => 'guideValue',
-        'guide_value' => 'guideValue',
-        'issuevalue' => 'issueValue',
-        'issue_value' => 'issueValue',
-        'comments' => 'comments',
+        'status'         => 'status',
+        'condition'      => 'condition',
+        'bkcondition'    => 'condition',
+        'location'       => 'location',
+        'guide'          => 'guide',
+        'guidevalue'     => 'guideValue',
+        'guide_value'    => 'guideValue',
+        'issuevalue'     => 'issueValue',
+        'issue_value'    => 'issueValue',
+        'comments'       => 'comments',
     ];
     if (isset($exactMap[$normalized])) {
         return ['field' => $exactMap[$normalized], 'confidence' => 'exact'];
     }
 
     $aliasMap = [
-        'title' => 'titleName',
-        'comic_title' => 'titleName',
-        'story' => 'storyTitle',
-        'series' => 'seriesName',
-        'run' => 'seriesName',
-        'issue' => 'issueNumber',
-        'number' => 'issueNumber',
-        'issue_no' => 'issueNumber',
+        'title'               => 'titleName',
+        'comic_title'         => 'titleName',
+        'story'               => 'storyTitle',
+        'series'              => 'seriesName',
+        'run'                 => 'seriesName',
+        'issue'               => 'issueNumber',
+        'number'              => 'issueNumber',
+        'issue_no'            => 'issueNumber',
         'variant_description' => 'comments',
         'varient_description' => 'comments',
-        'series_volume' => 'volume',
-        'year' => 'startYear',
-        'series_year' => 'startYear',
-        'type' => 'seriesType',
-        'series_kind' => 'seriesType',
-        'printing' => 'printRun',
-        'qty' => 'quantity',
-        'on_hand' => 'quantity',
-        'cover' => 'coverDate',
-        'cover_month' => 'coverDate',
-        'purchased' => 'purchaseDate',
-        'cost' => 'purchasePrice',
-        'price' => 'coverPrice',
-        'grade' => 'condition',
-        'storage_box' => 'location',
-        'notes' => 'comments',
-        'comment' => 'comments',
+        'series_volume'       => 'volume',
+        'year'                => 'startYear',
+        'series_year'         => 'startYear',
+        'type'                => 'seriesType',
+        'series_kind'         => 'seriesType',
+        'printing'            => 'printRun',
+        'qty'                 => 'quantity',
+        'on_hand'             => 'quantity',
+        'cover'               => 'coverDate',
+        'cover_month'         => 'coverDate',
+        'purchased'           => 'purchaseDate',
+        'cost'                => 'purchasePrice',
+        'price'               => 'coverPrice',
+        'grade'               => 'condition',
+        'storage_box'         => 'location',
+        'notes'               => 'comments',
+        'comment'             => 'comments',
     ];
     if (isset($aliasMap[$normalized])) {
         return ['field' => $aliasMap[$normalized], 'confidence' => 'alias'];
@@ -155,7 +155,7 @@ function csvImportParseInteger($value)
     if ($raw === '') {
         return ['value' => null, 'error' => null];
     }
-    if (!preg_match('/^-?\d+$/', $raw)) {
+    if (! preg_match('/^-?\d+$/', $raw)) {
         return ['value' => null, 'error' => 'Expected integer'];
     }
     return ['value' => (int) $raw, 'error' => null];
@@ -168,7 +168,7 @@ function csvImportParseDecimal($value)
         return ['value' => null, 'error' => null];
     }
     $normalized = str_replace([',', '$'], ['.', ''], $raw);
-    if (!is_numeric($normalized)) {
+    if (! is_numeric($normalized)) {
         return ['value' => null, 'error' => 'Expected decimal number'];
     }
     return ['value' => number_format((float) $normalized, 2, '.', ''), 'error' => null];
@@ -194,17 +194,17 @@ function csvImportParseStatus($value)
         return ['value' => null, 'error' => null];
     }
     $normalized = normalizeCsvImportKey($raw);
-    $map = [
-        '0' => 0,
-        '1' => 1,
-        '2' => 2,
+    $map        = [
+        '0'         => 0,
+        '1'         => 1,
+        '2'         => 2,
         'collected' => 0,
-        'for_sale' => 1,
-        'forsale' => 1,
+        'for_sale'  => 1,
+        'forsale'   => 1,
         'wish_list' => 2,
-        'wishlist' => 2,
+        'wishlist'  => 2,
     ];
-    if (!isset($map[$normalized])) {
+    if (! isset($map[$normalized])) {
         return ['value' => null, 'error' => "Unknown status '$raw'"];
     }
     return ['value' => $map[$normalized], 'error' => null];
@@ -243,11 +243,11 @@ function ensureSeriesTotalSchema($db)
 
 function parseSeriesSlotFromSortValue($value)
 {
-    if (!isset($value)) {
+    if (! isset($value)) {
         return null;
     }
     $normalized = trim((string) $value);
-    if ($normalized === '' || !preg_match('/^-?\d+$/', $normalized)) {
+    if ($normalized === '' || ! preg_match('/^-?\d+$/', $normalized)) {
         return null;
     }
     $slot = (int) $normalized;
@@ -256,11 +256,11 @@ function parseSeriesSlotFromSortValue($value)
 
 function parseSeriesSlotFromIssueNumber($value)
 {
-    if (!isset($value)) {
+    if (! isset($value)) {
         return null;
     }
     $normalized = trim((string) $value);
-    if ($normalized === '' || !preg_match('/^-?\d+$/', $normalized)) {
+    if ($normalized === '' || ! preg_match('/^-?\d+$/', $normalized)) {
         return null;
     }
     $slot = (int) $normalized;
@@ -280,18 +280,18 @@ function csvImportResolveMapping($headers, $mappingSuggestions, $mappingInput, &
 {
     $resolvedMapping = [];
     $mappedFieldKeys = [];
-    $fieldKeys = csvImportCanonicalFieldKeys();
+    $fieldKeys       = csvImportCanonicalFieldKeys();
 
     if (is_array($mappingInput)) {
         foreach ($headers as $header) {
-            if (!array_key_exists($header, $mappingInput)) {
+            if (! array_key_exists($header, $mappingInput)) {
                 continue;
             }
             $field = trim((string) $mappingInput[$header]);
             if ($field === '') {
                 continue;
             }
-            if (!isset($fieldKeys[$field])) {
+            if (! isset($fieldKeys[$field])) {
                 $warnings[] = "Unknown mapped field '$field' for column '$header'.";
                 continue;
             }
@@ -300,15 +300,15 @@ function csvImportResolveMapping($headers, $mappingSuggestions, $mappingInput, &
                 continue;
             }
             $mappedFieldKeys[$field] = true;
-            $resolvedMapping[] = [
-                'field' => $field,
+            $resolvedMapping[]       = [
+                'field'  => $field,
                 'column' => $header,
             ];
         }
     }
 
     foreach ($mappingSuggestions as $suggestion) {
-        if (!isset($suggestion['suggestedField']) || $suggestion['suggestedField'] === null) {
+        if (! isset($suggestion['suggestedField']) || $suggestion['suggestedField'] === null) {
             continue;
         }
         $field = $suggestion['suggestedField'];
@@ -316,8 +316,8 @@ function csvImportResolveMapping($headers, $mappingSuggestions, $mappingInput, &
             continue;
         }
         $mappedFieldKeys[$field] = true;
-        $resolvedMapping[] = [
-            'field' => $field,
+        $resolvedMapping[]       = [
+            'field'  => $field,
             'column' => $suggestion['column'],
         ];
     }
@@ -327,7 +327,7 @@ function csvImportResolveMapping($headers, $mappingSuggestions, $mappingInput, &
 
 function csvImportBuildPreviewPayload($data, $includeRows = false)
 {
-    if (!is_array($data)) {
+    if (! is_array($data)) {
         return ['error' => 'Invalid request payload.'];
     }
 
@@ -337,8 +337,8 @@ function csvImportBuildPreviewPayload($data, $includeRows = false)
     }
 
     $delimiter = resolveCsvImportDelimiter($data['delimiter'] ?? ',');
-    $hasHeader = !isset($data['hasHeader']) || (bool) $data['hasHeader'];
-    $warnings = [];
+    $hasHeader = ! isset($data['hasHeader']) || (bool) $data['hasHeader'];
+    $warnings  = [];
 
     $stream = fopen('php://temp', 'r+');
     fwrite($stream, $csvText);
@@ -360,9 +360,9 @@ function csvImportBuildPreviewPayload($data, $includeRows = false)
         return ['error' => 'No CSV rows detected.'];
     }
 
-    $firstRow = $rows[0];
+    $firstRow    = $rows[0];
     $columnCount = count($firstRow);
-    $headers = [];
+    $headers     = [];
 
     if ($hasHeader) {
         for ($i = 0; $i < $columnCount; $i++) {
@@ -377,11 +377,11 @@ function csvImportBuildPreviewPayload($data, $includeRows = false)
         for ($i = 0; $i < $columnCount; $i++) {
             $headers[] = 'column_' . ($i + 1);
         }
-        $dataRows = $rows;
+        $dataRows   = $rows;
         $warnings[] = 'Header row disabled. Generated placeholder column names.';
     }
 
-    $seenHeaders = [];
+    $seenHeaders      = [];
     $duplicateHeaders = [];
     foreach ($headers as $header) {
         $normalized = normalizeCsvImportKey($header);
@@ -400,18 +400,18 @@ function csvImportBuildPreviewPayload($data, $includeRows = false)
 
     $mappingSuggestions = [];
     foreach ($headers as $header) {
-        $guess = guessCsvImportField($header);
+        $guess                = guessCsvImportField($header);
         $mappingSuggestions[] = [
-            'column' => $header,
+            'column'         => $header,
             'suggestedField' => $guess['field'],
-            'confidence' => $guess['confidence'],
+            'confidence'     => $guess['confidence'],
         ];
     }
 
     $sampleRows = [];
     $maxSamples = min(5, count($dataRows));
     for ($rowIndex = 0; $rowIndex < $maxSamples; $rowIndex++) {
-        $row = $dataRows[$rowIndex];
+        $row    = $dataRows[$rowIndex];
         $sample = [];
         foreach ($headers as $index => $header) {
             $sample[$header] = trim((string) ($row[$index] ?? ''));
@@ -436,40 +436,40 @@ function csvImportBuildPreviewPayload($data, $includeRows = false)
 
     $requiredFieldKeys = [];
     foreach (csvImportCanonicalFields() as $field) {
-        if (!empty($field['required'])) {
+        if (! empty($field['required'])) {
             $requiredFieldKeys[] = $field['key'];
-            if (!isset($fieldToColumnIndex[$field['key']])) {
+            if (! isset($fieldToColumnIndex[$field['key']])) {
                 $warnings[] = "Required field '{$field['label']}' has no mapped CSV column.";
             }
         }
     }
 
-    $validRows = 0;
-    $errorRows = 0;
-    $warningRows = 0;
-    $rowFindings = [];
-    $errorFindings = [];
-    $warningFindings = [];
-    $allRows = [];
-    $maxFindings = 100;
-    $maxErrorFindings = 1000;
+    $validRows          = 0;
+    $errorRows          = 0;
+    $warningRows        = 0;
+    $rowFindings        = [];
+    $errorFindings      = [];
+    $warningFindings    = [];
+    $allRows            = [];
+    $maxFindings        = 100;
+    $maxErrorFindings   = 1000;
     $maxWarningFindings = 100;
 
     foreach ($dataRows as $rowIndex => $row) {
-        $rowErrors = [];
+        $rowErrors   = [];
         $rowWarnings = [];
-        $normalized = [];
-        $rawRow = [];
+        $normalized  = [];
+        $rawRow      = [];
         foreach ($headers as $index => $header) {
             $rawRow[$header] = trim((string) ($row[$index] ?? ''));
         }
 
         foreach ($requiredFieldKeys as $requiredKey) {
-            if (!isset($fieldToColumnIndex[$requiredKey])) {
+            if (! isset($fieldToColumnIndex[$requiredKey])) {
                 continue;
             }
-            $index = $fieldToColumnIndex[$requiredKey];
-            $raw = trim((string) ($row[$index] ?? ''));
+            $index                    = $fieldToColumnIndex[$requiredKey];
+            $raw                      = trim((string) ($row[$index] ?? ''));
             $normalized[$requiredKey] = $raw;
             if ($raw === '') {
                 $rowErrors[] = "Required field '$requiredKey' is blank.";
@@ -480,19 +480,19 @@ function csvImportBuildPreviewPayload($data, $includeRows = false)
             $normalized['titleName'] = trim((string) ($row[$fieldToColumnIndex['titleName']] ?? ''));
         }
 
-        if (isset($fieldToColumnIndex['seriesName']) && (!isset($normalized['titleName']) || $normalized['titleName'] === '')) {
+        if (isset($fieldToColumnIndex['seriesName']) && (! isset($normalized['titleName']) || $normalized['titleName'] === '')) {
             $derivedTitleName = csvImportDeriveTitleNameFromSeriesName($row[$fieldToColumnIndex['seriesName']] ?? '');
             if ($derivedTitleName !== null && $derivedTitleName !== '') {
                 $normalized['titleName'] = $derivedTitleName;
-                $rowWarnings[] = "titleName derived from seriesName ('$derivedTitleName').";
+                $rowWarnings[]           = "titleName derived from seriesName ('$derivedTitleName').";
             }
         }
 
         foreach (['volume', 'startYear', 'quantity'] as $integerField) {
-            if (!isset($fieldToColumnIndex[$integerField])) {
+            if (! isset($fieldToColumnIndex[$integerField])) {
                 continue;
             }
-            $result = csvImportParseInteger($row[$fieldToColumnIndex[$integerField]] ?? '');
+            $result                    = csvImportParseInteger($row[$fieldToColumnIndex[$integerField]] ?? '');
             $normalized[$integerField] = $result['value'];
             if ($result['error']) {
                 $rowErrors[] = "$integerField: {$result['error']}";
@@ -500,10 +500,10 @@ function csvImportBuildPreviewPayload($data, $includeRows = false)
         }
 
         foreach (['coverPrice', 'purchasePrice', 'guideValue', 'issueValue'] as $decimalField) {
-            if (!isset($fieldToColumnIndex[$decimalField])) {
+            if (! isset($fieldToColumnIndex[$decimalField])) {
                 continue;
             }
-            $result = csvImportParseDecimal($row[$fieldToColumnIndex[$decimalField]] ?? '');
+            $result                    = csvImportParseDecimal($row[$fieldToColumnIndex[$decimalField]] ?? '');
             $normalized[$decimalField] = $result['value'];
             if ($result['error']) {
                 $rowErrors[] = "$decimalField: {$result['error']}";
@@ -511,10 +511,10 @@ function csvImportBuildPreviewPayload($data, $includeRows = false)
         }
 
         foreach (['coverDate', 'purchaseDate'] as $dateField) {
-            if (!isset($fieldToColumnIndex[$dateField])) {
+            if (! isset($fieldToColumnIndex[$dateField])) {
                 continue;
             }
-            $result = csvImportParseDate($row[$fieldToColumnIndex[$dateField]] ?? '');
+            $result                 = csvImportParseDate($row[$fieldToColumnIndex[$dateField]] ?? '');
             $normalized[$dateField] = $result['value'];
             if ($result['error']) {
                 $rowErrors[] = "$dateField: {$result['error']}";
@@ -522,7 +522,7 @@ function csvImportBuildPreviewPayload($data, $includeRows = false)
         }
 
         if (isset($fieldToColumnIndex['status'])) {
-            $statusResult = csvImportParseStatus($row[$fieldToColumnIndex['status']] ?? '');
+            $statusResult         = csvImportParseStatus($row[$fieldToColumnIndex['status']] ?? '');
             $normalized['status'] = $statusResult['value'];
             if ($statusResult['error']) {
                 $rowErrors[] = "status: {$statusResult['error']}";
@@ -530,19 +530,19 @@ function csvImportBuildPreviewPayload($data, $includeRows = false)
         }
 
         foreach (['storyTitle', 'publisher', 'seriesName', 'seriesType', 'issueNumber', 'printRun', 'condition', 'location', 'guide', 'comments'] as $stringField) {
-            if (!isset($fieldToColumnIndex[$stringField])) {
+            if (! isset($fieldToColumnIndex[$stringField])) {
                 continue;
             }
             $normalized[$stringField] = trim((string) ($row[$fieldToColumnIndex[$stringField]] ?? ''));
         }
 
         $rowNumber = $hasHeader ? ($rowIndex + 2) : ($rowIndex + 1);
-        $rowState = [
-            'rowNumber' => $rowNumber,
-            'errors' => $rowErrors,
-            'warnings' => $rowWarnings,
+        $rowState  = [
+            'rowNumber'  => $rowNumber,
+            'errors'     => $rowErrors,
+            'warnings'   => $rowWarnings,
             'normalized' => $normalized,
-            'raw' => $rawRow,
+            'raw'        => $rawRow,
         ];
 
         if (count($rowErrors) > 0) {
@@ -578,27 +578,27 @@ function csvImportBuildPreviewPayload($data, $includeRows = false)
     }
 
     $payload = [
-        'headers' => $headers,
-        'rowCount' => count($dataRows),
-        'sampleRows' => $sampleRows,
+        'headers'            => $headers,
+        'rowCount'           => count($dataRows),
+        'sampleRows'         => $sampleRows,
         'mappingSuggestions' => $mappingSuggestions,
-        'resolvedMapping' => $resolvedMapping,
-        'canonicalFields' => csvImportCanonicalFields(),
-        'warnings' => $warnings,
-        'validation' => [
-            'validRows' => $validRows,
-            'errorRows' => $errorRows,
-            'warningRows' => $warningRows,
-            'sampledFindingLimit' => $maxFindings,
-            'sampledFindings' => count($rowFindings),
-            'sampledErrorFindings' => count($errorFindings),
-            'sampledWarningFindings' => count($warningFindings),
-            'sampledErrorFindingLimit' => $maxErrorFindings,
+        'resolvedMapping'    => $resolvedMapping,
+        'canonicalFields'    => csvImportCanonicalFields(),
+        'warnings'           => $warnings,
+        'validation'         => [
+            'validRows'                  => $validRows,
+            'errorRows'                  => $errorRows,
+            'warningRows'                => $warningRows,
+            'sampledFindingLimit'        => $maxFindings,
+            'sampledFindings'            => count($rowFindings),
+            'sampledErrorFindings'       => count($errorFindings),
+            'sampledWarningFindings'     => count($warningFindings),
+            'sampledErrorFindingLimit'   => $maxErrorFindings,
             'sampledWarningFindingLimit' => $maxWarningFindings,
         ],
-        'rowFindings' => $rowFindings,
-        'errorFindings' => $errorFindings,
-        'warningFindings' => $warningFindings,
+        'rowFindings'        => $rowFindings,
+        'errorFindings'      => $errorFindings,
+        'warningFindings'    => $warningFindings,
     ];
     if ($includeRows) {
         $payload['allRows'] = $allRows;
@@ -614,7 +614,7 @@ function previewCsvImport($dataJson)
 
 function csvImportIssueStoryTitleColumnExists($db)
 {
-    $query = "SHOW COLUMNS FROM issues LIKE 'story_title'";
+    $query  = "SHOW COLUMNS FROM issues LIKE 'story_title'";
     $result = $db->query($query);
     if (! $result) {
         die('There was an error running the query [' . $db->error . ']');
@@ -625,8 +625,8 @@ function csvImportIssueStoryTitleColumnExists($db)
 function csvImportFindTitleId($db, $titleName)
 {
     $titleNameEscaped = $db->real_escape_string($titleName);
-    $query = "SELECT id FROM titles WHERE name = '$titleNameEscaped' LIMIT 1";
-    $result = $db->query($query);
+    $query            = "SELECT id FROM titles WHERE name = '$titleNameEscaped' LIMIT 1";
+    $result           = $db->query($query);
     if (! $result) {
         die('There was an error running the query [' . $db->error . ']');
     }
@@ -637,7 +637,7 @@ function csvImportFindTitleId($db, $titleName)
 function csvImportCreateTitle($db, $titleName)
 {
     $titleNameEscaped = $db->real_escape_string($titleName);
-    $query = "INSERT INTO titles (name) VALUES ('$titleNameEscaped')";
+    $query            = "INSERT INTO titles (name) VALUES ('$titleNameEscaped')";
     if (! $db->query($query)) {
         if ((int) $db->errno === 1062) {
             $existing = csvImportFindTitleId($db, $titleName);
@@ -652,11 +652,11 @@ function csvImportCreateTitle($db, $titleName)
 
 function csvImportFindSeriesId($db, $titleId, $seriesName, $volume, $startYear)
 {
-    $seriesNameEscaped = $db->real_escape_string($seriesName);
-    $volumeCondition = $volume === null ? 'volume IS NULL' : ('volume=' . (int) $volume);
+    $seriesNameEscaped  = $db->real_escape_string($seriesName);
+    $volumeCondition    = $volume === null ? 'volume IS NULL' : ('volume=' . (int) $volume);
     $startYearCondition = $startYear === null ? 'start_year IS NULL' : ('start_year=' . (int) $startYear);
-    $query = "SELECT id FROM series WHERE title=$titleId AND name='$seriesNameEscaped' AND $volumeCondition AND $startYearCondition LIMIT 1";
-    $result = $db->query($query);
+    $query              = "SELECT id FROM series WHERE title=$titleId AND name='$seriesNameEscaped' AND $volumeCondition AND $startYearCondition LIMIT 1";
+    $result             = $db->query($query);
     if (! $result) {
         die('There was an error running the query [' . $db->error . ']');
     }
@@ -666,22 +666,22 @@ function csvImportFindSeriesId($db, $titleId, $seriesName, $volume, $startYear)
 
 function csvImportCreateSeries($db, $titleId, $normalized)
 {
-    $seriesName = $db->real_escape_string($normalized['seriesName']);
-    $publisher = isset($normalized['publisher']) && trim($normalized['publisher']) !== '' ? trim($normalized['publisher']) : 'Unknown';
+    $seriesName       = $db->real_escape_string($normalized['seriesName']);
+    $publisher        = isset($normalized['publisher']) && trim($normalized['publisher']) !== '' ? trim($normalized['publisher']) : 'Unknown';
     $publisherEscaped = $db->real_escape_string($publisher);
-    $columns = ['title', 'name', 'publisher'];
-    $values = [(int) $titleId, "'$seriesName'", "'$publisherEscaped'"];
+    $columns          = ['title', 'name', 'publisher'];
+    $values           = [(int) $titleId, "'$seriesName'", "'$publisherEscaped'"];
     if (isset($normalized['volume']) && $normalized['volume'] !== null) {
         $columns[] = 'volume';
-        $values[] = (int) $normalized['volume'];
+        $values[]  = (int) $normalized['volume'];
     }
     if (isset($normalized['startYear']) && $normalized['startYear'] !== null) {
         $columns[] = 'start_year';
-        $values[] = (int) $normalized['startYear'];
+        $values[]  = (int) $normalized['startYear'];
     }
     if (isset($normalized['seriesType']) && trim((string) $normalized['seriesType']) !== '') {
         $columns[] = 'type';
-        $values[] = "'" . $db->real_escape_string(trim((string) $normalized['seriesType'])) . "'";
+        $values[]  = "'" . $db->real_escape_string(trim((string) $normalized['seriesType'])) . "'";
     }
     $query = "INSERT INTO series (" . implode(', ', $columns) . ") VALUES (" . implode(', ', $values) . ")";
     if (! $db->query($query)) {
@@ -695,7 +695,7 @@ function csvImportUpdateSeriesMetadata($db, $seriesId, $normalized, $mappedField
     $terms = [];
     if (isset($mappedFieldSet['publisher'])) {
         $publisher = isset($normalized['publisher']) && trim((string) $normalized['publisher']) !== '' ? trim((string) $normalized['publisher']) : 'Unknown';
-        $terms[] = "publisher='" . $db->real_escape_string($publisher) . "'";
+        $terms[]   = "publisher='" . $db->real_escape_string($publisher) . "'";
     }
     if (isset($mappedFieldSet['seriesType'])) {
         $seriesType = isset($normalized['seriesType']) ? trim((string) $normalized['seriesType']) : '';
@@ -706,14 +706,14 @@ function csvImportUpdateSeriesMetadata($db, $seriesId, $normalized, $mappedField
         }
     }
     if (isset($mappedFieldSet['volume'])) {
-        if (!array_key_exists('volume', $normalized) || $normalized['volume'] === null) {
+        if (! array_key_exists('volume', $normalized) || $normalized['volume'] === null) {
             $terms[] = "volume=NULL";
         } else {
             $terms[] = "volume=" . (int) $normalized['volume'];
         }
     }
     if (isset($mappedFieldSet['startYear'])) {
-        if (!array_key_exists('startYear', $normalized) || $normalized['startYear'] === null) {
+        if (! array_key_exists('startYear', $normalized) || $normalized['startYear'] === null) {
             $terms[] = "start_year=NULL";
         } else {
             $terms[] = "start_year=" . (int) $normalized['startYear'];
@@ -732,7 +732,7 @@ function csvImportUpdateSeriesMetadata($db, $seriesId, $normalized, $mappedField
 function csvImportFindIssueId($db, $seriesId, $issueNumber, $printRunMapped, $printRun)
 {
     $issueNumberEscaped = $db->real_escape_string($issueNumber);
-    $query = "SELECT id FROM issues WHERE series=$seriesId AND number='$issueNumberEscaped'";
+    $query              = "SELECT id FROM issues WHERE series=$seriesId AND number='$issueNumberEscaped'";
     if ($printRunMapped) {
         if ($printRun === null || trim((string) $printRun) === '') {
             $query .= " AND (printrun IS NULL OR printrun='')";
@@ -740,7 +740,7 @@ function csvImportFindIssueId($db, $seriesId, $issueNumber, $printRunMapped, $pr
             $query .= " AND printrun='" . $db->real_escape_string(trim((string) $printRun)) . "'";
         }
     }
-    $query .= " LIMIT 1";
+    $query  .= " LIMIT 1";
     $result = $db->query($query);
     if (! $result) {
         die('There was an error running the query [' . $db->error . ']');
@@ -752,20 +752,20 @@ function csvImportFindIssueId($db, $seriesId, $issueNumber, $printRunMapped, $pr
 function csvImportIssueFieldMap()
 {
     return [
-        'issueNumber' => 'number',
-        'printRun' => 'printrun',
-        'quantity' => 'quantity',
-        'coverDate' => 'cover_date',
-        'purchaseDate' => 'purchase_date',
-        'status' => 'status',
-        'condition' => 'bkcondition',
-        'coverPrice' => 'cover_price',
+        'issueNumber'   => 'number',
+        'printRun'      => 'printrun',
+        'quantity'      => 'quantity',
+        'coverDate'     => 'cover_date',
+        'purchaseDate'  => 'purchase_date',
+        'status'        => 'status',
+        'condition'     => 'bkcondition',
+        'coverPrice'    => 'cover_price',
         'purchasePrice' => 'purchase_price',
-        'guideValue' => 'guide_value',
-        'guide' => 'guide',
-        'issueValue' => 'issue_value',
-        'location' => 'location',
-        'comments' => 'comments',
+        'guideValue'    => 'guide_value',
+        'guide'         => 'guide',
+        'issueValue'    => 'issue_value',
+        'location'      => 'location',
+        'comments'      => 'comments',
     ];
 }
 
@@ -856,7 +856,7 @@ function csvImportGenerateRunId()
 
 function csvImportLogRunSummary($db, $runId, $summary)
 {
-    $mode = $db->real_escape_string($summary['mode']);
+    $mode  = $db->real_escape_string($summary['mode']);
     $query = <<<EOT
       INSERT INTO import_runs (
           run_id, mode, total_rows, valid_rows, error_rows, warning_rows, skipped_invalid_rows,
@@ -886,15 +886,15 @@ function csvImportLogSkippedRows($db, $runId, $rows)
 {
     $logged = 0;
     foreach ($rows as $rowState) {
-        if (!isset($rowState['errors']) || count($rowState['errors']) === 0) {
+        if (! isset($rowState['errors']) || count($rowState['errors']) === 0) {
             continue;
         }
-        $errors = $db->real_escape_string(implode(' | ', $rowState['errors']));
-        $warnings = isset($rowState['warnings']) && count($rowState['warnings']) > 0 ? "'" . $db->real_escape_string(implode(' | ', $rowState['warnings'])) . "'" : "NULL";
-        $rawJson = isset($rowState['raw']) ? "'" . $db->real_escape_string(json_encode($rowState['raw'])) . "'" : "NULL";
+        $errors         = $db->real_escape_string(implode(' | ', $rowState['errors']));
+        $warnings       = isset($rowState['warnings']) && count($rowState['warnings']) > 0 ? "'" . $db->real_escape_string(implode(' | ', $rowState['warnings'])) . "'" : "NULL";
+        $rawJson        = isset($rowState['raw']) ? "'" . $db->real_escape_string(json_encode($rowState['raw'])) . "'" : "NULL";
         $normalizedJson = isset($rowState['normalized']) ? "'" . $db->real_escape_string(json_encode($rowState['normalized'])) . "'" : "NULL";
-        $rowNumber = isset($rowState['rowNumber']) ? (int) $rowState['rowNumber'] : 0;
-        $query = <<<EOT
+        $rowNumber      = isset($rowState['rowNumber']) ? (int) $rowState['rowNumber'] : 0;
+        $query          = <<<EOT
           INSERT INTO import_skipped_rows (run_id, source_row_number, error_text, warning_text, raw_row, normalized_row)
           VALUES ('{$db->real_escape_string($runId)}', $rowNumber, '$errors', $warnings, $rawJson, $normalizedJson)
 EOT;
@@ -909,8 +909,8 @@ EOT;
 function csvImportFetchSkippedRows($db, $runId, $limit)
 {
     $runIdEscaped = $db->real_escape_string($runId);
-    $limit = max(1, min(2000, (int) $limit));
-    $query = <<<EOT
+    $limit        = max(1, min(2000, (int) $limit));
+    $query        = <<<EOT
       SELECT id, run_id, source_row_number, error_text, warning_text, raw_row, normalized_row, created_at
         FROM import_skipped_rows
        WHERE run_id = '$runIdEscaped'
@@ -924,14 +924,14 @@ EOT;
     $rows = [];
     while ($row = $result->fetch_assoc()) {
         $rows[] = [
-            'id' => (int) $row['id'],
-            'runId' => $row['run_id'],
-            'rowNumber' => (int) $row['source_row_number'],
-            'errors' => $row['error_text'],
-            'warnings' => $row['warning_text'],
-            'raw' => $row['raw_row'] ? json_decode($row['raw_row'], true) : null,
+            'id'         => (int) $row['id'],
+            'runId'      => $row['run_id'],
+            'rowNumber'  => (int) $row['source_row_number'],
+            'errors'     => $row['error_text'],
+            'warnings'   => $row['warning_text'],
+            'raw'        => $row['raw_row'] ? json_decode($row['raw_row'], true) : null,
             'normalized' => $row['normalized_row'] ? json_decode($row['normalized_row'], true) : null,
-            'createdAt' => $row['created_at'],
+            'createdAt'  => $row['created_at'],
         ];
     }
     return $rows;
@@ -955,20 +955,20 @@ EOT;
     $runs = [];
     while ($row = $result->fetch_assoc()) {
         $runs[] = [
-            'runId' => $row['run_id'],
-            'mode' => $row['mode'],
-            'totalRows' => (int) $row['total_rows'],
-            'validRows' => (int) $row['valid_rows'],
-            'errorRows' => (int) $row['error_rows'],
-            'warningRows' => (int) $row['warning_rows'],
-            'skippedInvalidRows' => (int) $row['skipped_invalid_rows'],
-            'insertedTitles' => (int) $row['inserted_titles'],
-            'insertedSeries' => (int) $row['inserted_series'],
-            'updatedSeries' => (int) $row['updated_series'],
-            'insertedIssues' => (int) $row['inserted_issues'],
-            'updatedIssues' => (int) $row['updated_issues'],
+            'runId'                 => $row['run_id'],
+            'mode'                  => $row['mode'],
+            'totalRows'             => (int) $row['total_rows'],
+            'validRows'             => (int) $row['valid_rows'],
+            'errorRows'             => (int) $row['error_rows'],
+            'warningRows'           => (int) $row['warning_rows'],
+            'skippedInvalidRows'    => (int) $row['skipped_invalid_rows'],
+            'insertedTitles'        => (int) $row['inserted_titles'],
+            'insertedSeries'        => (int) $row['inserted_series'],
+            'updatedSeries'         => (int) $row['updated_series'],
+            'insertedIssues'        => (int) $row['inserted_issues'],
+            'updatedIssues'         => (int) $row['updated_issues'],
             'skippedExistingIssues' => (int) $row['skipped_existing_issues'],
-            'createdAt' => $row['created_at'],
+            'createdAt'             => $row['created_at'],
         ];
     }
     return $runs;
@@ -976,7 +976,7 @@ EOT;
 
 function csvImportCommit($dataJson)
 {
-    $data = json_decode($dataJson, true);
+    $data     = json_decode($dataJson, true);
     $analysis = csvImportBuildPreviewPayload($data, true);
     if (isset($analysis['error'])) {
         return json_encode($analysis);
@@ -988,18 +988,18 @@ function csvImportCommit($dataJson)
     }
 
     $summary = [
-        'mode' => $mode,
-        'rowCount' => (int) $analysis['rowCount'],
-        'validRows' => (int) $analysis['validation']['validRows'],
-        'errorRows' => (int) $analysis['validation']['errorRows'],
-        'warningRows' => (int) $analysis['validation']['warningRows'],
-        'insertedTitles' => 0,
-        'insertedSeries' => 0,
-        'insertedIssues' => 0,
-        'updatedSeries' => 0,
-        'updatedIssues' => 0,
+        'mode'                  => $mode,
+        'rowCount'              => (int) $analysis['rowCount'],
+        'validRows'             => (int) $analysis['validation']['validRows'],
+        'errorRows'             => (int) $analysis['validation']['errorRows'],
+        'warningRows'           => (int) $analysis['validation']['warningRows'],
+        'insertedTitles'        => 0,
+        'insertedSeries'        => 0,
+        'insertedIssues'        => 0,
+        'updatedSeries'         => 0,
+        'updatedIssues'         => 0,
         'skippedExistingIssues' => 0,
-        'skippedInvalidRows' => 0,
+        'skippedInvalidRows'    => 0,
     ];
 
     $db = ComicDB_DB::db();
@@ -1012,17 +1012,17 @@ function csvImportCommit($dataJson)
         csvImportLogRunSummary($db, $runId, $summary);
         $loggedSkippedRows = csvImportLogSkippedRows($db, $runId, $analysis['allRows']);
         return json_encode([
-            'runId' => $runId,
-            'summary' => $summary,
-            'warnings' => $analysis['warnings'],
-            'rowFindings' => $analysis['rowFindings'],
+            'runId'             => $runId,
+            'summary'           => $summary,
+            'warnings'          => $analysis['warnings'],
+            'rowFindings'       => $analysis['rowFindings'],
             'loggedSkippedRows' => $loggedSkippedRows,
-            'message' => 'Dry run only: no database writes performed.',
+            'message'           => 'Dry run only: no database writes performed.',
         ]);
     }
 
     $storyTitleSupported = csvImportIssueStoryTitleColumnExists($db);
-    $mappedFieldSet = [];
+    $mappedFieldSet      = [];
     foreach ($analysis['resolvedMapping'] as $mapping) {
         $mappedFieldSet[$mapping['field']] = true;
     }
@@ -1030,8 +1030,8 @@ function csvImportCommit($dataJson)
         $analysis['warnings'][] = "Mapped field 'storyTitle' is ignored because issues.story_title does not exist in this database.";
     }
 
-    $titleCache = [];
-    $seriesCache = [];
+    $titleCache    = [];
+    $seriesCache   = [];
     $issueFieldMap = csvImportIssueFieldMap();
 
     foreach ($analysis['allRows'] as $rowState) {
@@ -1040,9 +1040,9 @@ function csvImportCommit($dataJson)
             continue;
         }
 
-        $normalized = $rowState['normalized'];
-        $titleName = isset($normalized['titleName']) ? trim((string) $normalized['titleName']) : '';
-        $seriesName = isset($normalized['seriesName']) ? trim((string) $normalized['seriesName']) : '';
+        $normalized  = $rowState['normalized'];
+        $titleName   = isset($normalized['titleName']) ? trim((string) $normalized['titleName']) : '';
+        $seriesName  = isset($normalized['seriesName']) ? trim((string) $normalized['seriesName']) : '';
         $issueNumber = isset($normalized['issueNumber']) ? trim((string) $normalized['issueNumber']) : '';
         if ($titleName === '' || $seriesName === '' || $issueNumber === '') {
             $summary['skippedInvalidRows']++;
@@ -1061,8 +1061,8 @@ function csvImportCommit($dataJson)
             $titleCache[$titleCacheKey] = $titleId;
         }
 
-        $volume = isset($normalized['volume']) ? $normalized['volume'] : null;
-        $startYear = isset($normalized['startYear']) ? $normalized['startYear'] : null;
+        $volume         = isset($normalized['volume']) ? $normalized['volume'] : null;
+        $startYear      = isset($normalized['startYear']) ? $normalized['startYear'] : null;
         $seriesCacheKey = $titleId . '|' . strtolower($seriesName) . '|' . ($volume === null ? 'null' : (string) $volume) . '|' . ($startYear === null ? 'null' : (string) $startYear);
         if (isset($seriesCache[$seriesCacheKey])) {
             $seriesId = $seriesCache[$seriesCacheKey];
@@ -1080,8 +1080,8 @@ function csvImportCommit($dataJson)
         }
 
         $printRunMapped = isset($mappedFieldSet['printRun']);
-        $printRunValue = $printRunMapped && isset($normalized['printRun']) ? $normalized['printRun'] : null;
-        $issueId = csvImportFindIssueId($db, $seriesId, $issueNumber, $printRunMapped, $printRunValue);
+        $printRunValue  = $printRunMapped && isset($normalized['printRun']) ? $normalized['printRun'] : null;
+        $issueId        = csvImportFindIssueId($db, $seriesId, $issueNumber, $printRunMapped, $printRunValue);
 
         if ($issueId !== null && $mode === 'create-only') {
             $summary['skippedExistingIssues']++;
@@ -1090,20 +1090,20 @@ function csvImportCommit($dataJson)
 
         if ($issueId === null) {
             $columns = ['series', 'number'];
-            $values = [(int) $seriesId, "'" . $db->real_escape_string($issueNumber) . "'"];
+            $values  = [(int) $seriesId, "'" . $db->real_escape_string($issueNumber) . "'"];
             foreach ($issueFieldMap as $field => $column) {
-                if ($field === 'issueNumber' || !isset($mappedFieldSet[$field])) {
+                if ($field === 'issueNumber' || ! isset($mappedFieldSet[$field])) {
                     continue;
                 }
-                if (!array_key_exists($field, $normalized)) {
+                if (! array_key_exists($field, $normalized)) {
                     continue;
                 }
                 $columns[] = $column;
-                $values[] = csvImportSqlValue($db, $field, $normalized[$field]);
+                $values[]  = csvImportSqlValue($db, $field, $normalized[$field]);
             }
             if ($storyTitleSupported && isset($mappedFieldSet['storyTitle']) && array_key_exists('storyTitle', $normalized)) {
                 $columns[] = 'story_title';
-                $values[] = csvImportSqlValue($db, 'storyTitle', $normalized['storyTitle']);
+                $values[]  = csvImportSqlValue($db, 'storyTitle', $normalized['storyTitle']);
             }
             $query = "INSERT INTO issues (" . implode(', ', $columns) . ") VALUES (" . implode(', ', $values) . ")";
             if (! $db->query($query)) {
@@ -1115,17 +1115,17 @@ function csvImportCommit($dataJson)
 
         $updateTerms = [];
         foreach ($issueFieldMap as $field => $column) {
-            if ($field === 'issueNumber' || !isset($mappedFieldSet[$field])) {
+            if ($field === 'issueNumber' || ! isset($mappedFieldSet[$field])) {
                 continue;
             }
-            if (!array_key_exists($field, $normalized)) {
+            if (! array_key_exists($field, $normalized)) {
                 $updateTerms[] = "$column=NULL";
             } else {
                 $updateTerms[] = "$column=" . csvImportSqlValue($db, $field, $normalized[$field]);
             }
         }
         if ($storyTitleSupported && isset($mappedFieldSet['storyTitle'])) {
-            if (!array_key_exists('storyTitle', $normalized)) {
+            if (! array_key_exists('storyTitle', $normalized)) {
                 $updateTerms[] = "story_title=NULL";
             } else {
                 $updateTerms[] = "story_title=" . csvImportSqlValue($db, 'storyTitle', $normalized['storyTitle']);
@@ -1146,10 +1146,10 @@ function csvImportCommit($dataJson)
     $loggedSkippedRows = csvImportLogSkippedRows($db, $runId, $analysis['allRows']);
 
     return json_encode([
-        'runId' => $runId,
-        'summary' => $summary,
-        'warnings' => $analysis['warnings'],
-        'rowFindings' => $analysis['rowFindings'],
+        'runId'             => $runId,
+        'summary'           => $summary,
+        'warnings'          => $analysis['warnings'],
+        'rowFindings'       => $analysis['rowFindings'],
         'loggedSkippedRows' => $loggedSkippedRows,
     ]);
 }
@@ -1165,7 +1165,7 @@ function grabCsvImportRuns($limit = '50')
     csvImportEnsureLogTables($db);
     $runs = csvImportFetchRuns($db, $limit);
     return json_encode([
-        'runs' => $runs,
+        'runs'  => $runs,
         'count' => count($runs),
     ]);
 }
@@ -1177,7 +1177,7 @@ function grabCsvImportSkippedRows($runId, $limit = '500')
     $rows = csvImportFetchSkippedRows($db, $runId, $limit);
     return json_encode([
         'runId' => $runId,
-        'rows' => $rows,
+        'rows'  => $rows,
         'count' => count($rows),
     ]);
 }
@@ -1186,7 +1186,7 @@ function grabCsvImportSkippedRowsCsv($runId, $limit = '2000')
 {
     $db = ComicDB_DB::db();
     csvImportEnsureLogTables($db);
-    $rows = csvImportFetchSkippedRows($db, $runId, $limit);
+    $rows   = csvImportFetchSkippedRows($db, $runId, $limit);
     $stream = fopen('php://temp', 'r+');
     fputcsv($stream, ['run_id', 'row_number', 'errors', 'warnings', 'raw_json', 'normalized_json', 'created_at']);
     foreach ($rows as $row) {
@@ -1252,10 +1252,10 @@ function grabSeries($id)
 
 function grabSeriesList($dataJson)
 {
-    $filters = json_decode($dataJson, true);
-    $titleId = isset($filters['titleId']) ? (int) $filters['titleId'] : 0;
+    $filters     = json_decode($dataJson, true);
+    $titleId     = isset($filters['titleId']) ? (int) $filters['titleId'] : 0;
     $publisherId = isset($filters['publisherId']) ? (int) $filters['publisherId'] : 0;
-    $db = ComicDB_DB::db();
+    $db          = ComicDB_DB::db();
     ensureSeriesTotalSchema($db);
     $whereClauses = [];
     if ($titleId > 0) {
@@ -1271,7 +1271,7 @@ function grabSeriesList($dataJson)
         $where = 'WHERE ' . implode(' AND ', $whereClauses);
     }
     $minimumIssueCount = isset($filters['minimumIssueCount']) ? (int) $filters['minimumIssueCount'] : 0;
-    $having = "HAVING COUNT(i.id) >= $minimumIssueCount";
+    $having            = "HAVING COUNT(i.id) >= $minimumIssueCount";
 
     $query = <<<EOT
       SELECT s.id,
@@ -1279,7 +1279,7 @@ function grabSeriesList($dataJson)
              s.name,
              s.volume,
              s.start_year,
-             s.publisher,
+             p.name AS publisher,
              t.name AS title_name,
              COALESCE(s.total_issues, 0) AS total_issues,
              COUNT(i.id) AS issue_count,
@@ -1291,10 +1291,10 @@ function grabSeriesList($dataJson)
              END AS completion_percent
         FROM series s
    LEFT JOIN titles t ON t.id = s.title
-    LEFT JOIN publisher p ON p.name = s.publisher
+    LEFT JOIN publisher p ON p.id = s.publisher_id
     LEFT JOIN issues i ON i.series = s.id
         $where
-     GROUP BY s.id, s.title, s.name, s.volume, s.start_year, s.publisher, t.name, s.total_issues
+     GROUP BY s.id, s.title, s.name, s.volume, s.start_year, s.publisher_id, p.name, t.name, s.total_issues
       $having
      ORDER BY t.name ASC, s.name ASC
 EOT;
@@ -1306,16 +1306,16 @@ EOT;
     $list = [];
     while ($row = $result->fetch_assoc()) {
         $list[] = [
-            'id' => (int) $row['id'],
-            'titleId' => (int) $row['title_id'],
-            'name' => $row['name'],
-            'volume' => isset($row['volume']) ? (int) $row['volume'] : 0,
-            'startYear' => isset($row['start_year']) ? (int) $row['start_year'] : 0,
-            'publisher' => $row['publisher'],
-            'titleName' => $row['title_name'] ?? '',
-            'issueCount' => isset($row['issue_count']) ? (int) $row['issue_count'] : 0,
-            'totalIssues' => isset($row['total_issues']) ? (int) $row['total_issues'] : 0,
-            'missingIssues' => isset($row['missing_issues']) ? (int) $row['missing_issues'] : 0,
+            'id'                => (int) $row['id'],
+            'titleId'           => (int) $row['title_id'],
+            'name'              => $row['name'],
+            'volume'            => isset($row['volume']) ? (int) $row['volume'] : 0,
+            'startYear'         => isset($row['start_year']) ? (int) $row['start_year'] : 0,
+            'publisher'         => $row['publisher'],
+            'titleName'         => $row['title_name'] ?? '',
+            'issueCount'        => isset($row['issue_count']) ? (int) $row['issue_count'] : 0,
+            'totalIssues'       => isset($row['total_issues']) ? (int) $row['total_issues'] : 0,
+            'missingIssues'     => isset($row['missing_issues']) ? (int) $row['missing_issues'] : 0,
             'completionPercent' => isset($row['completion_percent']) ? (int) $row['completion_percent'] : 0,
         ];
     }
@@ -1376,7 +1376,7 @@ function deleteTitle($id)
 // Create a Series
 function createSeries($dataJson)
 {
-    $data   = json_decode($dataJson, true);
+    $data = json_decode($dataJson, true);
     ensureSeriesTotalSchema(ComicDB_DB::db());
     $series = new ComicDB_Series();
     $series->titleId($data['titleId']);
@@ -1423,11 +1423,11 @@ function createSeries($dataJson)
 // Update a Series
 function updateSeries($id, $dataJson)
 {
-    $data   = json_decode($dataJson, true);
+    $data = json_decode($dataJson, true);
     ensureSeriesTotalSchema(ComicDB_DB::db());
     $series = new ComicDB_Series($id);
     $series->restore();
-    if (isset($data['titleId'])) {
+    if (isset($data['titleId']) && (int) $data['titleId'] > 0) {
         $series->titleId($data['titleId']);
     }
 
@@ -1491,24 +1491,24 @@ function deleteSeries($id)
 function applyIssueData(ComicDB_Issue $issue, array $data)
 {
     $fieldMap = [
-        'seriesId' => 'seriesId',
-        'number' => 'number',
-        'storyTitle' => 'storyTitle',
-        'sort' => 'sort',
-        'printRun' => 'printRun',
-        'quantity' => 'quantity',
-        'coverDate' => 'coverDate',
-        'location' => 'location',
-        'type' => 'type',
-        'status' => 'status',
-        'condition' => 'condition',
-        'coverPrice' => 'coverPrice',
+        'seriesId'      => 'seriesId',
+        'number'        => 'number',
+        'storyTitle'    => 'storyTitle',
+        'sort'          => 'sort',
+        'printRun'      => 'printRun',
+        'quantity'      => 'quantity',
+        'coverDate'     => 'coverDate',
+        'location'      => 'location',
+        'type'          => 'type',
+        'status'        => 'status',
+        'condition'     => 'condition',
+        'coverPrice'    => 'coverPrice',
         'purchasePrice' => 'purchasePrice',
-        'purchaseDate' => 'purchaseDate',
-        'guideValue' => 'guideValue',
-        'guide' => 'guide',
-        'issueValue' => 'issueValue',
-        'comments' => 'comments',
+        'purchaseDate'  => 'purchaseDate',
+        'guideValue'    => 'guideValue',
+        'guide'         => 'guide',
+        'issueValue'    => 'issueValue',
+        'comments'      => 'comments',
     ];
 
     foreach ($fieldMap as $key => $method) {
@@ -1521,7 +1521,7 @@ function applyIssueData(ComicDB_Issue $issue, array $data)
 // Create an Issue
 function createIssue($dataJson)
 {
-    $data  = json_decode($dataJson, true);
+    $data = json_decode($dataJson, true);
     ensureSeriesTotalSchema(ComicDB_DB::db());
     $issue = new ComicDB_Issue();
     applyIssueData($issue, $data);
@@ -1533,7 +1533,7 @@ function createIssue($dataJson)
 // Update an Issue
 function updateIssue($id, $dataJson)
 {
-    $data  = json_decode($dataJson, true);
+    $data = json_decode($dataJson, true);
     ensureSeriesTotalSchema(ComicDB_DB::db());
     $issue = new ComicDB_Issue($id);
     $issue->restore();
@@ -1555,10 +1555,10 @@ function deleteIssue($id)
 
 function grabIssuesList($dataJson)
 {
-    $filters = json_decode($dataJson, true);
-    $titleId = isset($filters['titleId']) ? (int) $filters['titleId'] : 0;
-    $seriesId = isset($filters['seriesId']) ? (int) $filters['seriesId'] : 0;
-    $db = ComicDB_DB::db();
+    $filters      = json_decode($dataJson, true);
+    $titleId      = isset($filters['titleId']) ? (int) $filters['titleId'] : 0;
+    $seriesId     = isset($filters['seriesId']) ? (int) $filters['seriesId'] : 0;
+    $db           = ComicDB_DB::db();
     $whereClauses = [];
     if ($titleId > 0) {
         $whereClauses[] = "s.title = $titleId";
@@ -1601,12 +1601,12 @@ EOT;
     $list = [];
     while ($row = $result->fetch_assoc()) {
         $list[] = [
-            'id' => (int) $row['id'],
-            'number' => $row['number'],
-            'seriesId' => (int) $row['series_id'],
+            'id'         => (int) $row['id'],
+            'number'     => $row['number'],
+            'seriesId'   => (int) $row['series_id'],
             'seriesName' => $row['series_name'] ?? '',
-            'titleId' => (int) $row['title_id'],
-            'titleName' => $row['title_name'] ?? '',
+            'titleId'    => (int) $row['title_id'],
+            'titleName'  => $row['title_name'] ?? '',
         ];
     }
 
@@ -1655,16 +1655,16 @@ function grabPublisher($id)
 // Grab all Publishers with title count
 function grabPublishers()
 {
-    $db = ComicDB_DB::db();
+    $db    = ComicDB_DB::db();
     $query = <<<EOT
       SELECT p.id, p.name, COUNT(DISTINCT s.title) AS title_count
         FROM publisher p
-   LEFT JOIN series s ON s.publisher = p.name
+   LEFT JOIN series s ON s.publisher_id = p.id
     GROUP BY p.id, p.name
     ORDER BY p.name ASC
 EOT;
     $result = $db->query($query);
-    $list = [];
+    $list   = [];
     while ($row = $result->fetch_assoc()) {
         $list[] = [
             'id'          => (int) $row['id'],
@@ -1727,11 +1727,12 @@ EOT;
     ];
 
     $topPublishersQuery = <<<EOT
-      SELECT s.publisher AS name, COUNT(i.id) AS issue_count
+      SELECT p.name AS name, COUNT(i.id) AS issue_count
         FROM series s
+        JOIN publisher p ON p.id = s.publisher_id
    LEFT JOIN issues i ON i.series = s.id
-    GROUP BY s.publisher
-    ORDER BY issue_count DESC, s.publisher ASC
+    GROUP BY p.id, p.name
+    ORDER BY issue_count DESC, p.name ASC
        LIMIT 5
 EOT;
     $topPublishersResult = $db->query($topPublishersQuery);
@@ -1741,7 +1742,7 @@ EOT;
     $topPublishers = [];
     while ($row = $topPublishersResult->fetch_assoc()) {
         $topPublishers[] = [
-            'name' => $row['name'] ?? 'Unknown',
+            'name'       => $row['name'] ?? 'Unknown',
             'issueCount' => (int) $row['issue_count'],
         ];
     }
@@ -1762,7 +1763,7 @@ EOT;
     $topTitles = [];
     while ($row = $topTitlesResult->fetch_assoc()) {
         $topTitles[] = [
-            'name' => $row['name'] ?? 'Unknown',
+            'name'       => $row['name'] ?? 'Unknown',
             'issueCount' => (int) $row['issue_count'],
         ];
     }
@@ -1795,23 +1796,23 @@ EOT;
     $missingRow = $missingResult->fetch_assoc();
 
     return json_encode([
-        'totals' => [
-            'publishers' => (int) $totalsRow['publishers'],
-            'titles' => (int) $totalsRow['titles'],
-            'series' => (int) $totalsRow['series'],
+        'totals'          => [
+            'publishers'  => (int) $totalsRow['publishers'],
+            'titles'      => (int) $totalsRow['titles'],
+            'series'      => (int) $totalsRow['series'],
             'issuesOwned' => (int) $totalsRow['issues_owned'],
         ],
-        'values' => [
-            'issueValue' => (float) $valuesRow['issue_value'],
+        'values'          => [
+            'issueValue'    => (float) $valuesRow['issue_value'],
             'purchasePrice' => (float) $valuesRow['purchase_price'],
-            'coverPrice' => (float) $valuesRow['cover_price'],
+            'coverPrice'    => (float) $valuesRow['cover_price'],
         ],
         'statusBreakdown' => $statusBreakdown,
-        'topPublishers' => $topPublishers,
-        'topTitles' => $topTitles,
-        'missing' => [
+        'topPublishers'   => $topPublishers,
+        'topTitles'       => $topTitles,
+        'missing'         => [
             'estimatedMissingIssues' => (int) $missingRow['estimated_missing_issues'],
-            'seriesWithGaps' => (int) $missingRow['series_with_gaps'],
+            'seriesWithGaps'         => (int) $missingRow['series_with_gaps'],
         ],
     ]);
 }
@@ -1819,11 +1820,11 @@ EOT;
 function grabSeriesTypes()
 {
     $typesList = new ComicDB_SeriesTypes();
-    $types = $typesList->getAll();
-    $list = [];
+    $types     = $typesList->getAll();
+    $list      = [];
     foreach ($types as $type) {
         $list[] = [
-            'id' => (int) $type->id(),
+            'id'   => (int) $type->id(),
             'name' => $type->name(),
         ];
     }
@@ -1833,7 +1834,7 @@ function grabSeriesTypes()
 function createPublisher($dataJson)
 {
     $data = json_decode($dataJson, true);
-    if (!isset($data['name']) || trim($data['name']) === '') {
+    if (! isset($data['name']) || trim($data['name']) === '') {
         return json_encode(['error' => 'Publisher name is required.']);
     }
     $publisher = new ComicDB_Publisher();
@@ -1844,7 +1845,7 @@ function createPublisher($dataJson)
 
 function updatePublisher($id, $dataJson)
 {
-    $data = json_decode($dataJson, true);
+    $data      = json_decode($dataJson, true);
     $publisher = new ComicDB_Publisher();
     $publisher->id($id);
     $publisher->restore();
@@ -1859,21 +1860,6 @@ function updatePublisher($id, $dataJson)
 
     $publisher->save();
 
-    $newName = $publisher->name();
-    if ($oldName !== $newName) {
-        $db = ComicDB_DB::db();
-        $oldNameEscaped = $db->real_escape_string($oldName);
-        $newNameEscaped = $db->real_escape_string($newName);
-        $query = <<<EOT
-          UPDATE series
-             SET publisher = '$newNameEscaped'
-           WHERE publisher = '$oldNameEscaped'
-EOT;
-        if (! $db->query($query)) {
-            die('There was an error running the query [' . $db->error . ']');
-        }
-    }
-
     return json_encode(['id' => $publisher->id(), 'name' => $publisher->name()]);
 }
 
@@ -1882,25 +1868,25 @@ function deletePublisher($id)
     $publisher = new ComicDB_Publisher();
     $publisher->id($id);
     $publisher->restore();
-    $name = $publisher->name();
-    $db = ComicDB_DB::db();
+    $name        = $publisher->name();
+    $db          = ComicDB_DB::db();
     $nameEscaped = $db->real_escape_string($name);
-    $countQuery = <<<EOT
+    $countQuery  = <<<EOT
       SELECT COUNT(*) AS series_count
         FROM series
-       WHERE publisher = '$nameEscaped'
+       WHERE publisher_id = $id
 EOT;
     $countResult = $db->query($countQuery);
     if (! $countResult) {
         die('There was an error running the query [' . $db->error . ']');
     }
-    $row = $countResult->fetch_assoc();
+    $row         = $countResult->fetch_assoc();
     $seriesCount = (int) $row['series_count'];
     if ($seriesCount > 0) {
         return json_encode([
             'deleted' => false,
-            'id' => (int) $id,
-            'error' => "Cannot delete publisher in use by $seriesCount series.",
+            'id'      => (int) $id,
+            'error'   => "Cannot delete publisher in use by $seriesCount series.",
         ]);
     }
 
@@ -1920,12 +1906,12 @@ function buildSeriesGridPayload($id)
     $gridData   = $grid->displayGrid();
 
     return [
-        'seriesId' => (int) $id,
-        'firstIssue' => is_numeric($firstIssue) ? (int) $firstIssue : null,
-        'finalIssue' => is_numeric($finalIssue) ? (int) $finalIssue : null,
+        'seriesId'    => (int) $id,
+        'firstIssue'  => is_numeric($firstIssue) ? (int) $firstIssue : null,
+        'finalIssue'  => is_numeric($finalIssue) ? (int) $finalIssue : null,
         'totalIssues' => is_numeric($series->totalIssues()) ? (int) $series->totalIssues() : 0,
-        'gridable' => count($gridData) > 0,
-        'issues' => $gridData,
+        'gridable'    => count($gridData) > 0,
+        'issues'      => $gridData,
     ];
 }
 
@@ -1937,20 +1923,20 @@ function grabSeriesGrid($id)
 function grabSeriesMissing($id)
 {
     $seriesId = (int) $id;
-    $db = ComicDB_DB::db();
+    $db       = ComicDB_DB::db();
     ensureSeriesTotalSchema($db);
 
-    $seriesQuery = "SELECT total_issues FROM series WHERE id=$seriesId LIMIT 1";
+    $seriesQuery  = "SELECT total_issues FROM series WHERE id=$seriesId LIMIT 1";
     $seriesResult = $db->query($seriesQuery);
     if (! $seriesResult) {
         die('There was an error running the query [' . $db->error . ']');
     }
     $seriesRow = $seriesResult->fetch_assoc();
-    if (!$seriesRow) {
+    if (! $seriesRow) {
         return json_encode([
-            'seriesId' => $seriesId,
-            'totalIssues' => 0,
-            'ownedSlots' => 0,
+            'seriesId'     => $seriesId,
+            'totalIssues'  => 0,
+            'ownedSlots'   => 0,
             'missingCount' => 0,
             'missingSlots' => [],
         ]);
@@ -1959,15 +1945,15 @@ function grabSeriesMissing($id)
     $totalIssues = isset($seriesRow['total_issues']) ? (int) $seriesRow['total_issues'] : 0;
     if ($totalIssues <= 0) {
         return json_encode([
-            'seriesId' => $seriesId,
-            'totalIssues' => 0,
-            'ownedSlots' => 0,
+            'seriesId'     => $seriesId,
+            'totalIssues'  => 0,
+            'ownedSlots'   => 0,
             'missingCount' => 0,
             'missingSlots' => [],
         ]);
     }
 
-    $issuesQuery = "SELECT number, sort FROM issues WHERE series=$seriesId";
+    $issuesQuery  = "SELECT number, sort FROM issues WHERE series=$seriesId";
     $issuesResult = $db->query($issuesQuery);
     if (! $issuesResult) {
         die('There was an error running the query [' . $db->error . ']');
@@ -1987,15 +1973,15 @@ function grabSeriesMissing($id)
 
     $missingSlots = [];
     for ($slot = 1; $slot <= $totalIssues; $slot++) {
-        if (!isset($occupied[$slot])) {
+        if (! isset($occupied[$slot])) {
             $missingSlots[] = ['slot' => $slot];
         }
     }
 
     return json_encode([
-        'seriesId' => $seriesId,
-        'totalIssues' => $totalIssues,
-        'ownedSlots' => count($occupied),
+        'seriesId'     => $seriesId,
+        'totalIssues'  => $totalIssues,
+        'ownedSlots'   => count($occupied),
         'missingCount' => count($missingSlots),
         'missingSlots' => $missingSlots,
     ]);
