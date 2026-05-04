@@ -857,7 +857,7 @@ function csvImportGenerateRunId()
 function csvImportLogRunSummary($db, $runId, $summary)
 {
     $mode  = $db->real_escape_string($summary['mode']);
-    $query = <<<EOT
+    $query = "
       INSERT INTO import_runs (
           run_id, mode, total_rows, valid_rows, error_rows, warning_rows, skipped_invalid_rows,
           inserted_titles, inserted_series, updated_series, inserted_issues, updated_issues, skipped_existing_issues
@@ -876,7 +876,7 @@ function csvImportLogRunSummary($db, $runId, $summary)
           {$summary['updatedIssues']},
           {$summary['skippedExistingIssues']}
       )
-EOT;
+    ";
     if (! $db->query($query)) {
         die('There was an error running the query [' . $db->error . ']');
     }
@@ -894,10 +894,10 @@ function csvImportLogSkippedRows($db, $runId, $rows)
         $rawJson        = isset($rowState['raw']) ? "'" . $db->real_escape_string(json_encode($rowState['raw'])) . "'" : "NULL";
         $normalizedJson = isset($rowState['normalized']) ? "'" . $db->real_escape_string(json_encode($rowState['normalized'])) . "'" : "NULL";
         $rowNumber      = isset($rowState['rowNumber']) ? (int) $rowState['rowNumber'] : 0;
-        $query          = <<<EOT
+        $query          = "
           INSERT INTO import_skipped_rows (run_id, source_row_number, error_text, warning_text, raw_row, normalized_row)
           VALUES ('{$db->real_escape_string($runId)}', $rowNumber, '$errors', $warnings, $rawJson, $normalizedJson)
-EOT;
+        ";
         if (! $db->query($query)) {
             die('There was an error running the query [' . $db->error . ']');
         }
@@ -910,13 +910,13 @@ function csvImportFetchSkippedRows($db, $runId, $limit)
 {
     $runIdEscaped = $db->real_escape_string($runId);
     $limit        = max(1, min(2000, (int) $limit));
-    $query        = <<<EOT
+    $query        = "
       SELECT id, run_id, source_row_number, error_text, warning_text, raw_row, normalized_row, created_at
         FROM import_skipped_rows
        WHERE run_id = '$runIdEscaped'
     ORDER BY source_row_number ASC, id ASC
        LIMIT $limit
-EOT;
+    ";
     $result = $db->query($query);
     if (! $result) {
         die('There was an error running the query [' . $db->error . ']');
@@ -940,14 +940,14 @@ EOT;
 function csvImportFetchRuns($db, $limit)
 {
     $limit = max(1, min(500, (int) $limit));
-    $query = <<<EOT
+    $query = "
       SELECT run_id, mode, total_rows, valid_rows, error_rows, warning_rows, skipped_invalid_rows,
              inserted_titles, inserted_series, updated_series, inserted_issues, updated_issues, skipped_existing_issues,
              created_at
         FROM import_runs
     ORDER BY created_at DESC
        LIMIT $limit
-EOT;
+    ";
     $result = $db->query($query);
     if (! $result) {
         die('There was an error running the query [' . $db->error . ']');
@@ -1273,7 +1273,7 @@ function grabSeriesList($dataJson)
     $minimumIssueCount = isset($filters['minimumIssueCount']) ? (int) $filters['minimumIssueCount'] : 0;
     $having            = "HAVING COUNT(i.id) >= $minimumIssueCount";
 
-    $query = <<<EOT
+    $query = "
       SELECT s.id,
              s.title AS title_id,
              s.name,
@@ -1297,7 +1297,7 @@ function grabSeriesList($dataJson)
      GROUP BY s.id, s.title, s.name, s.volume, s.start_year, s.publisher_id, p.name, t.name, s.total_issues
       $having
      ORDER BY t.name ASC, s.name ASC
-EOT;
+    ";
     $result = $db->query($query);
     if (! $result) {
         die('There was an error running the query [' . $db->error . ']');
@@ -1573,7 +1573,7 @@ function grabIssuesList($dataJson)
         $where = 'WHERE ' . implode(' AND ', $whereClauses);
     }
 
-    $query = <<<EOT
+    $query = "
       SELECT i.id,
              i.number,
              i.sort,
@@ -1592,7 +1592,7 @@ function grabIssuesList($dataJson)
              CASE WHEN i.number REGEXP '^-?[0-9]+$' THEN 0 ELSE 1 END ASC,
              CASE WHEN i.number REGEXP '^-?[0-9]+$' THEN CAST(i.number AS SIGNED) ELSE 0 END ASC,
              i.number ASC
-EOT;
+    ";
     $result = $db->query($query);
     if (! $result) {
         die('There was an error running the query [' . $db->error . ']');
@@ -1656,13 +1656,13 @@ function grabPublisher($id)
 function grabPublishers()
 {
     $db    = ComicDB_DB::db();
-    $query = <<<EOT
+    $query = "
       SELECT p.id, p.name, COUNT(DISTINCT s.title) AS title_count
         FROM publisher p
    LEFT JOIN series s ON s.publisher_id = p.id
     GROUP BY p.id, p.name
     ORDER BY p.name ASC
-EOT;
+    ";
     $result = $db->query($query);
     $list   = [];
     while ($row = $result->fetch_assoc()) {
@@ -1680,35 +1680,35 @@ function grabDashboard()
     $db = ComicDB_DB::db();
     ensureSeriesTotalSchema($db);
 
-    $totalsQuery = <<<EOT
+    $totalsQuery = "
       SELECT (SELECT COUNT(*) FROM publisher) AS publishers,
              (SELECT COUNT(*) FROM titles) AS titles,
              (SELECT COUNT(*) FROM series) AS series,
              (SELECT COUNT(*) FROM issues) AS issues_owned
-EOT;
+    ";
     $totalsResult = $db->query($totalsQuery);
     if (! $totalsResult) {
         die('There was an error running the query [' . $db->error . ']');
     }
     $totalsRow = $totalsResult->fetch_assoc();
 
-    $valuesQuery = <<<EOT
+    $valuesQuery = "
       SELECT COALESCE(SUM(issue_value), 0) AS issue_value,
              COALESCE(SUM(purchase_price), 0) AS purchase_price,
              COALESCE(SUM(cover_price), 0) AS cover_price
         FROM issues
-EOT;
+    ";
     $valuesResult = $db->query($valuesQuery);
     if (! $valuesResult) {
         die('There was an error running the query [' . $db->error . ']');
     }
     $valuesRow = $valuesResult->fetch_assoc();
 
-    $statusQuery = <<<EOT
+    $statusQuery = "
       SELECT status, COUNT(*) AS total
         FROM issues
     GROUP BY status
-EOT;
+    ";
     $statusResult = $db->query($statusQuery);
     if (! $statusResult) {
         die('There was an error running the query [' . $db->error . ']');
@@ -1726,7 +1726,7 @@ EOT;
         ['status' => 'Wish List', 'count' => $statusCounts[2]],
     ];
 
-    $topPublishersQuery = <<<EOT
+    $topPublishersQuery = "
       SELECT p.name AS name, COUNT(i.id) AS issue_count
         FROM series s
         JOIN publisher p ON p.id = s.publisher_id
@@ -1734,7 +1734,7 @@ EOT;
     GROUP BY p.id, p.name
     ORDER BY issue_count DESC, p.name ASC
        LIMIT 5
-EOT;
+    ";
     $topPublishersResult = $db->query($topPublishersQuery);
     if (! $topPublishersResult) {
         die('There was an error running the query [' . $db->error . ']');
@@ -1747,7 +1747,7 @@ EOT;
         ];
     }
 
-    $topTitlesQuery = <<<EOT
+    $topTitlesQuery = "
       SELECT t.name, COUNT(i.id) AS issue_count
         FROM titles t
    LEFT JOIN series s ON s.title = t.id
@@ -1755,7 +1755,7 @@ EOT;
     GROUP BY t.id, t.name
     ORDER BY issue_count DESC, t.name ASC
        LIMIT 5
-EOT;
+    ";
     $topTitlesResult = $db->query($topTitlesQuery);
     if (! $topTitlesResult) {
         die('There was an error running the query [' . $db->error . ']');
@@ -1768,7 +1768,7 @@ EOT;
         ];
     }
 
-    $missingQuery = <<<EOT
+    $missingQuery = "
       SELECT COALESCE(SUM(GREATEST(expected_total - issue_count, 0)), 0) AS estimated_missing_issues,
              COALESCE(SUM(CASE WHEN expected_total > issue_count THEN 1 ELSE 0 END), 0) AS series_with_gaps
         FROM (
@@ -1788,7 +1788,7 @@ EOT;
            LEFT JOIN issues i ON i.series = s.id
             GROUP BY s.id, s.total_issues, s.first_issue, s.final_issue
               ) expected
-EOT;
+    ";
     $missingResult = $db->query($missingQuery);
     if (! $missingResult) {
         die('There was an error running the query [' . $db->error . ']');
@@ -1871,11 +1871,11 @@ function deletePublisher($id)
     $name        = $publisher->name();
     $db          = ComicDB_DB::db();
     $nameEscaped = $db->real_escape_string($name);
-    $countQuery  = <<<EOT
+    $countQuery  = "
       SELECT COUNT(*) AS series_count
         FROM series
        WHERE publisher_id = $id
-EOT;
+    ";
     $countResult = $db->query($countQuery);
     if (! $countResult) {
         die('There was an error running the query [' . $db->error . ']');
