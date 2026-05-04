@@ -16,6 +16,7 @@ Priorities:
 - Keep changes minimal and scoped strictly to the request.
 - Do not modify unrelated files.
 - If requirements are unclear, ask clarifying questions before implementing.
+- Test that the backend and frontend are working before assuming that changes are corret
 
 ---
 
